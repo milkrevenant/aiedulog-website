@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(claude mcp get:*)"
+      "Bash(claude mcp get:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker:*)",
+      "Bash(npx create-next-app:*)"
     ],
     "deny": [],
     "ask": [],
