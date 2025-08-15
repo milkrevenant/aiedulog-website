@@ -20,6 +20,8 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Menu,
+  MenuItem,
   useTheme,
   alpha
 } from '@mui/material'
@@ -37,8 +39,14 @@ import {
   School,
   LocalOffer,
   ChatBubbleOutline,
-  Bookmark
+  Bookmark,
+  SupervisorAccount,
+  Settings,
+  Dashboard,
+  AdminPanelSettings,
+  Logout
 } from '@mui/icons-material'
+import { createClient } from '@/lib/supabase/client'
 
 interface AppHeaderProps {
   user: any
@@ -48,8 +56,24 @@ interface AppHeaderProps {
 export default function AppHeader({ user, profile }: AppHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const router = useRouter()
   const theme = useTheme()
+  const supabase = createClient()
+  
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget)
+  }
+  
+  const handleClose = () => {
+    setAnchorEl(null)
+  }
+  
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    handleClose()
+    router.push('/')
+  }
 
   return (
     <>
@@ -96,7 +120,10 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
             </ListItemIcon>
             <ListItemText primary="홈" />
           </ListItemButton>
-          <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/dashboard') }}>
+          <ListItemButton onClick={() => { 
+            setDrawerOpen(false); 
+            router.push('/dashboard') 
+          }}>
             <ListItemIcon>
               <AccountCircle />
             </ListItemIcon>
@@ -190,6 +217,24 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
             <Chip label="8" size="small" />
           </ListItemButton>
         </List>
+
+        {/* 관리자 메뉴 - role이 admin 또는 moderator일 때만 표시 */}
+        {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+          <>
+            <Divider />
+            <List>
+              <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 'medium', color: 'error.main' }}>
+                관리자 메뉴
+              </ListSubheader>
+              <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/admin') }}>
+                <ListItemIcon>
+                  <Settings color="error" />
+                </ListItemIcon>
+                <ListItemText primary="사이트 관리" />
+              </ListItemButton>
+            </List>
+          </>
+        )}
       </Drawer>
 
       {/* Material 3 스타일 상단 헤더 */}
@@ -206,32 +251,32 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
         }}
       >
         <Toolbar sx={{ px: { xs: 1, sm: 2 } }}>
-          {/* 사이드바 토글 버튼 */}
-          <IconButton
-            edge="start"
-            onClick={() => setDrawerOpen(true)}
-            sx={{ mr: 1 }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          {/* 로고 */}
-          <Typography 
-            variant="h6" 
-            fontWeight="bold" 
-            color="primary"
-            onClick={() => router.push('/feed')}
-            sx={{ 
-              mr: 3, 
-              display: { xs: 'none', sm: 'block' },
-              cursor: 'pointer',
-              '&:hover': {
-                opacity: 0.8
-              }
-            }}
-          >
-            AIedulog
-          </Typography>
+          {/* 사이드바 토글 버튼과 로고를 함께 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 3 }}>
+            <IconButton
+              edge="start"
+              onClick={() => setDrawerOpen(true)}
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            
+            {/* 로고 */}
+            <Typography 
+              variant="h6" 
+              fontWeight="bold" 
+              color="primary"
+              onClick={() => router.push('/feed')}
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8
+                }
+              }}
+            >
+              AIedulog
+            </Typography>
+          </Box>
 
           {/* Material 3 검색창 */}
           <Paper
@@ -277,12 +322,62 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
                 <Notifications />
               </Badge>
             </IconButton>
-            <IconButton onClick={() => router.push('/dashboard')}>
+            <IconButton onClick={handleMenu}>
               <AccountCircle />
             </IconButton>
           </Stack>
         </Toolbar>
       </Paper>
+      
+      {/* User Dropdown Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        sx={{ 
+          mt: 1,
+          '& .MuiPaper-root': {
+            minWidth: 200,
+          }
+        }}
+      >
+        <MenuItem 
+          onClick={() => {
+            handleClose()
+            router.push('/dashboard')
+          }}
+        >
+          <ListItemIcon>
+            <Dashboard fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>마이페이지</ListItemText>
+        </MenuItem>
+        
+        {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+          <MenuItem 
+            onClick={() => {
+              handleClose()
+              router.push('/admin')
+            }}
+          >
+            <ListItemIcon>
+              <AdminPanelSettings fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>사이트 관리</ListItemText>
+          </MenuItem>
+        )}
+        
+        <Divider />
+        
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <Logout fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>로그아웃</ListItemText>
+        </MenuItem>
+      </Menu>
     </>
   )
 }

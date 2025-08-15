@@ -14,10 +14,12 @@ import {
   Divider,
   useTheme,
   alpha,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import {
@@ -26,25 +28,49 @@ import {
   Dashboard,
   Logout,
   Login,
+  AdminPanelSettings,
+  Settings,
 } from '@mui/icons-material'
 
 export default function Navbar() {
   const theme = useTheme()
   const pathname = usePathname()
+  const router = useRouter()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<any>(null)
   const supabase = createClient()
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+      
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        setProfile(profileData)
+      }
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        setProfile(profileData)
+      } else {
+        setProfile(null)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -91,20 +117,21 @@ export default function Navbar() {
     >
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ height: 64 }}>
-          {/* Logo */}
-          <Typography
-            variant="h6"
-            component={Link}
-            href="/"
-            sx={{
-              fontWeight: 700,
-              color: theme.palette.primary.main,
-              textDecoration: 'none',
-              mr: 4,
-            }}
-          >
-            AIedulog
-          </Typography>
+          {/* Logo - 햄버거 메뉴 다음에 위치 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
+            <Typography
+              variant="h6"
+              component={Link}
+              href="/"
+              sx={{
+                fontWeight: 700,
+                color: theme.palette.primary.main,
+                textDecoration: 'none',
+              }}
+            >
+              AIedulog
+            </Typography>
+          </Box>
 
           {/* Desktop Menu */}
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 1 }}>
@@ -144,15 +171,6 @@ export default function Navbar() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {user ? (
               <>
-                <Button
-                  component={Link}
-                  href="/dashboard"
-                  variant="text"
-                  sx={{ display: { xs: 'none', sm: 'flex' } }}
-                  startIcon={<Dashboard />}
-                >
-                  대시보드
-                </Button>
                 <IconButton
                   size="large"
                   onClick={handleMenu}
@@ -202,17 +220,46 @@ export default function Navbar() {
             onClose={handleClose}
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            sx={{ mt: 1 }}
+            sx={{ 
+              mt: 1,
+              '& .MuiPaper-root': {
+                minWidth: 200,
+              }
+            }}
           >
-            <MenuItem component={Link} href="/profile" onClick={handleClose}>
-              <AccountCircle sx={{ mr: 1 }} /> 프로필
+            <MenuItem 
+              onClick={() => {
+                handleClose()
+                router.push('/dashboard')
+              }}
+            >
+              <ListItemIcon>
+                <Dashboard fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>마이페이지</ListItemText>
             </MenuItem>
-            <MenuItem component={Link} href="/dashboard" onClick={handleClose}>
-              <Dashboard sx={{ mr: 1 }} /> 대시보드
-            </MenuItem>
+            
+            {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+              <MenuItem 
+                onClick={() => {
+                  handleClose()
+                  router.push('/admin')
+                }}
+              >
+                <ListItemIcon>
+                  <AdminPanelSettings fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>사이트 관리</ListItemText>
+              </MenuItem>
+            )}
+            
             <Divider />
+            
             <MenuItem onClick={handleLogout}>
-              <Logout sx={{ mr: 1 }} /> 로그아웃
+              <ListItemIcon>
+                <Logout fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>로그아웃</ListItemText>
             </MenuItem>
           </Menu>
         </Toolbar>

@@ -94,8 +94,10 @@ export function usePermission() {
     user,
     loading,
     can,
+    hasPermission: can,  // 별칭 추가 (호환성)
     hasRole,
     hasMinimumRole,
+    role: user?.role,  // 현재 사용자 role 추가
     isAdmin: user?.role === 'admin',
     isModerator: user?.role === 'moderator',
     isVerified: user?.role === 'verified',

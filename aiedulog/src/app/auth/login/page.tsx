@@ -77,13 +77,8 @@ export default function LoginPage() {
           .eq('id', authData.user.id)
           .single()
         
-        // 권한별 리다이렉트
-        if (profileData?.role === 'admin' || profileData?.role === 'moderator') {
-          router.push('/dashboard')
-        } else {
-          router.push('/feed')
-        }
-        router.refresh()
+        // 모든 사용자는 피드로 리다이렉트
+        router.push('/feed')
       }
     } catch (error: any) {
       setError(error.message)

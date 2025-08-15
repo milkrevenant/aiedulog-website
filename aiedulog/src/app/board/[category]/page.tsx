@@ -427,7 +427,22 @@ export default function BoardPage() {
             </Card>
           ) : (
             posts.map((post) => (
-              <Card key={post.id}>
+              <Card 
+                key={post.id}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    boxShadow: 3
+                  }
+                }}
+                onClick={(e) => {
+                  // 버튼이나 액션 아이템 클릭시 카드 클릭 이벤트 방지
+                  if ((e.target as HTMLElement).closest('button, .MuiIconButton-root')) {
+                    return
+                  }
+                  router.push(`/post/${post.id}`)
+                }}
+              >
                 <CardHeader
                   avatar={
                     <Badge
