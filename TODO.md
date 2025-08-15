@@ -1,114 +1,175 @@
 # AIedulog 개발 TODO List
 
+## 🎯 프로젝트 개요
+**AIedulog** - 전남에듀테크교육연구회 커뮤니티 플랫폼
+- 교사들을 위한 복합 기능 커뮤니티 (자료공유, 소통, 강의홍보, 구인구직, 전문칼럼, 연구회활동)
+- Material 3 디자인 시스템 기반
+- Supabase + Next.js 15 스택
+
 ## 🔄 현재 진행 상황
-- ✅ Next.js 프로젝트 생성 완료 (`/aiedulog` 폴더)
-- 🚧 Docker PostgreSQL 설정 중 (재부팅 필요)
+- ✅ Next.js 15.4.6 프로젝트 생성 (`/aiedulog` 폴더)
+- ✅ Supabase 프로젝트 생성 및 연결
+- ✅ Material 3 디자인 시스템 적용 (MUI)
+- ✅ 홈페이지 구현 (전남에듀테크교육연구회)
+- ✅ 네비게이션 바 구현
+- ✅ DB 스키마 재설계 (커뮤니티 플랫폼용)
+- 🚧 로그인 시스템 구현 중
 
-## 📋 Phase 1: 프로젝트 초기 설정
+## 📋 Phase 1: 프로젝트 초기 설정 ✅
 
-### 1. Docker PostgreSQL 실행 (재부팅 후)
-```bash
-# PowerShell 또는 CMD에서
-docker compose up -d
+### 완료된 작업
+1. **Supabase 설정**
+   - 프로젝트 ID: nnfpdhtpbjijdctslexc
+   - 환경변수 설정 (SUPABASE_URL, SUPABASE_KEY)
+   - MCP Supabase 연동 완료
 
-# 확인
-docker ps
-```
+2. **Material 3 디자인 시스템**
+   - MUI 설치 및 테마 설정
+   - Dynamic Color Scheme 적용
+   - 커스텀 컴포넌트 스타일링
 
-### 2. 필수 패키지 설치
-```bash
-cd aiedulog
-
-# 기본 패키지
-npm install drizzle-orm postgres 
-npm install next-auth @auth/drizzle-adapter
-npm install bcryptjs date-fns clsx react-hot-toast
-
-# UI 라이브러리
-npm install @headlessui/react @heroicons/react 
-npm install react-hook-form @hookform/resolvers zod
-npm install material-symbols
-
-# 개발 도구
-npm install -D drizzle-kit @types/bcryptjs
-```
-
-### 3. 환경변수 설정
-```bash
-# .env.local 파일 생성 (aiedulog 폴더 내)
-cp ../.env.local.example .env.local
-
-# NEXTAUTH_SECRET 생성
-openssl rand -base64 32
-```
-
-### 4. Tailwind 설정 (Material 3 디자인 토큰)
-`tailwind.config.ts` 수정:
-- 컬러 시스템 추가
-- 폰트 크기 토큰 추가
-- Border radius 토큰 추가
-- Shadow (elevation) 토큰 추가
-
-### 5. 폰트 설정
-`src/app/layout.tsx`:
-- Roboto, Noto Sans KR 폰트 import
-- 폰트 변수 적용
-
-### 6. 프로젝트 구조 생성
-```
-src/
-├── components/
-│   ├── layout/
-│   ├── ui/
-│   └── auth/
-├── lib/
-│   ├── db/
-│   └── auth/
-├── hooks/
-└── types/
-```
+3. **프로젝트 구조**
+   ```
+   src/
+   ├── app/
+   │   ├── theme/         # Material 3 테마
+   │   ├── auth/          # 인증 페이지
+   │   └── dashboard/     # 대시보드
+   ├── components/
+   │   └── Navbar.tsx     # 네비게이션 바
+   ├── lib/
+   │   ├── supabase/      # Supabase 클라이언트
+   │   └── database.sql   # DB 스키마
+   └── types/
+   ```
 
 ## 📋 Phase 2: 데이터베이스 & 인증
 
-### 1. Drizzle 스키마 설정
-- `src/lib/db/schema.ts` 생성
-- 테이블 정의 (users, boards, posts, comments 등)
+### ✅ 완료된 테이블 구조
+1. **profiles** - 사용자 프로필 (학교, 과목, 강사정보)
+2. **posts** - 게시글 (6가지 카테고리)
+3. **comments** - 댓글/대댓글
+4. **resources** - 교육자료
+5. **lectures** - 강의 정보
+6. **job_posts** - 구인/구직
+7. **columns** - 전문 칼럼
+8. **column_authors** - 칼럼 작성자 인증
+9. **likes**, **bookmarks**, **notifications**
+10. **chat_rooms**, **chat_messages**
 
-### 2. Drizzle 설정
-- `drizzle.config.ts` 생성
-- `src/lib/db/index.ts` - DB 연결
+### 🚧 진행 중
+- [ ] 회원 유형별 권한 시스템 (admin, moderator, verified, member)
+- [ ] Google/Apple OAuth 설정 (나중에)
+- [ ] 이메일/비밀번호 로그인 시스템
 
-### 3. 마이그레이션
-```bash
-npx drizzle-kit generate:pg
-npx drizzle-kit push:pg
-```
+## 📋 Phase 3: 핵심 기능 구현
 
-### 4. NextAuth 설정
-- `src/app/api/auth/[...nextauth]/route.ts`
-- Google OAuth 설정 (Google Cloud Console)
-- 미들웨어 설정
+### 우선순위 기능
+1. **자료 공유** 
+   - 파일 업로드/다운로드
+   - 과목별/학년별 분류
+   - 검색 및 필터링
 
-## 🎯 오늘의 목표
-1. ✅ Next.js 프로젝트 생성
-2. 🔄 Docker PostgreSQL 실행 (재부팅 후)
-3. ⏳ 필수 패키지 설치
-4. ⏳ Material 3 디자인 토큰 설정
-5. ⏳ 기본 프로젝트 구조 생성
+2. **커뮤니티 게시판**
+   - 카테고리별 게시판 (잡담, 수업고민 등)
+   - 댓글/대댓글
+   - 좋아요/북마크
 
-## 💡 메모
-- Docker Desktop 재부팅 후 자동 시작 확인
-- PostgreSQL 기본 포트: 5432
-- 데이터베이스명: aiedulog_dev
-- 사용자명: aiedulog
-- 비밀번호: aiedulog2024!
+3. **강의 홍보**
+   - 강의 등록/수정
+   - 참가 신청
+   - 일정 관리
 
-## 🔗 참고
-- 전체 체크리스트: `/checklist/README.md`
-- Phase 1 상세: `/checklist/phase1_initial_setup.md`
-- Phase 2 상세: `/checklist/phase2_database_auth.md`
+4. **구인구직**
+   - 강사 구인/구직 게시
+   - 연락처 공유
+   - 매칭 시스템
+
+5. **전문 칼럼**
+   - 인증된 작성자 시스템
+   - 칼럼 작성/편집
+   - 추천 칼럼
+
+## 🎨 디자인 시스템 원칙
+
+### Material 3 적용 가이드
+1. **초기 설계부터 Material 3 적용**
+   - 모든 컴포넌트는 MUI 기반
+   - 커스텀 테마 일관성 유지
+   - Dynamic Color 활용
+
+2. **반응형 디자인**
+   - 모바일 (xs): 2열 그리드
+   - 태블릿 (sm): 2열 그리드
+   - 데스크톱 (md): 3열 그리드
+
+3. **일관된 스타일링**
+   - borderRadius: 12px (카드)
+   - borderRadius: 20px (버튼)
+   - Elevation 단계별 그림자
+
+## 🎯 현재 작업 목록
+1. ✅ Material 3 디자인 시스템 설정
+2. ✅ 홈페이지 레이아웃 구현
+3. ✅ 네비게이션 바 구현
+4. ✅ 주요 기능 카드 균등 배치
+5. ✅ 로그인 페이지 Material 3 재구성
+6. ✅ 회원 권한 시스템 구현
+7. ⏳ 권한 시스템 DB 적용 (SQL 실행 필요)
+8. ⏳ 대시보드 재구성
+9. ⏳ 게시판 CRUD 구현
+10. ⏳ 파일 업로드 시스템
+
+## 🎯 다음 단계
+1. Supabase에서 권한 시스템 SQL 실행
+2. 대시보드 메인 화면 구현 (역할별 UI)
+3. 게시글 작성/목록 페이지
+4. 파일 업로드 컴포넌트
+5. 실시간 알림 시스템
+
+## 📝 다음 세션에 할 일
+1. **Supabase SQL Editor에서 실행**
+   - `src/lib/roles-update.sql` 실행
+   - 관리자 계정 설정 (본인 이메일)
+   - 권한 시스템 테스트
+
+2. **대시보드 구현**
+   - 역할별 대시보드 카드
+   - 권한별 통계 표시
+   - 빠른 메뉴 권한 체크
+
+## 💡 중요 인사이트
+1. **Material 3 우선**: 모든 UI 컴포넌트는 처음부터 Material 3로 설계
+2. **복합 기능 플랫폼**: 단순 게시판이 아닌 교사 커뮤니티의 종합 플랫폼
+3. **모바일 최적화**: 교사들의 모바일 사용 고려한 반응형 디자인
+4. **확장 가능한 구조**: 기능 추가가 용이한 모듈화된 설계
+
+## 🔗 참고 문서
+- Material 3 가이드: https://m3.material.io/
+- MUI 문서: https://mui.com/material-ui/
+- Supabase 문서: https://supabase.com/docs
 - 진행상황: `/PROGRESS.md`
+- 체크리스트: `/checklist/aiedulog_development_checklist.md`
+
+## ✅ 주요 완료 항목
+- Supabase 프로젝트 생성 및 연결
+- Material 3 테마 시스템 구축
+- 홈페이지 완성 (6개 주요 기능 카드)
+- 네비게이션 바 (반응형)
+- DB 스키마 설계 (13개 테이블)
+- Grid 레이아웃 문제 해결 (Flexbox 사용)
+
+## 🚀 배포 계획 (AWS)
+- **개발**: Supabase (빠른 프로토타이핑)
+- **프로덕션**: AWS 전환
+  - EC2: Next.js 애플리케이션 서버
+  - RDS: PostgreSQL 데이터베이스
+  - S3: 정적 파일 및 업로드 파일 저장
+  - CloudFront: CDN
+  - Route 53: 도메인 관리
 
 ---
-*저장 시각: 2024-01-14*
-*재부팅 후 이 파일을 참고하여 계속 진행*
+*최종 업데이트: 2025-08-15*
+*작업 환경: macOS (16GB RAM)*
+*개발 스택: Next.js 15 + Supabase + Material UI*
+*프로덕션 스택: Next.js 15 + AWS (EC2, RDS, S3, CloudFront)*

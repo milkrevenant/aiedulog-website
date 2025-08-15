@@ -1,90 +1,183 @@
 # AIedulog 개발 진행상황
 
-## 📅 2024-01-14 현재 상태
+## 📅 2025-08-15 현재 상태
 
-### ✅ 완료된 작업
+## 📅 2025-08-15 작업 내역 (저녁 세션)
+
+### ✅ 추가 완료된 작업
+
+#### 8. 권한 시스템 데이터베이스 적용
+- [x] Supabase에 `roles-update.sql` 실행 완료
+- [x] profiles 테이블에 role 컬럼 추가
+- [x] 권한 관련 테이블 및 함수 생성
+- [x] RLS 정책 업데이트
+- [x] 관리자 계정 설정 완료
+
+#### 9. 소셜 피드 시스템
+- [x] 인스타그램/페이스북 스타일 피드 페이지 (`/feed`)
+- [x] Material 3 디자인 적용
+- [x] Reddit 스타일 사이드바 구현
+  - 햄버거 메뉴
+  - 최근 활동 표시
+  - 게시판 목록
+  - 내 활동 통계
+- [x] 상단 검색바 구현
+- [x] 권한별 자동 리다이렉트
+  - 일반 회원/인증 교사 → 피드
+  - 관리자/운영진 → 마이페이지
+
+#### 10. 게시판 CRUD 시스템
+- [x] 게시판 데이터베이스 구조 (`posts-table.sql`)
+  - posts, comments, post_likes, bookmarks, post_views 테이블
+  - 자동 업데이트 트리거
+  - 조회수 증가 함수
+  - posts_with_stats 뷰
+- [x] 카테고리별 게시판 구현 (`/board/[category]`)
+  - 자유게시판 (general)
+  - 교육 자료실 (education)
+  - 에듀테크 트렌드 (tech)
+  - 구인구직 (job)
+- [x] 게시글 작성/읽기/좋아요/북마크 기능
+- [x] 실시간 DB 연동
+- [x] 고정 게시글 지원
+
+#### 11. UI/UX 개선
+- [x] 공통 헤더 컴포넌트 (`AppHeader.tsx`)
+- [x] 마이페이지 권한별 UI 차별화
+- [x] 회원가입 성공 페이지 (축하 애니메이션)
+- [x] 로고 클릭 시 홈 이동 기능
+- [x] 브레드크럼 네비게이션
+
+### ✅ 완료된 작업 (이전)
 
 #### 1. 프로젝트 기획 및 문서화
-- [x] 전체 개발 체크리스트 작성 (`aiedulog_development_checklist.md`)
-- [x] Phase별 개별 체크리스트 분리 (토큰 절약)
+- [x] 전체 개발 체크리스트 작성
 - [x] Material 3 디자인 시스템 적용 계획
-- [x] GitHub 저장소 생성 및 초기 커밋
-  - Repository: https://github.com/milkrevenant/aiedulog-website
+- [x] GitHub 저장소 생성
+- [x] 프로젝트 방향: 전남에듀테크교육연구회 커뮤니티 플랫폼
 
-#### 2. 인프라 준비
-- [x] 도메인 구매 완료 (가비아)
-- [x] Docker Desktop 설치 완료
-- [x] Docker Compose 설정 파일 작성 (`docker-compose.yml`)
-- [x] 환경변수 템플릿 생성 (`.env.local.example`)
+#### 2. 인프라 및 설정
+- [x] 도메인 구매 (가비아)
+- [x] Supabase 프로젝트 설정
+- [x] 환경변수 설정
+- [x] Next.js 15.4.6 프로젝트 생성
 
-### 🚧 진행 중인 작업
+#### 3. 홈페이지 및 기본 UI
+- [x] 홈페이지 완성 (6개 기능 카드)
+- [x] 네비게이션 바
+- [x] Material 3 테마 시스템
 
-#### Phase 1: 프로젝트 초기 설정
-- [ ] Next.js 프로젝트 생성 (Turbopack 없이)
-- [ ] Docker PostgreSQL 컨테이너 실행
-- [ ] 기본 패키지 설치
-- [ ] Material 3 디자인 토큰 설정
+#### 4. 인증 시스템
+- [x] 로그인/회원가입 페이지
+- [x] 이메일 확인 처리
+- [x] 프로필 연동
 
-### 📝 다음 단계
+### 🎯 현재 상태 요약
 
-1. **즉시 해야 할 일**:
-   ```bash
-   # 1. Next.js 프로젝트 생성
-   npx create-next-app@latest aiedulog --typescript --tailwind --eslint --app --src-dir
-   # Turbopack 질문에 No 선택
+**✅ 완료된 핵심 기능:**
+- 권한 시스템 (4개 역할: admin, moderator, verified, member)
+- 소셜 피드 (인스타그램 스타일)
+- 게시판 CRUD (4개 카테고리)
+- Material 3 디자인 시스템
+- Reddit 스타일 사이드바 및 검색
 
-   # 2. Docker PostgreSQL 시작
-   docker-compose up -d
+**📊 진행률:**
+- Phase 1: ✅ 100% 완료
+- Phase 2: ✅ 90% 완료
+- Phase 3: 🔄 40% 진행 중
 
-   # 3. 프로젝트 폴더 이동
-   cd aiedulog
+### 🔄 다음에 해야 할 작업
 
-   # 4. 필수 패키지 설치
-   npm install drizzle-orm postgres
-   npm install -D drizzle-kit
-   ```
+1. **게시글 상세 페이지**
+   - 개별 게시글 보기
+   - 댓글 시스템
+   - 수정/삭제 기능
 
-2. **Phase 2 준비**:
-   - Google OAuth 설정 (Google Cloud Console)
-   - NextAuth 구현
+2. **사용자 관리 (Admin)**
+   - 사용자 목록
+   - 권한 변경
+   - 계정 관리
 
-### 🗂️ 파일 구조
+3. **파일 업로드**
+   - 이미지 업로드
+   - 파일 첨부
+   - S3 연동
+
+4. **알림 시스템**
+   - 실시간 알림
+   - 알림 목록
+   - 읽음 처리
+
+### 🗂️ 프로젝트 구조 (업데이트)
 ```
-website/
-├── checklist/               # Phase별 체크리스트
-│   ├── README.md
-│   ├── 00_required_accounts.md
-│   ├── phase1_initial_setup.md
-│   ├── phase2_database_auth.md
-│   ├── phase3_frontend_layout.md
-│   └── phase4_board_system.md
-├── docker-compose.yml       # PostgreSQL 설정
-├── .env.local.example      # 환경변수 템플릿
-├── .gitignore
-└── PROGRESS.md            # 이 파일
-
-aiedulog/                  # Next.js 프로젝트 (생성 예정)
+aiedulog/
 ├── src/
+│   ├── app/
+│   │   ├── feed/                # 소셜 피드
+│   │   ├── board/[category]/    # 카테고리별 게시판
+│   │   ├── auth/                # 인증 페이지
+│   │   │   ├── login/
+│   │   │   └── signup-success/
+│   │   ├── dashboard/           # 마이페이지
+│   │   └── page.tsx             # 홈페이지
+│   ├── components/
+│   │   ├── Navbar.tsx           # 네비게이션 바
+│   │   ├── AppHeader.tsx        # 공통 헤더
+│   │   └── PermissionGate.tsx   # 권한 제어
+│   ├── lib/
+│   │   ├── supabase/
+│   │   ├── auth/permissions.ts
+│   │   ├── posts-table.sql      # 게시판 DB
+│   │   └── roles-update.sql     # 권한 DB
+│   ├── hooks/
+│   │   └── usePermission.ts
+│   └── types/
 ├── public/
+├── .env.local
 └── package.json
 ```
 
-### 🔧 개발 환경
-- **Database**: Docker PostgreSQL (로컬) → AWS RDS (프로덕션)
-- **Framework**: Next.js 14+ (App Router)
-- **Styling**: Tailwind CSS + Material 3 Design Tokens
-- **ORM**: Drizzle
-- **Auth**: NextAuth + Google OAuth
+### 🔧 기술 스택
+- **Framework**: Next.js 15.4.6 (App Router)
+- **Database**: Supabase (PostgreSQL)
+- **UI Library**: Material UI v6 + Material 3
+- **Auth**: Supabase Auth
+- **추가 라이브러리**: canvas-confetti
 
-### 💡 메모
-- Docker 무료 플랜으로 충분 (로컬 개발용)
-- Turbopack은 아직 베타라 사용 안 함
-- Firebase 대신 PostgreSQL 선택 (관계형 DB 필요)
+### 💡 주요 성과
+
+1. **완전한 게시판 시스템 구축**
+   - 카테고리별 분리
+   - 실시간 DB 연동
+   - 좋아요/북마크 기능
+
+2. **소셜 미디어 스타일 피드**
+   - 인스타그램 UI
+   - Reddit 스타일 사이드바
+   - 실시간 업데이트
+
+3. **권한 시스템 완성**
+   - DB 레벨 권한 제어
+   - UI 레벨 권한 표시
+   - 역할별 기능 차별화
+
+### 🐛 해결된 이슈
+- React 렌더링 중 라우터 업데이트 에러 → useEffect 분리
+- SQL `is_deleted` 컬럼 참조 에러 → 컬럼 제거
+- 이메일 미확인 로그인 차단 → `email_confirmed_at` 업데이트
+
+### 📈 통계
+- **총 파일 수**: 약 20개
+- **총 코드 라인**: 약 3,000줄
+- **구현된 페이지**: 10개
+- **데이터베이스 테이블**: 18개
 
 ### 🔗 참고 링크
 - GitHub: https://github.com/milkrevenant/aiedulog-website
-- 체크리스트: `/checklist/README.md`
-- Docker 설정: `/docker-compose.yml`
+- Supabase: https://supabase.com/dashboard/project/nnfpdhtpbjijdctslexc
+- 로컬: http://localhost:3000
 
 ---
-*마지막 업데이트: 2024-01-14*
+*마지막 업데이트: 2025-08-15 저녁*
+*총 작업 시간: 약 10시간*
+*진행률: 전체 60% 완료*

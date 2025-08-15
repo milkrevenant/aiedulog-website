@@ -1,63 +1,56 @@
-# AIedulog 개발 체크리스트 - 완전판
+# AIedulog 개발 체크리스트 - 전남에듀테크교육연구회 커뮤니티 플랫폼
 
-## 🎯 Phase 1: 프로젝트 초기 설정 (1-2주)
+## 🚀 프로젝트 개요
+- **목표**: 교사들을 위한 종합 커뮤니티 플랫폼
+- **핵심 기능**: 자료공유, 소통공간, 강의홍보, 구인구직, 전문칼럼, 연구회활동
+- **디자인 원칙**: Material 3 Design System 전면 적용
+- **기술 스택**: Next.js 15 + Supabase + Material UI
+
+## 🎯 Phase 1: 프로젝트 초기 설정 ✅
 
 ### 1.1 개발 환경 구축
-- [ ] **Next.js 14+ TypeScript 프로젝트 생성**
+- [x] **Next.js 15.4.6 TypeScript 프로젝트 생성**
   ```bash
   npx create-next-app@latest aiedulog --typescript --tailwind --eslint --app
   ```
-- [ ] **필수 패키지 설치**
+- [x] **필수 패키지 설치**
   ```bash
-  # 인증
-  npm install next-auth @auth/drizzle-adapter
+  # Supabase
+  npm install @supabase/supabase-js @supabase/auth-helpers-nextjs
   
-  # 데이터베이스 (Drizzle)
-  npm install drizzle-orm postgres
-  npm install -D drizzle-kit
-  npm install @types/bcryptjs bcryptjs
+  # Material UI (Material 3)
+  npm install @mui/material @emotion/react @emotion/styled
+  npm install @mui/material-nextjs @emotion/cache
+  npm install @mui/icons-material
   
-  # Material 3 UI 라이브러리
-  npm install @mui/material @mui/material-nextjs @emotion/react @emotion/styled
-  npm install @mui/icons-material @mui/lab
+  # 폼 처리
   npm install react-hook-form @hookform/resolvers zod
-  
-  # Tailwind CSS Material 3 플러그인
-  npm install -D @material-tailwind/react
-  npm install -D tailwindcss-animate
-  
-  # 파일 업로드
-  npm install aws-sdk multer
-  npm install @types/multer
   
   # 기타 유틸리티
   npm install date-fns clsx
   npm install react-hot-toast
   ```
-- [ ] **환경변수 설정 (.env.local)**
+- [x] **환경변수 설정 (.env.local)**
   ```env
-  DATABASE_URL="postgresql://..."
-  NEXTAUTH_SECRET="your-secret-here"
-  NEXTAUTH_URL="http://localhost:3000"
+  # Supabase
+  SUPABASE_URL="https://nnfpdhtpbjijdctslexc.supabase.co"
+  SUPABASE_KEY="sb_publishable_..."
   
-  # OAuth 설정
+  # OAuth 설정 (보류)
   GOOGLE_CLIENT_ID=""
   GOOGLE_CLIENT_SECRET=""
   APPLE_ID=""
   APPLE_SECRET=""
   
-  # AWS S3 설정
+  # AWS S3 설정 (프로덕션)
   AWS_ACCESS_KEY_ID=""
   AWS_SECRET_ACCESS_KEY=""
-  AWS_REGION=""
+  AWS_REGION="ap-northeast-2"
   S3_BUCKET_NAME=""
-  
-  # Google Calendar API
-  GOOGLE_CALENDAR_API_KEY=""
   ```
 
-### 1.2 Material 3 디자인 시스템 구축
-- [ ] **Material 3 컬러 시스템 구현 (tailwind.config.js)**
+### 1.2 Material 3 디자인 시스템 구축 ✅
+- [x] **Material 3 컬러 시스템 구현 (MUI Theme)**
   ```javascript
   // Material 3 Dynamic Color Scheme
   colors: {
