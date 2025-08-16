@@ -7,7 +7,6 @@ import { User } from '@supabase/supabase-js'
 import { 
   Box, 
   Container, 
-  Grid, 
   Paper, 
   Typography, 
   Button,
@@ -22,7 +21,8 @@ import {
   Alert,
   LinearProgress,
   useTheme,
-  alpha
+  alpha,
+  Grid
 } from '@mui/material'
 import {
   Dashboard,
@@ -44,7 +44,8 @@ import {
   Groups,
   Assignment,
   WorkspacePremium,
-  Security
+  Security,
+  PhotoCamera
 } from '@mui/icons-material'
 import { usePermission } from '@/hooks/usePermission'
 import AppHeader from '@/components/AppHeader'
@@ -128,7 +129,7 @@ export default function DashboardPage() {
           <Skeleton variant="rectangular" height={200} />
           <Grid container spacing={3}>
             {[1, 2, 3, 4].map((i) => (
-              <Grid item xs={12} sm={6} md={3} key={i}>
+              <Grid key={i}>
                 <Skeleton variant="rectangular" height={150} />
               </Grid>
             ))}
@@ -151,19 +152,41 @@ export default function DashboardPage() {
       {/* 마이페이지 서브 헤더 */}
       <Paper elevation={0} sx={{ borderRadius: 0, mb: 3 }}>
         <Container maxWidth="lg">
-          <Box sx={{ py: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 3 }}>
               <Stack direction="row" spacing={3} alignItems="center">
-                <Avatar 
-                  sx={{ 
-                    width: 56, 
-                    height: 56,
-                    bgcolor: alpha(theme.palette[roleInfo.color].main, 0.1),
-                    color: roleInfo.color + '.main'
-                  }}
-                >
-                  {roleInfo.icon}
-                </Avatar>
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar 
+                    src={profile?.avatar_url || undefined}
+                    sx={{ 
+                      width: 80, 
+                      height: 80,
+                      bgcolor: alpha(theme.palette[roleInfo.color].main, 0.1),
+                      color: roleInfo.color + '.main',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        transform: 'scale(1.05)'
+                      }
+                    }}
+                    onClick={() => router.push('/settings/profile')}
+                  >
+                    {!profile?.avatar_url && roleInfo.icon}
+                  </Avatar>
+                  <IconButton
+                    size="small"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      bgcolor: 'background.paper',
+                      boxShadow: 2,
+                      '&:hover': { bgcolor: 'background.paper' }
+                    }}
+                    onClick={() => router.push('/settings/profile')}
+                  >
+                    <PhotoCamera fontSize="small" />
+                  </IconButton>
+                </Box>
                 <Box>
                   <Typography variant="h4" fontWeight="bold">
                     마이페이지
@@ -181,16 +204,24 @@ export default function DashboardPage() {
                   </Stack>
                 </Box>
               </Stack>
-              <Button
-                variant="outlined"
-                color="inherit"
-                startIcon={<Logout />}
-                onClick={handleSignOut}
-              >
-                로그아웃
-              </Button>
-            </Stack>
-          </Box>
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="contained"
+                  startIcon={<Settings />}
+                  onClick={() => router.push('/settings/profile')}
+                >
+                  프로필 설정
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<Logout />}
+                  onClick={handleSignOut}
+                >
+                  로그아웃
+                </Button>
+              </Stack>
+          </Stack>
         </Container>
         <LinearProgress variant="determinate" value={100} sx={{ height: 2 }} />
       </Paper>
@@ -212,7 +243,7 @@ export default function DashboardPage() {
 
         {/* 통계 카드 */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -231,7 +262,7 @@ export default function DashboardPage() {
           </Grid>
           
           {(role === 'admin' || role === 'moderator') && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid>
               <Card>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -251,7 +282,7 @@ export default function DashboardPage() {
           )}
           
           {role === 'verified' && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid>
               <Card>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -270,7 +301,7 @@ export default function DashboardPage() {
             </Grid>
           )}
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -288,7 +319,7 @@ export default function DashboardPage() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -314,7 +345,7 @@ export default function DashboardPage() {
         
         <Grid container spacing={3}>
           {/* 모든 사용자 공통 메뉴 */}
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Stack spacing={2}>
@@ -334,7 +365,7 @@ export default function DashboardPage() {
           {/* Admin 전용 메뉴 */}
           {role === 'admin' && (
             <>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -351,7 +382,7 @@ export default function DashboardPage() {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -368,7 +399,7 @@ export default function DashboardPage() {
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -390,7 +421,7 @@ export default function DashboardPage() {
           {/* Moderator 전용 메뉴 */}
           {role === 'moderator' && (
             <>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -407,7 +438,7 @@ export default function DashboardPage() {
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -429,7 +460,7 @@ export default function DashboardPage() {
           {/* Verified 전용 메뉴 */}
           {role === 'verified' && (
             <>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -446,7 +477,7 @@ export default function DashboardPage() {
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -467,7 +498,7 @@ export default function DashboardPage() {
 
           {/* Member 추가 메뉴 */}
           {role === 'member' && (
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Stack spacing={2}>

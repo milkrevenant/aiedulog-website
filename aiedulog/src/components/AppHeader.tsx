@@ -303,7 +303,16 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
               }
             }}
           >
-            <IconButton sx={{ p: '10px' }} aria-label="search">
+            <IconButton 
+              sx={{ p: '10px' }} 
+              aria-label="search"
+              onClick={() => {
+                if (searchQuery.trim()) {
+                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                  setSearchQuery('')
+                }
+              }}
+            >
               <Search />
             </IconButton>
             <InputBase
@@ -311,6 +320,12 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
               placeholder="게시글, 사용자, 태그 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                  setSearchQuery('')
+                }
+              }}
               inputProps={{ 'aria-label': 'search' }}
             />
           </Paper>
@@ -323,7 +338,14 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
               </Badge>
             </IconButton>
             <IconButton onClick={handleMenu}>
-              <AccountCircle />
+              {profile?.avatar_url ? (
+                <Avatar 
+                  src={profile.avatar_url} 
+                  sx={{ width: 32, height: 32 }}
+                />
+              ) : (
+                <AccountCircle />
+              )}
             </IconButton>
           </Stack>
         </Toolbar>
@@ -353,6 +375,18 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
             <Dashboard fontSize="small" />
           </ListItemIcon>
           <ListItemText>마이페이지</ListItemText>
+        </MenuItem>
+        
+        <MenuItem 
+          onClick={() => {
+            handleClose()
+            router.push('/settings/profile')
+          }}
+        >
+          <ListItemIcon>
+            <Settings fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>프로필 설정</ListItemText>
         </MenuItem>
         
         {(profile?.role === 'admin' || profile?.role === 'moderator') && (

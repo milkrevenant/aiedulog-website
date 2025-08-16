@@ -499,13 +499,24 @@ export default function PostDetailPage() {
             )}
           </CardContent>
 
-          {post.image && (
-            <Box
-              component="img"
-              src={post.image}
-              alt="Post image"
-              sx={{ width: '100%', maxHeight: 600, objectFit: 'contain' }}
-            />
+          {post.image_urls && post.image_urls.length > 0 && (
+            <Box sx={{ px: 2, pb: 2 }}>
+              {post.image_urls.map((imageUrl: string, index: number) => (
+                <Box
+                  key={index}
+                  component="img"
+                  src={imageUrl}
+                  alt={`Post image ${index + 1}`}
+                  sx={{ 
+                    width: '100%', 
+                    maxHeight: 600, 
+                    objectFit: 'contain',
+                    borderRadius: '12px',
+                    mb: index < post.image_urls.length - 1 ? 2 : 0
+                  }}
+                />
+              ))}
+            </Box>
           )}
 
           <CardActions disableSpacing>

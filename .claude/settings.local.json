@@ -4,7 +4,13 @@
       "Bash(claude mcp get:*)",
       "Bash(docker-compose up:*)",
       "Bash(docker:*)",
-      "Bash(npx create-next-app:*)"
+      "Bash(npx create-next-app:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx supabase storage:*)",
+      "Bash(touch:*)",
+      "Bash(powershell:*)",
+      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": [],

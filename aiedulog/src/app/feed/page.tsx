@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
@@ -26,7 +26,9 @@ import {
   MenuItem,
   Badge,
   useTheme,
-  alpha
+  alpha,
+  CircularProgress,
+  CardMedia
 } from '@mui/material'
 import {
   Favorite,
@@ -41,7 +43,8 @@ import {
   PhotoCamera,
   Mood,
   LocationOn,
-  VerifiedUser
+  VerifiedUser,
+  Close
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 
@@ -55,6 +58,11 @@ export default function FeedPage() {
   const [newPostTitle, setNewPostTitle] = useState('')
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [postLoading, setPostLoading] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const router = useRouter()
   const supabase = createClient()
@@ -69,7 +77,9 @@ export default function FeedPage() {
         profiles!posts_author_id_fkey (
           id,
           email,
-          role
+          nickname,
+          role,
+          avatar_url
         ),
         post_likes (
           user_id
@@ -86,19 +96,24 @@ export default function FeedPage() {
       .limit(20)
 
     if (data) {
-      const postsWithStats = data.map(post => ({
-        ...post,
-        author: {
-          name: post.profiles?.email?.split('@')[0] || '사용자',
-          email: post.profiles?.email,
-          role: post.profiles?.role || 'member',
-          isVerified: post.profiles?.role === 'verified'
-        },
-        likes: post.post_likes?.length || 0,
-        comments: post.comments?.length || 0,
-        isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-        isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
-      }))
+      console.log('Fetched posts:', data) // 디버깅용
+      const postsWithStats = data.map(post => {
+        console.log('Post image_urls:', post.image_urls) // 각 게시글의 image_urls 확인
+        return {
+          ...post,
+          author: {
+            name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
+            email: post.profiles?.email,
+            role: post.profiles?.role || 'member',
+            isVerified: post.profiles?.role === 'verified',
+            avatar_url: post.profiles?.avatar_url
+          },
+          likes: post.post_likes?.length || 0,
+          comments: post.comments?.length || 0,
+          isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+          isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
+        }
+      })
       setPosts(postsWithStats)
     }
   }, [supabase, user?.id])
@@ -189,50 +204,101 @@ export default function FeedPage() {
     ))
   }
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handlePost = async () => {
     if (!newPostTitle.trim() || !newPost.trim() || !user) return
     
     setPostLoading(true)
+    let imageUrl = null
     
-    const { data, error } = await supabase
-      .from('posts')
-      .insert({
-        title: newPostTitle,
-        content: newPost,
-        author_id: user.id,
-        category: 'general'
-      })
-      .select()
-      .single()
-    
-    if (data) {
-      // 새 게시글을 목록 맨 앞에 추가
-      const newPostData = {
-        ...data,
-        author: {
-          name: profile?.email?.split('@')[0] || '사용자',
-          email: profile?.email,
-          role: profile?.role || 'member',
-          isVerified: profile?.role === 'verified'
-        },
-        likes: 0,
-        comments: 0,
-        isLiked: false,
-        isBookmarked: false
+    try {
+      // 이미지 업로드
+      if (selectedImage) {
+        setUploadingImage(true)
+        const fileExt = selectedImage.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, selectedImage)
+        
+        if (uploadError) throw uploadError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(uploadData.path)
+        
+        imageUrl = publicUrl
       }
       
-      setPosts([newPostData, ...posts])
-      setNewPostTitle('')
-      setNewPost('')
+      // 게시글 생성
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          title: newPostTitle,
+          content: newPost,
+          author_id: user.id,
+          category: 'general',
+          image_urls: imageUrl ? [imageUrl] : []
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      if (data) {
+        // 새 게시글을 목록 맨 앞에 추가
+        const newPostData = {
+          ...data,
+          author: {
+            name: profile?.nickname || profile?.email?.split('@')[0] || '사용자',
+            email: profile?.email,
+            role: profile?.role || 'member',
+            isVerified: profile?.role === 'verified',
+            avatar_url: profile?.avatar_url
+          },
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+          isBookmarked: false
+        }
+        
+        setPosts([newPostData, ...posts])
+        setNewPostTitle('')
+        setNewPost('')
+        handleRemoveImage()
+      }
+    } catch (error: any) {
+      console.error('Error posting:', error)
+    } finally {
+      setPostLoading(false)
+      setUploadingImage(false)
     }
-    
-    setPostLoading(false)
   }
 
   if (loading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
-        <Container maxWidth="sm" sx={{ pt: 2 }}>
+        <Container maxWidth="sm" sx={{ py: 2 }}>
           <Stack spacing={2}>
             {[1, 2, 3].map((i) => (
               <Card key={i}>
@@ -261,14 +327,17 @@ export default function FeedPage() {
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
 
-      <Container maxWidth="sm" sx={{ pt: 3 }}>
+      <Container maxWidth="sm" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
         {/* 글 작성 영역 */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Stack spacing={2}>
               <Stack direction="row" spacing={2}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {profile.email?.[0]?.toUpperCase()}
+                <Avatar 
+                  src={profile?.avatar_url || undefined}
+                  sx={{ bgcolor: 'primary.main' }}
+                >
+                  {profile?.email?.[0]?.toUpperCase()}
                 </Avatar>
                 <Stack spacing={2} sx={{ flex: 1 }}>
                   <TextField
@@ -299,11 +368,56 @@ export default function FeedPage() {
                   />
                 </Stack>
               </Stack>
+              
+              {/* 이미지 미리보기 */}
+              {imagePreview && (
+                <Box sx={{ position: 'relative', mt: 2 }}>
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    style={{ 
+                      width: '100%', 
+                      maxHeight: 300, 
+                      objectFit: 'cover',
+                      borderRadius: 8
+                    }} 
+                  />
+                  <IconButton
+                    size="small"
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      bgcolor: 'background.paper',
+                      '&:hover': { bgcolor: 'background.paper' }
+                    }}
+                    onClick={handleRemoveImage}
+                  >
+                    <Close />
+                  </IconButton>
+                </Box>
+              )}
+              
               <Divider />
               <Stack direction="row" justifyContent="space-between">
                 <Stack direction="row" spacing={1}>
-                  <IconButton color="primary">
-                    <PhotoCamera />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                  />
+                  <IconButton 
+                    color="primary"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? (
+                      <CircularProgress size={20} />
+                    ) : (
+                      <PhotoCamera />
+                    )}
                   </IconButton>
                   <IconButton color="primary">
                     <Mood />
@@ -363,7 +477,10 @@ export default function FeedPage() {
                       ) : null
                     }
                   >
-                    <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    <Avatar 
+                      src={post.author.avatar_url || undefined}
+                      sx={{ bgcolor: 'primary.main' }}
+                    >
                       {post.author.name[0]}
                     </Avatar>
                   </Badge>
@@ -410,13 +527,34 @@ export default function FeedPage() {
                 </Typography>
               </CardContent>
 
-              {post.image && (
-                <Box
-                  component="img"
-                  src={post.image}
-                  alt="Post image"
-                  sx={{ width: '100%', maxHeight: 400, objectFit: 'cover' }}
-                />
+              {post.image_urls && post.image_urls.length > 0 && (
+                <Box sx={{ position: 'relative', p: 2, pt: 0 }}>
+                  <CardMedia
+                    component="img"
+                    image={post.image_urls[0]}
+                    alt="Post image"
+                    sx={{ 
+                      width: '100%',
+                      maxHeight: 400, 
+                      objectFit: 'cover',
+                      borderRadius: '12px'
+                    }}
+                  />
+                  {post.image_urls.length > 1 && (
+                    <Chip
+                      label={`+${post.image_urls.length - 1}`}
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 32,
+                        right: 32,
+                        bgcolor: 'rgba(0, 0, 0, 0.6)',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                  )}
+                </Box>
               )}
 
               <CardActions disableSpacing>

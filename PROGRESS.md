@@ -1,6 +1,39 @@
 # AIedulog 개발 진행상황
 
-## 📅 2025-08-16 현재 상태
+## 📅 2025-08-16 현재 상태 (오후 세션)
+
+### ✅ 최신 완료 작업 (2025-08-16 오후 세션 4)
+- [x] **이미지 업로드 시스템 완성**
+  - 피드 페이지 이미지 업로드 기능
+  - 여러 이미지 표시 (+N 배지)
+  - 게시글 상세 페이지 이미지 표시
+  - 이미지 여백 및 borderRadius 최적화
+  - DB 필드 불일치 문제 해결 (image_url → image_urls)
+
+- [x] **검색 기능 완성**
+  - AppHeader 검색바 활성화 (Enter 키, 아이콘 클릭)
+  - 검색 결과 페이지 (`/search`) 구현
+  - 탭 방식 UI (게시글, 사용자, 태그)
+  - 게시글 제목/내용 검색
+  - 사용자 닉네임/이메일 검색
+
+- [x] **프로필 아바타 시스템 완성**
+  - 프로필 설정 페이지 (`/settings/profile`)
+  - 아바타 업로드/변경/삭제 기능
+  - Supabase Storage avatars 버킷 연동
+  - 전체 UI에 프로필 사진 반영
+
+- [x] **닉네임 기능 추가**
+  - profiles 테이블에 nickname 컬럼 추가
+  - 프로필 설정에서 닉네임 수정 가능
+  - 전체 UI에서 닉네임 우선 표시 (이메일 대신)
+  - 검색에서 닉네임으로도 검색 가능
+
+### 🔄 Material 3 마이그레이션 시도 및 복원
+- Material 3 Web Components로 마이그레이션 시도 (46.2% 진행)
+- 반응형 디자인 문제, hydration 오류 등 여러 이슈 발생
+- 사용자 요청에 따라 원래 MUI 구현으로 전체 되돌림 (git stash)
+- 현재 Material UI v7 사용 중
 
 ## 📅 2025-08-16 작업 내역 (새벽 세션 3)
 
@@ -93,35 +126,34 @@
 - 게시판 CRUD (4개 카테고리)
 - 게시글 상세 페이지 및 댓글 시스템
 - 게시글 수정/삭제 기능
-- Material 3 디자인 시스템
-- Reddit 스타일 사이드바 및 검색
+- **이미지 업로드 시스템** ✨ NEW
+- **검색 기능** ✨ NEW
+- **프로필 아바타 시스템** ✨ NEW
+- **닉네임 기능** ✨ NEW
+- Material UI v7 디자인 시스템
+- Reddit 스타일 사이드바
 
 **📊 진행률:**
 - Phase 1: ✅ 100% 완료
 - Phase 2: ✅ 100% 완료
-- Phase 3: 🔄 60% 진행 중
+- Phase 3: 🔄 **85%** 진행 중 (검색+아바타+닉네임 완료)
 
 ### 🔄 다음에 해야 할 작업
 
 1. **사용자 관리 (Admin)** 🎯 다음 우선순위
-   - 사용자 목록
-   - 권한 변경
-   - 계정 관리
+   - 사용자 목록 페이지
+   - 권한 변경 기능
+   - 계정 활성화/비활성화
 
-2. **파일 업로드**
-   - 이미지 업로드
-   - 파일 첨부
-   - S3 연동
-
-3. **알림 시스템**
+2. **알림 시스템**
    - 실시간 알림
    - 알림 목록
    - 읽음 처리
 
-4. **검색 기능**
-   - 게시글 검색
-   - 사용자 검색
-   - 태그 검색
+3. **채팅 시스템**
+   - DM 기능
+   - 그룹 채팅
+   - 실시간 메시징
 
 ### 🗂️ 프로젝트 구조 (업데이트)
 ```
@@ -131,6 +163,8 @@ aiedulog/
 │   │   ├── feed/                # 소셜 피드
 │   │   ├── board/[category]/    # 카테고리별 게시판
 │   │   ├── post/[id]/           # 게시글 상세 페이지
+│   │   ├── search/              # 검색 결과 페이지
+│   │   ├── settings/profile/    # 프로필 설정 페이지
 │   │   ├── auth/                # 인증 페이지
 │   │   │   ├── login/
 │   │   │   └── signup-success/
@@ -138,13 +172,18 @@ aiedulog/
 │   │   └── page.tsx             # 홈페이지
 │   ├── components/
 │   │   ├── Navbar.tsx           # 네비게이션 바
-│   │   ├── AppHeader.tsx        # 공통 헤더
-│   │   └── PermissionGate.tsx   # 권한 제어
+│   │   ├── AppHeader.tsx        # 공통 헤더 (검색바 포함)
+│   │   ├── PermissionGate.tsx   # 권한 제어
+│   │   └── ImageUpload.tsx      # 이미지 업로드 컴포넌트
 │   ├── lib/
 │   │   ├── supabase/
 │   │   ├── auth/permissions.ts
+│   │   ├── storage/             # 파일 업로드 관련
 │   │   ├── posts-table.sql      # 게시판 DB
-│   │   └── roles-update.sql     # 권한 DB
+│   │   ├── roles-update.sql     # 권한 DB
+│   │   ├── add-image-columns.sql # 이미지 컬럼 추가
+│   │   ├── add-nickname.sql     # 닉네임 컬럼 추가
+│   │   └── avatars-bucket-setup.sql # 아바타 저장소 설정
 │   ├── hooks/
 │   │   └── usePermission.ts
 │   └── types/
@@ -156,7 +195,7 @@ aiedulog/
 ### 🔧 기술 스택
 - **Framework**: Next.js 15.4.6 (App Router)
 - **Database**: Supabase (PostgreSQL)
-- **UI Library**: Material UI v6 + Material 3
+- **UI Library**: Material UI v7 (MUI)
 - **Auth**: Supabase Auth
 - **추가 라이브러리**: canvas-confetti
 
@@ -187,13 +226,16 @@ aiedulog/
 - Grid2 import 오류 → 일반 Grid 사용
 - usePermission 훅 오류 → can 함수로 변경
 - Next.js 캐시 오류 → .next 폴더 삭제 후 재시작
+- 이미지 필드 불일치 → `image_url` → `image_urls` 배열로 통일
+- 버튼 높이/텍스트 정렬 문제 → 일관된 스타일링 적용
+- 닉네임 표시 누락 → 전체 UI에 닉네임 우선 표시 로직 추가
 
 ### 📈 통계
-- **총 파일 수**: 약 30개
-- **총 코드 라인**: 약 6,000줄
-- **구현된 페이지**: 15개
+- **총 파일 수**: 약 35개
+- **총 코드 라인**: 약 8,000줄
+- **구현된 페이지**: 18개
 - **데이터베이스 테이블**: 18개
-- **완료된 기능**: 25개 이상
+- **완료된 기능**: 30개 이상
 
 ### 🔗 참고 링크
 - GitHub: https://github.com/milkrevenant/aiedulog-website
@@ -201,6 +243,6 @@ aiedulog/
 - 로컬: http://localhost:3000
 
 ---
-*마지막 업데이트: 2025-08-16 새벽*
-*총 작업 시간: 약 15시간*
-*진행률: 전체 75% 완료*
+*마지막 업데이트: 2025-08-16 오후 (세션 4)*
+*총 작업 시간: 약 22시간*
+*진행률: 전체 **85%** 완료*

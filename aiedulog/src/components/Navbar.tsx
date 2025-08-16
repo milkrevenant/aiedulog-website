@@ -16,6 +16,8 @@ import {
   alpha,
   ListItemIcon,
   ListItemText,
+  InputBase,
+  Paper,
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -30,6 +32,8 @@ import {
   Login,
   AdminPanelSettings,
   Settings,
+  Search,
+  Notifications,
 } from '@mui/icons-material'
 
 export default function Navbar() {
@@ -116,7 +120,7 @@ export default function Navbar() {
       }}
     >
       <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ height: 64 }}>
+        <Toolbar disableGutters sx={{ minHeight: 64, height: 64 }}>
           {/* Logo - 햄버거 메뉴 다음에 위치 */}
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
             <Typography
@@ -133,8 +137,8 @@ export default function Navbar() {
             </Typography>
           </Box>
 
-          {/* Desktop Menu */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+          {/* Desktop Menu - 가운데 정렬 */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', gap: 1 }}>
             {menuItems.map((item) => (
               <Button
                 key={item.href}
@@ -167,17 +171,55 @@ export default function Navbar() {
             </IconButton>
           </Box>
 
-          {/* User Menu */}
+          {/* Search Bar and User Menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Search Bar */}
+            <Paper
+              sx={{
+                display: { xs: 'none', sm: 'flex' },
+                alignItems: 'center',
+                width: 240,
+                height: 40,
+                px: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                boxShadow: 'none',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 10,
+              }}
+            >
+              <Search sx={{ color: 'text.secondary', mr: 1 }} />
+              <InputBase
+                placeholder="검색..."
+                sx={{ flex: 1 }}
+              />
+            </Paper>
+
             {user ? (
               <>
+                {/* Notification Icon */}
+                <IconButton
+                  size="large"
+                  sx={{ color: theme.palette.text.secondary }}
+                >
+                  <Notifications />
+                </IconButton>
+
+                {/* User Avatar */}
                 <IconButton
                   size="large"
                   onClick={handleMenu}
-                  sx={{ color: theme.palette.text.primary }}
+                  sx={{ p: 0.5 }}
                 >
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main }}>
-                    {user.email?.[0].toUpperCase()}
+                  <Avatar 
+                    src={profile?.avatar_url || undefined}
+                    sx={{ 
+                      width: 36, 
+                      height: 36, 
+                      bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main
+                    }}
+                  >
+                    {!profile?.avatar_url && user.email?.[0].toUpperCase()}
                   </Avatar>
                 </IconButton>
               </>
