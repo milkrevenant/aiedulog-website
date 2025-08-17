@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { usePermission } from '@/hooks/usePermission';
 import AppHeader from '@/components/AppHeader';
+import AuthGuard from '@/components/AuthGuard';
 import { notifyRoleChange } from '@/lib/notifications';
 import {
   Box,
@@ -89,7 +90,7 @@ const roleLabels: Record<UserRole, string> = {
   member: '일반회원',
 };
 
-export default function UsersManagementPage() {
+function UsersManagementContent() {
   const router = useRouter();
   const supabase = createClient();
   const { can, user: currentUser } = usePermission();
@@ -525,5 +526,12 @@ export default function UsersManagementPage() {
         </DialogActions>
       </Dialog>
     </>
+  );
+}
+export default function UsersManagementPage() {
+  return (
+    <AuthGuard requireAuth requireAdmin>
+      <UsersManagementContent />
+    </AuthGuard>
   );
 }

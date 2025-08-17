@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import AuthGuard from '@/components/AuthGuard'
 import { 
   Box, 
   Container, 
@@ -78,7 +79,7 @@ const roleConfig = {
   }
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -556,7 +557,7 @@ export default function DashboardPage() {
                 <Typography variant="body2">• 자신의 콘텐츠 수정 및 삭제</Typography>
                 <Typography variant="body2">• 커뮤니티 활동 참여</Typography>
                 <Typography variant="body2" color="primary">
-                  💡 교사 인증을 받으면 더 많은 기능을 사용할 수 있습니다!
+                  💡 회원가입을 하시면 더 많은 기능을 사용할 수 있습니다!
                 </Typography>
               </Stack>
             )}
@@ -565,4 +566,11 @@ export default function DashboardPage() {
       </Container>
     </Box>
   )
+}
+export default function DashboardPage() {
+  return (
+    <AuthGuard requireAuth>
+      <DashboardContent />
+    </AuthGuard>
+  );
 }

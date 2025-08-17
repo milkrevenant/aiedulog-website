@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { usePermission } from '@/hooks/usePermission';
 import AppHeader from '@/components/AppHeader';
+import AuthGuard from '@/components/AuthGuard';
 import {
   Box,
   Container,
@@ -58,7 +59,7 @@ interface Statistics {
   verifiedTeachers: number;
 }
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
   const router = useRouter();
   const supabase = createClient();
   const { user, can, isAdmin, isModerator, loading: authLoading } = usePermission();
@@ -75,12 +76,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
-  // 권한 체크
-  useEffect(() => {
-    if (!authLoading && user && !isAdmin && !isModerator) {
-      router.push('/dashboard');
-    }
-  }, [authLoading, user, isAdmin, isModerator, router]);
+  // 권한 체크는 AuthGuard에서 처리되므로 제거
 
   // 사용자 프로필 가져오기
   useEffect(() => {
@@ -164,7 +160,7 @@ export default function AdminDashboard() {
   }, [user, supabase]);
 
   // 로딩 중일 때
-  if (authLoading) {
+  if (loading) {
     return (
       <>
         <AppHeader user={authUser} profile={profile} />
@@ -177,12 +173,15 @@ export default function AdminDashboard() {
     );
   }
 
-  // 권한이 없으면 리다이렉트
-  if (!isAdmin && !isModerator) {
-    return null;
-  }
-
   const adminMenus = [
+    {
+      title: '메인 페이지 관리',
+      description: '메인 페이지 콘텐츠 편집',
+      icon: <DashboardIcon fontSize="large" />,
+      path: '/admin/main-content',
+      color: '#9C27B0',
+      permission: 'manage_content',
+    },
     {
       title: '사용자 관리',
       description: '회원 정보 및 권한 관리',
@@ -468,5 +467,13 @@ export default function AdminDashboard() {
         </Grid>
       </Container>
     </>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <AuthGuard requireAuth requireModerator>
+      <AdminDashboardContent />
+    </AuthGuard>
   );
 }
