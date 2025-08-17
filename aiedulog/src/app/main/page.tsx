@@ -128,11 +128,6 @@ export default function Home() {
       }
     },
     {
-      label: '활용 사례',
-      key: 'cases',
-      dropdown: null
-    },
-    {
       label: '비전',
       key: 'vision',
       dropdown: null
