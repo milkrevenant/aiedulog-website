@@ -24,6 +24,8 @@
 - ✅ **채팅 시스템 구현 완료** (2025-08-17 밤)
 - ✅ **Feed/Board 3단 레이아웃 통합** (2025-08-17 밤)
 - ✅ **교육 자료실 파일 업로드 시스템** (2025-08-18 새벽)
+- ✅ **About Us 페이지 추가** (2025-08-18 오후)
+- ✅ **Interactive Grid Builder 추가** (2025-08-18 오후)
 - 🔄 Material 3 마이그레이션 시도 후 MUI로 복원 (2025-08-16)
 
 ## 📋 Phase 1: 프로젝트 초기 설정 ✅
@@ -206,5 +208,5 @@
 *작업 환경: Windows (현재) / macOS (평상시)*
 *개발 스택: Next.js 15 + Supabase + Material UI v7*
 *프로덕션 스택: Next.js 15 + AWS (EC2, RDS, S3, CloudFront)*
-*최근 완료: 메인 페이지 Grid 기반 랜딩 페이지 재구성*
+*최근 완료: About Us 페이지 및 Interactive Grid Builder 추가*
 *다음 우선순위: 관리자 페이지 - 메인 페이지 콘텐츠 관리*

@@ -32,7 +32,9 @@ npm run dev
 ## 📂 주요 파일 위치
 
 ### 핵심 페이지
-- `/src/app/main/page.tsx` - 메인 랜딩 페이지 (Grid 레이아웃) ✅ NEW!
+- `/src/app/main/page.tsx` - 메인 랜딩 페이지 (Grid 레이아웃) ✅
+- `/src/app/aboutus/page.tsx` - About Us 페이지 (2커럼 그리드) ✅ NEW!
+- `/src/app/grid-practice/page.tsx` - Interactive Grid Builder ✅ NEW!
 - `/src/app/feed/page.tsx` - 메인 피드 (3단 레이아웃) ✅
 - `/src/app/board/[category]/page.tsx` - 게시판 (3단 레이아웃, 파일업로드) ✅
 - `/src/app/board/education/[level]/page.tsx` - 교육 자료실 (학교급별) ✅
@@ -126,5 +128,5 @@ npm run dev
 ---
 *최종 업데이트: 2025-08-18 오후*
 *진행률: 전체 **99%** 완료*
-*최근 완료: 메인 페이지 Grid 기반 랜딩 페이지 재구성*
+*최근 완료: About Us 페이지 및 Interactive Grid Builder 추가*
 *다음 작업: 관리자 페이지 - 메인 페이지 콘텐츠 관리*
