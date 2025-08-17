@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
@@ -27,8 +27,13 @@ import {
   Badge,
   useTheme,
   alpha,
-  Breadcrumbs,
-  Link
+  CardMedia,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemSecondaryAction
 } from '@mui/material'
 import {
   Favorite,
@@ -44,13 +49,22 @@ import {
   Mood,
   LocationOn,
   VerifiedUser,
-  NavigateNext,
   Forum,
   School,
   TrendingUp,
-  LocalOffer
+  LocalOffer,
+  Menu as MenuIcon,
+  AttachFile,
+  PictureAsPdf,
+  Description,
+  FolderZip,
+  Download,
+  Close,
+  CloudUpload
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
+import SideChat from '@/components/SideChat'
+import FeedSidebar from '@/components/FeedSidebar'
 
 const categoryInfo = {
   general: {
@@ -82,6 +96,10 @@ const categoryInfo = {
 export default function BoardPage() {
   const params = useParams()
   const category = params.category as string
+  const router = useRouter()
+  const supabase = createClient()
+  const theme = useTheme()
+  
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -90,10 +108,21 @@ export default function BoardPage() {
   const [newPostTitle, setNewPostTitle] = useState('')
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [postLoading, setPostLoading] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   
-  const router = useRouter()
-  const supabase = createClient()
-  const theme = useTheme()
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // education 카테고리는 새로운 라우팅으로 리다이렉트
+  useEffect(() => {
+    if (category === 'education') {
+      router.replace('/board/education/all')
+    }
+  }, [category, router])
 
   const boardInfo = categoryInfo[category as keyof typeof categoryInfo] || categoryInfo.general
 
@@ -228,51 +257,210 @@ export default function BoardPage() {
     ))
   }
 
+  // 파일 관련 함수들
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setSelectedImages(prev => [...prev, ...files])
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const validFiles = files.filter(file => {
+      if (file.size > 50 * 1024 * 1024) {
+        alert(`${file.name}은 50MB를 초과합니다.`)
+        return false
+      }
+      return true
+    })
+    setSelectedFiles(prev => [...prev, ...validFiles])
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    const imageFiles: File[] = []
+    const docFiles: File[] = []
+    
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        imageFiles.push(file)
+      } else {
+        if (file.size > 50 * 1024 * 1024) {
+          alert(`${file.name}은 50MB를 초과합니다.`)
+        } else {
+          docFiles.push(file)
+        }
+      }
+    })
+    
+    if (imageFiles.length > 0) {
+      setSelectedImages(prev => [...prev, ...imageFiles])
+    }
+    if (docFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...docFiles])
+    }
+  }
+
+  // 파일 아이콘 반환 함수
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase()
+    switch (ext) {
+      case 'pdf':
+        return <PictureAsPdf color="error" />
+      case 'doc':
+      case 'docx':
+      case 'hwp':
+        return <Description color="primary" />
+      case 'ppt':
+      case 'pptx':
+        return <Description color="warning" />
+      case 'zip':
+      case 'rar':
+        return <FolderZip color="action" />
+      default:
+        return <AttachFile />
+    }
+  }
+
+  // 파일 크기 포맷 함수
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
   const handlePost = async () => {
     if (!newPostTitle.trim() || !newPost.trim() || !user) return
     
     setPostLoading(true)
+    setUploadingFiles(true)
     
-    const { data, error } = await supabase
-      .from('posts')
-      .insert({
-        title: newPostTitle,
-        content: newPost,
-        author_id: user.id,
-        category: category
-      })
-      .select()
-      .single()
-    
-    if (data) {
-      // 새 게시글을 목록 맨 앞에 추가
-      const newPostData = {
-        ...data,
-        author: {
-          name: profile?.email?.split('@')[0] || '사용자',
-          email: profile?.email,
-          role: profile?.role || 'member',
-          isVerified: profile?.role === 'verified'
-        },
-        likes: 0,
-        comments: 0,
-        isLiked: false,
-        isBookmarked: false
+    try {
+      let imageUrls: string[] = []
+      let fileUrls: string[] = []
+      let fileMetadata: any[] = []
+      
+      // 이미지 업로드
+      if (selectedImages.length > 0) {
+        for (const image of selectedImages) {
+          const fileExt = image.name.split('.').pop()
+          const fileName = `${user.id}/${Date.now()}_${Math.random()}.${fileExt}`
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('post-images')
+            .upload(fileName, image)
+          
+          if (uploadError) throw uploadError
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-images')
+            .getPublicUrl(uploadData.path)
+          
+          imageUrls.push(publicUrl)
+        }
       }
       
-      setPosts([newPostData, ...posts])
-      setNewPostTitle('')
-      setNewPost('')
+      // 파일 업로드
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user.id}/${Date.now()}_${file.name}`
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('education-files')
+            .upload(fileName, file)
+          
+          if (uploadError) throw uploadError
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('education-files')
+            .getPublicUrl(uploadData.path)
+          
+          fileUrls.push(publicUrl)
+          fileMetadata.push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: publicUrl
+          })
+        }
+      }
+      
+      // 게시글 생성
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          title: newPostTitle,
+          content: newPost,
+          author_id: user.id,
+          category: category,
+          image_urls: imageUrls,
+          file_urls: fileUrls,
+          file_metadata: fileMetadata
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      if (data) {
+        // 새 게시글을 목록 맨 앞에 추가
+        const newPostData = {
+          ...data,
+          author: {
+            name: profile?.nickname || profile?.email?.split('@')[0] || '사용자',
+            email: profile?.email,
+            role: profile?.role || 'member',
+            isVerified: profile?.role === 'verified'
+          },
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+          isBookmarked: false
+        }
+        
+        setPosts([newPostData, ...posts])
+        setNewPostTitle('')
+        setNewPost('')
+        setSelectedImages([])
+        setSelectedFiles([])
+      }
+    } catch (error: any) {
+      console.error('Error posting:', error)
+      alert('게시글 작성 중 오류가 발생했습니다.')
+    } finally {
+      setPostLoading(false)
+      setUploadingFiles(false)
     }
-    
-    setPostLoading(false)
   }
 
   if (loading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <AppHeader user={user} profile={profile} />
-        <Container maxWidth="md" sx={{ pt: 2 }}>
+        <Container maxWidth="sm" sx={{ pt: 2 }}>
           <Stack spacing={2}>
             {[1, 2, 3].map((i) => (
               <Card key={i}>
@@ -301,23 +489,67 @@ export default function BoardPage() {
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
 
-      <Container maxWidth="md" sx={{ pt: 3 }}>
-        {/* 브레드크럼 */}
-        <Breadcrumbs 
-          separator={<NavigateNext fontSize="small" />}
-          sx={{ mb: 2 }}
+      <Box sx={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        py: 3, 
+        px: 3
+      }}>
+        <Stack 
+          direction="row"
+          spacing={{ xs: 0, md: 3 }}
+          alignItems="flex-start"
+          sx={{
+            width: '100%',
+            maxWidth: { 
+              xs: '100%',    // 모바일: 전체 너비
+              sm: 600,       // 600px부터: 피드 600px 고정
+              md: 900,       // 태블릿: 사이드바(260) + 간격(24) + 피드(600) = 884
+              lg: 1320       // 데스크탑: 사이드바(260) + 간격(24) + 피드(720) + 간격(24) + 채팅(320) = 1348
+            },
+            mx: 'auto'
+          }}
         >
-          <Link
-            underline="hover"
-            color="inherit"
-            href="/feed"
-            onClick={(e) => { e.preventDefault(); router.push('/feed') }}
+          {/* 왼쪽 사이드바 - 데스크탑/태블릿만 표시 */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'block' },
+              width: 260,
+              flexShrink: 0
+            }}
           >
-            홈
-          </Link>
-          <Typography color="text.primary">{boardInfo.name}</Typography>
-        </Breadcrumbs>
+            <Paper
+              elevation={0}
+              sx={{
+                width: 260,
+                height: 'calc(100vh - 64px)',
+                position: 'sticky',
+                top: 80,
+                borderRadius: 2,
+                border: 1,
+                borderColor: 'divider',
+                overflow: 'hidden'
+              }}
+            >
+              <FeedSidebar 
+                user={user} 
+                profile={profile}
+                isStatic={true}
+              />
+            </Paper>
+          </Box>
 
+          {/* 메인 게시판 영역 */}
+          <Box sx={{ 
+            width: '100%',
+            maxWidth: { 
+              xs: '100%',      // 모바일: 100% 너비
+              sm: 600,         // 600px 이상: 고정 600px
+              lg: 720          // lg 이후: 최대 720px까지 확장
+            },
+            flex: '0 0 auto',  // 고정 너비 유지
+            overflow: 'hidden'  // overflow 방지
+          }}>
         {/* 게시판 헤더 */}
         <Paper
           elevation={0}
@@ -355,45 +587,158 @@ export default function BoardPage() {
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {profile.email?.[0]?.toUpperCase()}
-                </Avatar>
-                <Stack spacing={2} sx={{ flex: 1 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="제목을 입력하세요..."
-                    variant="outlined"
-                    value={newPostTitle}
-                    onChange={(e) => setNewPostTitle(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    placeholder={`${boardInfo.name}에 글을 작성해보세요...`}
-                    variant="outlined"
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }
-                    }}
-                  />
+              <TextField
+                fullWidth
+                placeholder="제목을 입력하세요..."
+                variant="outlined"
+                value={newPostTitle}
+                onChange={(e) => setNewPostTitle(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder={`${boardInfo.name}에 글을 작성해보세요...`}
+                variant="outlined"
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+              />
+              
+              {/* 드래그 앤 드롭 영역 */}
+              <Box
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                sx={{
+                  border: '2px dashed',
+                  borderColor: isDragging ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  p: 3,
+                  textAlign: 'center',
+                  bgcolor: isDragging ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  fileInputRef.current?.click()
+                }}
+              >
+                <CloudUpload 
+                  sx={{ 
+                    fontSize: 48, 
+                    color: isDragging ? 'primary.main' : 'text.secondary',
+                    mb: 1
+                  }} 
+                />
+                <Typography variant="body1" color="text.secondary">
+                  파일을 드래그하여 놓거나 클릭하여 선택하세요
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  이미지, PDF, DOC, PPT, HWP, ZIP 파일 지원 (최대 50MB)
+                </Typography>
+              </Box>
+              
+              {/* 선택된 이미지 미리보기 */}
+              {selectedImages.length > 0 && (
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                  {selectedImages.map((image, index) => (
+                    <Box key={index} sx={{ position: 'relative' }}>
+                      <img 
+                        src={URL.createObjectURL(image)} 
+                        alt={`Preview ${index}`}
+                        style={{ 
+                          width: 100, 
+                          height: 100, 
+                          objectFit: 'cover',
+                          borderRadius: 8
+                        }} 
+                      />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          bgcolor: 'background.paper'
+                        }}
+                        onClick={() => handleRemoveImage(index)}
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
                 </Stack>
-              </Stack>
+              )}
+              
+              {/* 선택된 파일 목록 */}
+              {selectedFiles.length > 0 && (
+                <List dense>
+                  {selectedFiles.map((file, index) => (
+                    <ListItem key={index}>
+                      <ListItemIcon>
+                        {getFileIcon(file.name)}
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={file.name}
+                        secondary={formatFileSize(file.size)}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton 
+                          edge="end" 
+                          size="small"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          <Close />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+              
               <Divider />
               <Stack direction="row" justifyContent="space-between">
                 <Stack direction="row" spacing={1}>
-                  <IconButton color="primary">
-                    <PhotoCamera />
-                  </IconButton>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    hidden
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    hidden
+                    multiple
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.hwp,.zip,.rar"
+                    onChange={handleFileSelect}
+                  />
+                  <Button 
+                    startIcon={<PhotoCamera />}
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={uploadingFiles}
+                  >
+                    이미지
+                  </Button>
+                  <Button 
+                    startIcon={<AttachFile />}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFiles}
+                  >
+                    파일 첨부
+                  </Button>
                   <IconButton color="primary">
                     <Mood />
                   </IconButton>
@@ -403,12 +748,12 @@ export default function BoardPage() {
                 </Stack>
                 <Button 
                   variant="contained" 
-                  endIcon={<Send />}
+                  endIcon={uploadingFiles ? <CircularProgress size={20} /> : <Send />}
                   onClick={handlePost}
                   disabled={!newPostTitle.trim() || !newPost.trim() || postLoading}
                   color={boardInfo.color}
                 >
-                  {postLoading ? '게시중...' : '게시'}
+                  {postLoading ? '업로드 중...' : '게시'}
                 </Button>
               </Stack>
             </Stack>
@@ -517,13 +862,34 @@ export default function BoardPage() {
                   </Typography>
                 </CardContent>
 
-                {post.image && (
-                  <Box
-                    component="img"
-                    src={post.image}
-                    alt="Post image"
-                    sx={{ width: '100%', maxHeight: 400, objectFit: 'cover' }}
-                  />
+                {post.image_urls && post.image_urls.length > 0 && (
+                  <Box sx={{ position: 'relative', p: 2, pt: 0 }}>
+                    <CardMedia
+                      component="img"
+                      image={post.image_urls[0]}
+                      alt="Post image"
+                      sx={{ 
+                        width: '100%',
+                        maxHeight: 400, 
+                        objectFit: 'cover',
+                        borderRadius: '12px'
+                      }}
+                    />
+                    {post.image_urls.length > 1 && (
+                      <Chip
+                        label={`+${post.image_urls.length - 1}`}
+                        size="small"
+                        sx={{
+                          position: 'absolute',
+                          bottom: 32,
+                          right: 32,
+                          bgcolor: 'rgba(0, 0, 0, 0.6)',
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    )}
+                  </Box>
                 )}
 
                 <CardActions disableSpacing>
@@ -562,17 +928,60 @@ export default function BoardPage() {
           )}
         </Stack>
 
-        {/* 더 보기 버튼 */}
-        {posts.length > 0 && (
-          <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
-            <Button variant="outlined" size="large">
-              더 많은 게시글 보기
-            </Button>
+            {/* 더 보기 버튼 */}
+            {posts.length > 0 && (
+              <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
+                <Button variant="outlined" size="large">
+                  더 많은 게시글 보기
+                </Button>
+              </Box>
+            )}
           </Box>
-        )}
-      </Container>
 
-      {/* 플로팅 버튼 */}
+          {/* 오른쪽 채팅 영역 - 데스크탑만 */}
+          <Box
+            sx={{
+              width: 320,
+              flexShrink: 0,
+              display: { xs: 'none', lg: 'block' }
+            }}
+          >
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 80
+              }}
+            >
+              <SideChat user={user} />
+            </Box>
+          </Box>
+        </Stack>
+      </Box>
+
+      {/* 모바일 사이드바 (Drawer로 처리됨) */}
+      <FeedSidebar 
+        user={user} 
+        profile={profile}
+        mobileOpen={mobileOpen}
+        onMobileToggle={() => setMobileOpen(false)}
+      />
+
+      {/* 모바일 햄버거 플로팅 버튼 - 왼쪽 하단 */}
+      <Fab
+        color="primary"
+        sx={{
+          display: { xs: 'flex', md: 'none' },
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          zIndex: 1100,
+        }}
+        onClick={() => setMobileOpen(true)}
+      >
+        <MenuIcon />
+      </Fab>
+
+      {/* 위로 가기 플로팅 버튼 - 오른쪽 하단 */}
       <Fab
         color={boardInfo.color}
         sx={{

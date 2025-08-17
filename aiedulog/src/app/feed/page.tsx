@@ -44,9 +44,12 @@ import {
   Mood,
   LocationOn,
   VerifiedUser,
-  Close
+  Close,
+  Menu as MenuIcon
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
+import SideChat from '@/components/SideChat'
+import FeedSidebar from '@/components/FeedSidebar'
 
 
 export default function FeedPage() {
@@ -61,6 +64,7 @@ export default function FeedPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -327,47 +331,97 @@ export default function FeedPage() {
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
 
-      <Container maxWidth="sm" sx={{ py: 3, px: { xs: 1, sm: 2 } }}>
-        {/* 글 작성 영역 */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
+      <Box sx={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        py: 3, 
+        px: 3
+      }}>
+        <Stack 
+          direction="row"
+          spacing={{ xs: 0, md: 3 }}
+          alignItems="flex-start"
+          sx={{
+            width: '100%',
+            maxWidth: { 
+              xs: '100%',    // 모바일: 전체 너비
+              sm: 600,       // 600px부터: 피드 600px 고정
+              md: 900,       // 태블릿: 사이드바(260) + 간격(24) + 피드(600) = 884
+              lg: 1320       // 데스크탑: 사이드바(260) + 간격(24) + 피드(720) + 간격(24) + 채팅(320) = 1348 (실제 콘텐츠)
+            },
+            mx: 'auto'
+          }}
+        >
+          {/* 왼쪽 사이드바 - 데스크탑/태블릿만 표시 */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'block' },
+              width: 260,
+              flexShrink: 0
+            }}
+          >
+            <Paper
+              elevation={0}
+              sx={{
+                width: 260,
+                height: 'calc(100vh - 64px)',
+                position: 'sticky',
+                top: 80,
+                borderRadius: 2,
+                border: 1,
+                borderColor: 'divider',
+                overflow: 'hidden'
+              }}
+            >
+              <FeedSidebar 
+                user={user} 
+                profile={profile}
+                isStatic={true}
+              />
+            </Paper>
+          </Box>
+
+          {/* 메인 피드 영역 */}
+          <Box sx={{ 
+            width: '100%',
+            maxWidth: { 
+              xs: '100%',      // 모바일: 100% 너비
+              sm: 600,         // 600px 이상: 고정 600px
+              lg: 720          // lg 이후: 최대 720px까지 확장 (600 * 1.2)
+            },
+            flex: '0 0 auto',  // 고정 너비 유지
+            overflow: 'hidden'  // overflow 방지
+          }}>
+            {/* 글 작성 영역 */}
+            <Card sx={{ mb: 3, overflow: 'hidden' }}>
+              <CardContent sx={{ p: 3 }}>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2}>
-                <Avatar 
-                  src={profile?.avatar_url || undefined}
-                  sx={{ bgcolor: 'primary.main' }}
-                >
-                  {profile?.email?.[0]?.toUpperCase()}
-                </Avatar>
-                <Stack spacing={2} sx={{ flex: 1 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="제목을 입력하세요..."
-                    variant="outlined"
-                    value={newPostTitle}
-                    onChange={(e) => setNewPostTitle(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    placeholder="교육 경험을 공유해주세요..."
-                    variant="outlined"
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }
-                    }}
-                  />
-                </Stack>
-              </Stack>
+              <TextField
+                fullWidth
+                placeholder="제목을 입력하세요..."
+                variant="outlined"
+                value={newPostTitle}
+                onChange={(e) => setNewPostTitle(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="교육 경험을 공유해주세요..."
+                variant="outlined"
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+              />
               
               {/* 이미지 미리보기 */}
               {imagePreview && (
@@ -446,6 +500,7 @@ export default function FeedPage() {
               key={post.id}
               sx={{ 
                 cursor: 'pointer',
+                overflow: 'hidden',
                 '&:hover': {
                   boxShadow: 3
                 }
@@ -521,8 +576,8 @@ export default function FeedPage() {
                 subheader={new Date(post.created_at).toLocaleString('ko-KR')}
               />
               
-              <CardContent>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line', mt: 1 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', mt: 1 }}>
                   {post.content}
                 </Typography>
               </CardContent>
@@ -595,25 +650,55 @@ export default function FeedPage() {
           ))}
         </Stack>
 
-        {/* 더 보기 버튼 */}
-        <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
-          <Button variant="outlined" size="large">
-            더 많은 게시글 보기
-          </Button>
-        </Box>
-      </Container>
+            {/* 더 보기 버튼 */}
+            <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
+              <Button variant="outlined" size="large">
+                더 많은 게시글 보기
+              </Button>
+            </Box>
+          </Box>
 
-      {/* 플로팅 버튼 */}
+          {/* 오른쪽 채팅 영역 - 데스크탑만 */}
+          <Box
+            sx={{
+              width: 320,
+              flexShrink: 0,
+              display: { xs: 'none', lg: 'block' }
+            }}
+          >
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 80
+              }}
+            >
+              <SideChat user={user} />
+            </Box>
+          </Box>
+        </Stack>
+      </Box>
+
+      {/* 모바일 사이드바 (Drawer로 처리됨) */}
+      <FeedSidebar 
+        user={user} 
+        profile={profile}
+        mobileOpen={mobileOpen}
+        onMobileToggle={() => setMobileOpen(false)}
+      />
+
+      {/* 모바일 햄버거 플로팅 버튼 - 왼쪽 하단 */}
       <Fab
         color="primary"
         sx={{
+          display: { xs: 'flex', md: 'none' },
           position: 'fixed',
           bottom: 16,
-          right: 16,
+          left: 16,
+          zIndex: 1100,
         }}
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onClick={() => setMobileOpen(true)}
       >
-        <Add />
+        <MenuIcon />
       </Fab>
 
       {/* 메뉴 */}

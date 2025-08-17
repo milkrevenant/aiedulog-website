@@ -10,7 +10,8 @@
       "Bash(touch:*)",
       "Bash(powershell:*)",
       "Bash(npm run dev:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

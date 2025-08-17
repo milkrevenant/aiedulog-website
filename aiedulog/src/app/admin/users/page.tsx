@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { usePermission } from '@/hooks/usePermission';
 import AppHeader from '@/components/AppHeader';
+import { notifyRoleChange } from '@/lib/notifications';
 import {
   Box,
   Container,
@@ -57,6 +58,7 @@ interface User {
   id: string;
   email: string;
   username: string;
+  nickname: string | null;
   full_name: string | null;
   avatar_url: string | null;
   role: UserRole;
@@ -136,7 +138,7 @@ export default function UsersManagementPage() {
 
       // 검색
       if (searchTerm) {
-        query = query.or(`username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
+        query = query.or(`username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`);
       }
 
       const { data, error } = await query;
@@ -169,7 +171,10 @@ export default function UsersManagementPage() {
 
       if (error) throw error;
 
-      setSuccess(`${selectedUser.username}님의 권한이 ${roleLabels[newRole]}(으)로 변경되었습니다.`);
+      // 권한 변경 알림 전송
+      await notifyRoleChange(selectedUser.id, newRole);
+
+      setSuccess(`${selectedUser.nickname || selectedUser.username}님의 권한이 ${roleLabels[newRole]}(으)로 변경되었습니다.`);
       setRoleDialogOpen(false);
       fetchUsers();
     } catch (err: any) {
@@ -196,7 +201,7 @@ export default function UsersManagementPage() {
 
       if (error) throw error;
 
-      setSuccess(`${selectedUser.username}님의 계정이 ${newStatus ? '활성화' : '비활성화'}되었습니다.`);
+      setSuccess(`${selectedUser.nickname || selectedUser.username}님의 계정이 ${newStatus ? '활성화' : '비활성화'}되었습니다.`);
       setStatusDialogOpen(false);
       fetchUsers();
     } catch (err: any) {
@@ -252,7 +257,7 @@ export default function UsersManagementPage() {
           {/* 필터 및 검색 */}
           <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
-              placeholder="이름, 이메일, 사용자명으로 검색"
+              placeholder="이름, 이메일, 닉네임, 사용자명으로 검색"
               variant="outlined"
               size="small"
               value={searchTerm}
@@ -343,7 +348,7 @@ export default function UsersManagementPage() {
                             </Avatar>
                             <Box>
                               <Typography variant="body2" fontWeight="medium">
-                                {user.username}
+                                {user.nickname || user.username}
                               </Typography>
                               {user.full_name && (
                                 <Typography variant="caption" color="text.secondary">
@@ -456,7 +461,7 @@ export default function UsersManagementPage() {
         <DialogTitle>권한 변경</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            {selectedUser?.username}님의 권한을 변경합니다.
+            {selectedUser?.nickname || selectedUser?.username}님의 권한을 변경합니다.
             {selectedUser?.role === 'admin' && (
               <Alert severity="warning" sx={{ mt: 2 }}>
                 관리자 권한 변경은 신중하게 진행해주세요.
@@ -498,7 +503,7 @@ export default function UsersManagementPage() {
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {selectedUser?.username}님의 계정을{' '}
+            {selectedUser?.nickname || selectedUser?.username}님의 계정을{' '}
             {selectedUser?.is_active ? '정지' : '활성화'}하시겠습니까?
             {selectedUser?.is_active && (
               <Alert severity="warning" sx={{ mt: 2 }}>

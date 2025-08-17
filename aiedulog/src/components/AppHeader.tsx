@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Paper,
@@ -9,57 +9,67 @@ import {
   Typography,
   InputBase,
   Stack,
-  Badge,
-  Drawer,
-  Box,
   Avatar,
-  Chip,
   Divider,
-  List,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
-  ListSubheader,
   Menu,
   MenuItem,
   useTheme,
-  alpha
+  alpha,
+  Box,
+  Collapse
 } from '@mui/material'
 import {
-  Menu as MenuIcon,
   Search,
-  Notifications,
   AccountCircle,
-  Home,
-  History,
-  Article,
-  Create,
-  TrendingUp,
-  Forum,
-  School,
-  LocalOffer,
-  ChatBubbleOutline,
-  Bookmark,
-  SupervisorAccount,
   Settings,
   Dashboard,
   AdminPanelSettings,
-  Logout
+  Logout,
+  Close
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
+import NotificationIcon from '@/components/NotificationIcon'
 
 interface AppHeaderProps {
-  user: any
-  profile: any
+  user?: any
+  profile?: any
 }
 
-export default function AppHeader({ user, profile }: AppHeaderProps) {
-  const [drawerOpen, setDrawerOpen] = useState(false)
+export default function AppHeader({ user: propsUser, profile: propsProfile }: AppHeaderProps = {}) {
   const [searchQuery, setSearchQuery] = useState('')
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [user, setUser] = useState<any>(propsUser || null)
+  const [profile, setProfile] = useState<any>(propsProfile || null)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const router = useRouter()
   const theme = useTheme()
   const supabase = createClient()
+  
+  // Fetch user and profile if not provided via props
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!propsUser) {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (authUser) {
+          setUser(authUser)
+          
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single()
+          
+          if (profileData) {
+            setProfile(profileData)
+          }
+        }
+      }
+    }
+    
+    fetchUserData()
+  }, [propsUser, propsProfile])
   
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -77,166 +87,6 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
 
   return (
     <>
-      {/* Material 3 스타일 사이드바 */}
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: 280,
-            bgcolor: 'background.paper',
-            borderRadius: '0 16px 16px 0',
-          }
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-            <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
-              {profile?.email?.[0]?.toUpperCase()}
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle1" fontWeight="medium">
-                {profile?.email?.split('@')[0]}
-              </Typography>
-              <Chip 
-                label={profile?.role === 'admin' ? '관리자' : profile?.role === 'verified' ? '인증 교사' : '일반 회원'}
-                size="small"
-                color={profile?.role === 'admin' ? 'error' : profile?.role === 'verified' ? 'success' : 'default'}
-              />
-            </Box>
-          </Stack>
-        </Box>
-        
-        <Divider />
-        
-        <List>
-          <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 'medium' }}>
-            기본 메뉴
-          </ListSubheader>
-          <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/feed') }}>
-            <ListItemIcon>
-              <Home />
-            </ListItemIcon>
-            <ListItemText primary="홈" />
-          </ListItemButton>
-          <ListItemButton onClick={() => { 
-            setDrawerOpen(false); 
-            router.push('/dashboard') 
-          }}>
-            <ListItemIcon>
-              <AccountCircle />
-            </ListItemIcon>
-            <ListItemText primary="마이페이지" />
-          </ListItemButton>
-        </List>
-
-        <Divider />
-
-        <List>
-          <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 'medium' }}>
-            최근 활동
-          </ListSubheader>
-          <ListItemButton>
-            <ListItemIcon>
-              <History />
-            </ListItemIcon>
-            <ListItemText 
-              primary="최근 방문 게시판" 
-              secondary="AI 교육 연구"
-            />
-          </ListItemButton>
-          <ListItemButton>
-            <ListItemIcon>
-              <Article />
-            </ListItemIcon>
-            <ListItemText 
-              primary="최근 본 글" 
-              secondary="VR 활용 수업 사례"
-            />
-          </ListItemButton>
-        </List>
-
-        <Divider />
-
-        <List>
-          <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 'medium' }}>
-            게시판
-          </ListSubheader>
-          <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/board/general') }}>
-            <ListItemIcon>
-              <Forum />
-            </ListItemIcon>
-            <ListItemText primary="자유게시판" />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/board/education') }}>
-            <ListItemIcon>
-              <School />
-            </ListItemIcon>
-            <ListItemText primary="교육 자료실" />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/board/tech') }}>
-            <ListItemIcon>
-              <TrendingUp />
-            </ListItemIcon>
-            <ListItemText primary="에듀테크 트렌드" />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/board/job') }}>
-            <ListItemIcon>
-              <LocalOffer />
-            </ListItemIcon>
-            <ListItemText primary="구인구직" />
-          </ListItemButton>
-        </List>
-
-        <Divider />
-
-        <List>
-          <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 'medium' }}>
-            내 활동
-          </ListSubheader>
-          <ListItemButton>
-            <ListItemIcon>
-              <Create />
-            </ListItemIcon>
-            <ListItemText primary="내가 쓴 글" />
-            <Chip label="12" size="small" />
-          </ListItemButton>
-          <ListItemButton>
-            <ListItemIcon>
-              <ChatBubbleOutline />
-            </ListItemIcon>
-            <ListItemText primary="내 댓글" />
-            <Chip label="34" size="small" />
-          </ListItemButton>
-          <ListItemButton>
-            <ListItemIcon>
-              <Bookmark />
-            </ListItemIcon>
-            <ListItemText primary="북마크" />
-            <Chip label="8" size="small" />
-          </ListItemButton>
-        </List>
-
-        {/* 관리자 메뉴 - role이 admin 또는 moderator일 때만 표시 */}
-        {(profile?.role === 'admin' || profile?.role === 'moderator') && (
-          <>
-            <Divider />
-            <List>
-              <ListSubheader sx={{ bgcolor: 'transparent', fontWeight: 'medium', color: 'error.main' }}>
-                관리자 메뉴
-              </ListSubheader>
-              <ListItemButton onClick={() => { setDrawerOpen(false); router.push('/admin') }}>
-                <ListItemIcon>
-                  <Settings color="error" />
-                </ListItemIcon>
-                <ListItemText primary="사이트 관리" />
-              </ListItemButton>
-            </List>
-          </>
-        )}
-      </Drawer>
-
       {/* Material 3 스타일 상단 헤더 */}
       <Paper 
         elevation={0} 
@@ -250,40 +100,31 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`
         }}
       >
-        <Toolbar sx={{ px: { xs: 1, sm: 2 } }}>
-          {/* 사이드바 토글 버튼과 로고를 함께 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 3 }}>
-            <IconButton
-              edge="start"
-              onClick={() => setDrawerOpen(true)}
-              sx={{ mr: 1 }}
-            >
-              <MenuIcon />
-            </IconButton>
-            
-            {/* 로고 */}
-            <Typography 
-              variant="h6" 
-              fontWeight="bold" 
-              color="primary"
-              onClick={() => router.push('/feed')}
-              sx={{ 
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8
-                }
-              }}
-            >
-              AIedulog
-            </Typography>
-          </Box>
+        <Toolbar sx={{ px: 3, minHeight: 64 }}>
+          {/* 로고 */}
+          <Typography 
+            variant="h6" 
+            fontWeight="bold" 
+            color="primary"
+            onClick={() => router.push('/feed')}
+            sx={{ 
+              cursor: 'pointer',
+              mr: { xs: 2, sm: 3 },
+              ml: 1,
+              '&:hover': {
+                opacity: 0.8
+              }
+            }}
+          >
+            AIedulog
+          </Typography>
 
           {/* Material 3 검색창 */}
           <Paper
             elevation={0}
             sx={{
               p: '2px 4px',
-              display: 'flex',
+              display: { xs: 'none', sm: 'flex' },  // 모바일에서 숨김
               alignItems: 'center',
               flex: 1,
               maxWidth: 600,
@@ -291,7 +132,7 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
               borderRadius: 10,
               bgcolor: alpha(theme.palette.action.selected, 0.04),
               border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              transition: 'all 0.2s',
+              transition: 'all 0.2s',  // 빠른 페이드
               '&:hover': {
                 bgcolor: alpha(theme.palette.action.selected, 0.08),
                 borderColor: alpha(theme.palette.primary.main, 0.2),
@@ -331,12 +172,18 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
           </Paper>
 
           {/* 우측 아이콘들 */}
-          <Stack direction="row" spacing={1} sx={{ ml: 2 }}>
-            <IconButton>
-              <Badge badgeContent={3} color="error">
-                <Notifications />
-              </Badge>
+          <Stack direction="row" spacing={1} sx={{ ml: 'auto', alignItems: 'center' }}>
+            {/* 모바일 검색 아이콘 */}
+            <IconButton 
+              sx={{ 
+                display: { xs: 'inline-flex', sm: 'none' }
+              }}
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+            >
+              {mobileSearchOpen ? <Close /> : <Search />}
             </IconButton>
+            
+            <NotificationIcon />
             <IconButton onClick={handleMenu}>
               {profile?.avatar_url ? (
                 <Avatar 
@@ -349,6 +196,73 @@ export default function AppHeader({ user, profile }: AppHeaderProps) {
             </IconButton>
           </Stack>
         </Toolbar>
+        
+        {/* 모바일 검색창 - 검색 아이콘 위치에서 왼쪽으로 확장 */}
+        <Box
+          sx={{
+            display: { xs: 'flex', sm: 'none' },
+            position: 'absolute',
+            top: '50%',
+            right: 88,  // 검색 아이콘 위치 (노티 + 프로필 아이콘 너비 고려)
+            transform: 'translateY(-50%)',
+            width: mobileSearchOpen ? 'calc(80% - 100px)' : 0,  // 0.8배로 줄임
+            transition: 'width 0.3s ease-in-out',
+            overflow: 'hidden',
+            zIndex: 10
+          }}
+        >
+          <Paper
+            elevation={0}
+            sx={{
+              p: '2px 4px',
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              borderRadius: 10,
+              bgcolor: 'background.paper',
+              border: `1px solid ${theme.palette.primary.main}`,
+              boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`
+            }}
+          >
+            <IconButton 
+              sx={{ p: '10px' }} 
+              aria-label="search"
+              onClick={() => {
+                if (searchQuery.trim()) {
+                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                  setSearchQuery('')
+                  setMobileSearchOpen(false)
+                }
+              }}
+            >
+              <Search />
+            </IconButton>
+            <InputBase
+              sx={{ ml: 1, flex: 1 }}
+              placeholder="검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                  setSearchQuery('')
+                  setMobileSearchOpen(false)
+                }
+              }}
+              autoFocus
+              inputProps={{ 'aria-label': 'search' }}
+            />
+            <IconButton 
+              sx={{ p: '10px' }}
+              onClick={() => {
+                setMobileSearchOpen(false)
+                setSearchQuery('')
+              }}
+            >
+              <Close />
+            </IconButton>
+          </Paper>
+        </Box>
       </Paper>
       
       {/* User Dropdown Menu */}

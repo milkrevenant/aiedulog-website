@@ -25,7 +25,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import {
-  Menu as MenuIcon,
   AccountCircle,
   Dashboard,
   Logout,
@@ -33,15 +32,15 @@ import {
   AdminPanelSettings,
   Settings,
   Search,
-  Notifications,
+  Chat,
 } from '@mui/icons-material'
+import NotificationIcon from '@/components/NotificationIcon'
 
 export default function Navbar() {
   const theme = useTheme()
   const pathname = usePathname()
   const router = useRouter()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const supabase = createClient()
@@ -84,13 +83,8 @@ export default function Navbar() {
     setAnchorEl(event.currentTarget)
   }
 
-  const handleMobileMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setMobileMenuAnchor(event.currentTarget)
-  }
-
   const handleClose = () => {
     setAnchorEl(null)
-    setMobileMenuAnchor(null)
   }
 
   const handleLogout = async () => {
@@ -159,17 +153,8 @@ export default function Navbar() {
             ))}
           </Box>
 
-          {/* Mobile Menu Icon */}
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, flexGrow: 1 }}>
-            <IconButton
-              size="large"
-              onClick={handleMobileMenu}
-              color="inherit"
-              sx={{ color: theme.palette.text.primary }}
-            >
-              <MenuIcon />
-            </IconButton>
-          </Box>
+          {/* 모바일에서 로고 가운데 정렬을 위한 spacer */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, flexGrow: 1 }} />
 
           {/* Search Bar and User Menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -197,12 +182,14 @@ export default function Navbar() {
 
             {user ? (
               <>
-                {/* Notification Icon */}
+                <NotificationIcon />
+                
+                {/* Chat Icon */}
                 <IconButton
-                  size="large"
-                  sx={{ color: theme.palette.text.secondary }}
+                  onClick={() => router.push('/chat')}
+                  sx={{ color: theme.palette.text.primary }}
                 >
-                  <Notifications />
+                  <Chat />
                 </IconButton>
 
                 {/* User Avatar */}
@@ -235,25 +222,6 @@ export default function Navbar() {
               </Button>
             )}
           </Box>
-
-          {/* Mobile Menu */}
-          <Menu
-            anchorEl={mobileMenuAnchor}
-            open={Boolean(mobileMenuAnchor)}
-            onClose={handleClose}
-            sx={{ display: { xs: 'block', md: 'none' } }}
-          >
-            {menuItems.map((item) => (
-              <MenuItem
-                key={item.href}
-                component={Link}
-                href={item.href}
-                onClick={handleClose}
-              >
-                {item.label}
-              </MenuItem>
-            ))}
-          </Menu>
 
           {/* User Dropdown Menu */}
           <Menu
