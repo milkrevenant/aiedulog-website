@@ -10,6 +10,10 @@
         "neutralVariant": "#EDEFF2"
     },
     "extendedColors": [],
+    "customColors": {
+        "cardBackground": "#D5DEF2",
+        "cardBackgroundDark": "#2A3F5F"
+    },
     "schemes": {
         "light": {
             "primary": "#3B608F",
