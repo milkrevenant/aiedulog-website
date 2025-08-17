@@ -82,7 +82,7 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
   const handleLogout = async () => {
     await supabase.auth.signOut()
     handleClose()
-    router.push('/')
+    router.push('/main')
   }
 
   return (

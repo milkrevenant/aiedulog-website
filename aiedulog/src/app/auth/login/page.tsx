@@ -342,7 +342,7 @@ export default function LoginPage() {
 
         {/* Back to Home */}
         <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Link href="/">
+          <Link href="/main">
             <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
               ← 홈으로 돌아가기
             </Typography>

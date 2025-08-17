@@ -165,9 +165,11 @@ export default function NotificationIcon() {
   return (
     <>
       <IconButton
-        color="inherit"
         onClick={handleClick}
-        sx={{ ml: 1 }}
+        sx={{ 
+          ml: 1,
+          color: unreadCount > 0 ? 'primary.main' : 'text.secondary'
+        }}
       >
         <Badge badgeContent={unreadCount} color="error">
           {unreadCount > 0 ? <NotificationsIcon /> : <NotificationsNoneIcon />}

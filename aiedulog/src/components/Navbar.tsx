@@ -120,7 +120,7 @@ export default function Navbar() {
             <Typography
               variant="h6"
               component={Link}
-              href="/"
+              href="/main"
               sx={{
                 fontWeight: 700,
                 color: theme.palette.primary.main,
