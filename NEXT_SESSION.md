@@ -12,6 +12,42 @@ npm run dev
 - **상태**: ✅ 성공적으로 배포됨
 - **배포 날짜**: 2025-08-19 00:52
 
+## ⚠️ MUI Grid v2 중요 사항 (필독!)
+**Vercel 빌드 시 Grid 컴포넌트 문제 해결됨**
+- `container` prop는 정상 작동
+- `item` prop 사용 불가 (제거됨)
+- `columns` prop 지원
+
+### 올바른 Grid 사용법:
+```jsx
+// ❌ 잘못된 방법 (MUI v5/v6 - 작동 안 함)
+<Grid container spacing={2}>
+  <Grid item xs={12} md={6}>
+
+// ✅ 올바른 방법 (MUI v7)
+<Grid container spacing={2}>
+  <Grid size={{ xs: 12, md: 6 }}>
+  
+// ✅ 단일 breakpoint
+<Grid size={6}>
+
+// ✅ auto-layout
+<Grid size="grow">
+```
+
+### Grid 수정이 필요한 파일들:
+- ✅ `src/app/aboutus/page.tsx` (완료)
+- ✅ `src/app/dashboard/page.tsx` (완료)
+- ✅ `src/app/admin/page.tsx` (완료)
+- ✅ `src/app/admin/lectures/page.tsx` (완료)
+- ✅ `src/app/admin/announcements/page.tsx` (완료)
+- ✅ `src/app/admin/news/page.tsx` (완료)
+- ✅ `src/app/admin/regular-meetings/page.tsx` (완료)
+- ✅ `src/app/admin/training-programs/page.tsx` (완료)
+- ✅ `src/app/admin/main-content/page.tsx` (완료)
+- ✅ `src/app/board/lectures/page.tsx` (완료)
+- ✅ `src/components/PostEditor.tsx` (완료)
+
 ## 🔧 코드 품질 점검 필요
 ### 자동화 도구 명령어
 ```bash
@@ -79,12 +115,19 @@ npm run build
   - MUI x-date-pickers 통합
   - Supabase client import 수정
 
+## 📚 중요 참조 문서
+- **배포 에러 기록**: `VERCEL_BUILD_ERRORS_LOG.md`
+- **기술 이슈 분석**: `DEPLOYMENT_ISSUES_REPORT.md`
+- **변경사항 기록**: `DEPLOYMENT_CHANGES.md`
+- **프로젝트 진행상황**: `PROGRESS.md`
+- **할 일 목록**: `TODO.md`
+
 ## 💡 참고사항
 - Admin 권한 필요 (AuthGuard 사용)
 - 날짜 선택: @mui/x-date-pickers 사용
 - 파일 업로드: Supabase Storage 사용
-- **배포 이슈 보고서**: `DEPLOYMENT_ISSUES_REPORT.md` 참조
-- **에러 로그**: `VERCEL_BUILD_ERRORS_LOG.md` 참조
+- Grid v2 사용 시 `size` prop 필수
+- Material 3 컴포넌트는 `as any` 타입 캐스팅 필요
 
 ## ⚠️ 가비아 도메인 연결 대기 중
 1. Vercel Dashboard → Settings → Domains
@@ -93,5 +136,13 @@ npm run build
    - A 레코드: `76.76.21.21`
    - CNAME: `cname.vercel-dns.com`
 
+## 📝 세션 종료 시점
+- **종료 시간**: 2025-08-19 01:35 (한국시간)
+- **마지막 작업**: MUI Grid v2 문제 분석 및 문서화
+- **다음 세션 작업**: 
+  1. Grid v2 완전 가이드 작성
+  2. 코드 품질 점검 실행
+  3. 강의 홍보 시스템 구현
+
 ---
-*업데이트: 2025-08-19*
+*업데이트: 2025-08-19 01:35*
