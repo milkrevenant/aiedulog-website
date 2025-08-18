@@ -39,7 +39,8 @@ import {
   Group,
   Person,
   ExpandLess,
-  ExpandMore
+  ExpandMore,
+  Event
 } from '@mui/icons-material'
 
 interface FeedSidebarProps {
@@ -54,6 +55,7 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
   const router = useRouter()
   const theme = useTheme()
   const [educationOpen, setEducationOpen] = useState(false)
+  const [jobOpen, setJobOpen] = useState(false)
 
   const menuItems = [
     { 
@@ -90,8 +92,19 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
     { 
       label: '구인구직', 
       icon: <Work />, 
-      href: '/board/job',
-      color: 'error' as const
+      href: '/board/job/all',
+      color: 'error' as const,
+      subItems: [
+        { label: '전체', href: '/board/job/all' },
+        { label: '구인', href: '/board/job/hiring' },
+        { label: '구직', href: '/board/job/seeking' }
+      ]
+    },
+    { 
+      label: '강의 홍보', 
+      icon: <Event />, 
+      href: '/board/lectures',
+      color: 'secondary' as const
     },
   ]
 
@@ -196,7 +209,11 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                 <ListItemButton
                   onClick={() => {
                     if (item.subItems) {
-                      setEducationOpen(!educationOpen)
+                      if (item.label === '교육 자료실') {
+                        setEducationOpen(!educationOpen)
+                      } else if (item.label === '구인구직') {
+                        setJobOpen(!jobOpen)
+                      }
                     } else {
                       router.push(item.href)
                       onMobileToggle?.()
@@ -219,11 +236,20 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                       fontWeight: 500
                     }}
                   />
-                  {item.subItems && (educationOpen ? <ExpandLess /> : <ExpandMore />)}
+                  {item.subItems && (
+                    item.label === '교육 자료실' 
+                      ? (educationOpen ? <ExpandLess /> : <ExpandMore />)
+                      : item.label === '구인구직'
+                      ? (jobOpen ? <ExpandLess /> : <ExpandMore />)
+                      : null
+                  )}
                 </ListItemButton>
               </ListItem>
               {item.subItems && (
-                <Collapse in={educationOpen} timeout="auto" unmountOnExit>
+                <Collapse 
+                  in={item.label === '교육 자료실' ? educationOpen : item.label === '구인구직' ? jobOpen : false} 
+                  timeout="auto" 
+                  unmountOnExit>
                   <List component="div" disablePadding>
                     {item.subItems.map((subItem) => (
                       <ListItem key={subItem.href} disablePadding sx={{ pl: 2 }}>
