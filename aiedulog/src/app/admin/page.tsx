@@ -199,6 +199,14 @@ function AdminDashboardContent() {
       permission: 'manage_content',
     },
     {
+      title: '강의 관리',
+      description: '강의 등록 및 수강생 관리',
+      icon: <School fontSize="large" />,
+      path: '/admin/lectures',
+      color: '#FF7675',
+      permission: 'manage_content',
+    },
+    {
       title: '신고 관리',
       description: '신고된 콘텐츠 처리',
       icon: <Security fontSize="large" />,

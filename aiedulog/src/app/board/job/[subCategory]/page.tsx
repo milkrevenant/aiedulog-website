@@ -65,6 +65,8 @@ import {
 import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
 import FeedSidebar from '@/components/FeedSidebar'
+import PostEditor from '@/components/PostEditor'
+import EmptyPostMessage from '@/components/EmptyPostMessage'
 
 const subCategoryInfo = {
   all: { name: '전체', icon: <Work />, color: 'info' as const },
@@ -156,31 +158,29 @@ export default function JobBoardPage() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-      
+      // 로그인하지 않아도 게시글 조회는 가능
       setUser(user)
       
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      if (user) {
+        // 프로필 정보 가져오기
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        
+        setProfile(profileData)
+      }
       
-      setProfile(profileData)
       setLoading(false)
     }
     getUser()
   }, [router, supabase])
 
   useEffect(() => {
-    if (user) {
-      fetchPosts()
-    }
-  }, [user, fetchPosts])
+    // 로그인 여부와 관계없이 게시글 로드
+    fetchPosts()
+  }, [fetchPosts])
 
   const handleLike = async (postId: string) => {
     const post = posts.find(p => p.id === postId)
@@ -230,6 +230,41 @@ export default function JobBoardPage() {
         ? { ...p, isBookmarked: !p.isBookmarked }
         : p
     ))
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return
+    
+    const post = posts.find(p => p.id === postId)
+    if (!post) return
+    
+    // 작성자 본인이거나 관리자만 삭제 가능
+    if (post.author_id !== user.id && profile?.role !== 'admin' && profile?.role !== 'moderator') {
+      alert('삭제 권한이 없습니다.')
+      return
+    }
+    
+    if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+      
+      if (error) throw error
+      
+      // 삭제 성공 시 목록에서 제거
+      setPosts(posts.filter(p => p.id !== postId))
+      alert('게시글이 삭제되었습니다.')
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      alert('삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -587,212 +622,28 @@ export default function JobBoardPage() {
               </Stack>
             </Paper>
 
-            {/* 글 작성 영역 */}
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Stack spacing={2}>
-                  {/* 구인/구직 선택 */}
-                  <ToggleButtonGroup
-                    value={postType}
-                    exclusive
-                    onChange={(e, newValue) => newValue && setPostType(newValue)}
-                    size="small"
-                  >
-                    <ToggleButton value="hiring">
-                      <Business sx={{ mr: 1 }} />
-                      구인 글 작성
-                    </ToggleButton>
-                    <ToggleButton value="seeking">
-                      <PersonSearch sx={{ mr: 1 }} />
-                      구직 글 작성
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-
-                  <TextField
-                    fullWidth
-                    placeholder={postType === 'hiring' ? '구인 제목을 입력하세요...' : '구직 제목을 입력하세요...'}
-                    variant="outlined"
-                    value={newPostTitle}
-                    onChange={(e) => setNewPostTitle(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={5}
-                    placeholder={postType === 'hiring' 
-                      ? '채용 정보를 자세히 작성해주세요.\n예) 학교/학원명, 과목, 근무조건, 급여, 지역 등'
-                      : '경력사항과 희망 근무조건을 작성해주세요.\n예) 경력, 자격증, 희망 과목, 희망 지역 등'}
-                    variant="outlined"
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                      }
-                    }}
-                  />
-                  
-                  {/* 드래그 앤 드롭 영역 */}
-                  <Box
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    sx={{
-                      border: '2px dashed',
-                      borderColor: isDragging ? 'primary.main' : 'divider',
-                      borderRadius: 2,
-                      p: 3,
-                      textAlign: 'center',
-                      bgcolor: isDragging ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
-                      transition: 'all 0.2s',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => {
-                      fileInputRef.current?.click()
-                    }}
-                  >
-                    <CloudUpload 
-                      sx={{ 
-                        fontSize: 48, 
-                        color: isDragging ? 'primary.main' : 'text.secondary',
-                        mb: 1
-                      }} 
-                    />
-                    <Typography variant="body1" color="text.secondary">
-                      파일을 드래그하여 놓거나 클릭하여 선택하세요
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      이력서, 포트폴리오 등 (PDF, DOC, HWP 등 / 최대 50MB)
-                    </Typography>
-                  </Box>
-                  
-                  {/* 선택된 이미지 미리보기 */}
-                  {selectedImages.length > 0 && (
-                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                      {selectedImages.map((image, index) => (
-                        <Box key={index} sx={{ position: 'relative' }}>
-                          <img 
-                            src={URL.createObjectURL(image)} 
-                            alt={`Preview ${index}`}
-                            style={{ 
-                              width: 100, 
-                              height: 100, 
-                              objectFit: 'cover',
-                              borderRadius: 8
-                            }} 
-                          />
-                          <IconButton
-                            size="small"
-                            sx={{
-                              position: 'absolute',
-                              top: -8,
-                              right: -8,
-                              bgcolor: 'background.paper'
-                            }}
-                            onClick={() => handleRemoveImage(index)}
-                          >
-                            <Close fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      ))}
-                    </Stack>
-                  )}
-                  
-                  {/* 선택된 파일 목록 */}
-                  {selectedFiles.length > 0 && (
-                    <List dense>
-                      {selectedFiles.map((file, index) => (
-                        <ListItem key={index}>
-                          <ListItemIcon>
-                            {getFileIcon(file.name)}
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={file.name}
-                            secondary={formatFileSize(file.size)}
-                          />
-                          <ListItemSecondaryAction>
-                            <IconButton 
-                              edge="end" 
-                              size="small"
-                              onClick={() => handleRemoveFile(index)}
-                            >
-                              <Close />
-                            </IconButton>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                  
-                  <Divider />
-                  <Stack direction="row" justifyContent="space-between">
-                    <Stack direction="row" spacing={1}>
-                      <input
-                        ref={imageInputRef}
-                        type="file"
-                        hidden
-                        multiple
-                        accept="image/*"
-                        onChange={handleImageSelect}
-                      />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        hidden
-                        multiple
-                        accept=".pdf,.doc,.docx,.hwp,.zip,.rar"
-                        onChange={handleFileSelect}
-                      />
-                      <Button 
-                        startIcon={<PhotoCamera />}
-                        onClick={() => imageInputRef.current?.click()}
-                        disabled={uploadingFiles}
-                      >
-                        이미지
-                      </Button>
-                      <Button 
-                        startIcon={<AttachFile />}
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingFiles}
-                      >
-                        파일 첨부
-                      </Button>
-                      <IconButton color="primary">
-                        <Mood />
-                      </IconButton>
-                      <IconButton color="primary">
-                        <LocationOn />
-                      </IconButton>
-                    </Stack>
-                    <Button 
-                      variant="contained" 
-                      endIcon={uploadingFiles ? <CircularProgress size={20} /> : <Send />}
-                      onClick={handlePost}
-                      disabled={!newPostTitle.trim() || !newPost.trim() || postLoading}
-                      color={currentInfo.color}
-                    >
-                      {postLoading ? '업로드 중...' : '게시'}
-                    </Button>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
+            {/* 글 작성 영역 - 통합 PostEditor 사용 */}
+            <Box sx={{ mb: 3 }}>
+              <PostEditor
+                user={user}
+                profile={profile}
+                category="job"
+                subCategory={subCategory === 'all' ? undefined : subCategory}
+                onPostCreated={fetchPosts}
+                placeholder={
+                  subCategory === 'hiring' 
+                    ? '채용 정보를 자세히 작성해주세요.\n예) 학교/학원명, 과목, 근무조건, 급여, 지역 등'
+                    : subCategory === 'seeking'
+                    ? '경력사항과 희망 근무조건을 작성해주세요.\n예) 경력, 자격증, 희망 과목, 희망 지역 등'
+                    : '구인/구직 정보를 작성해주세요.'
+                }
+              />
+            </Box>
 
             {/* 피드 */}
             <Stack spacing={2}>
               {posts.length === 0 ? (
-                <Card>
-                  <CardContent>
-                    <Typography variant="body1" color="text.secondary" align="center">
-                      아직 게시글이 없습니다. 첫 번째 글을 작성해보세요!
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <EmptyPostMessage />
               ) : (
                 posts.map((post) => (
                   <Card 

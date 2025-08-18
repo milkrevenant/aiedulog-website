@@ -65,6 +65,7 @@ import {
 import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
 import FeedSidebar from '@/components/FeedSidebar'
+import EmptyPostMessage from '@/components/EmptyPostMessage'
 
 const categoryInfo = {
   general: {
@@ -763,13 +764,7 @@ export default function BoardPage() {
         {/* 피드 */}
         <Stack spacing={2}>
           {posts.length === 0 ? (
-            <Card>
-              <CardContent>
-                <Typography variant="body1" color="text.secondary" align="center">
-                  아직 게시글이 없습니다. 첫 번째 글을 작성해보세요!
-                </Typography>
-              </CardContent>
-            </Card>
+            <EmptyPostMessage />
           ) : (
             posts.map((post) => (
               <Card 
