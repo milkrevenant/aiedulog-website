@@ -284,7 +284,7 @@ export default function Home() {
                             onMouseLeave={handleMenuClose}
                           >
                             <Grid container>
-                              <Grid item xs={8}>
+                              <Grid size={8}>
                                 <Box sx={{ p: 3 }}>
                                   {item.dropdown.sections.map((section, idx) => (
                                     <Box key={idx} sx={{ mb: idx < item.dropdown.sections.length - 1 ? 2 : 0 }}>
@@ -307,7 +307,7 @@ export default function Home() {
                                             }}
                                           >
                                             {subItem.label}
-                                            {subItem.external && <ArrowOutward sx={{ fontSize: 14 }} />}
+                                            {(subItem as any).external && <ArrowOutward sx={{ fontSize: 14 }} />}
                                           </MuiLink>
                                         ))}
                                       </Stack>
@@ -316,7 +316,7 @@ export default function Home() {
                                 </Box>
                               </Grid>
                               {item.dropdown.featured && (
-                                <Grid item xs={4}>
+                                <Grid size={4}>
                                   <Box 
                                     sx={{ 
                                       bgcolor: '#FFFFFF', // 흰색 배경
@@ -850,7 +850,7 @@ export default function Home() {
         <Container maxWidth="xl">
           <Grid container spacing={6} justifyContent="center">
             {/* Footer columns */}
-            <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -920,7 +920,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -979,7 +979,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -1027,7 +1027,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -1075,7 +1075,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid item xs={6} sm={4} md={3} lg={2}>
+            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 

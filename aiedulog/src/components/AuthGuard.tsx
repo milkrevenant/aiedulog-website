@@ -141,7 +141,6 @@ export default function AuthGuard({
             border: '1px solid',
             borderColor: 'error.main',
             borderRadius: 2,
-            bgcolor: 'error.light',
             bgcolor: '#fff5f5'
           }}
         >

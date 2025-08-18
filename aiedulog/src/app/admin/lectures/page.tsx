@@ -403,7 +403,7 @@ export default function LecturesAdminPage() {
 
           <Grid container spacing={3}>
             {filteredLectures.map((lecture) => (
-              <Grid item xs={12} md={6} lg={4} key={lecture.id}>
+              <Grid size={{ xs: 12, md: 6, lg: 4 }} key={lecture.id}>
                 <Card>
                   <CardContent>
                     <Stack spacing={2}>
@@ -484,7 +484,7 @@ export default function LecturesAdminPage() {
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     label="강의명"
                     value={formData.title}
@@ -493,7 +493,7 @@ export default function LecturesAdminPage() {
                     required
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     label="부제목"
                     value={formData.subtitle}
@@ -501,7 +501,7 @@ export default function LecturesAdminPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     label="설명"
                     value={formData.description}
@@ -511,7 +511,7 @@ export default function LecturesAdminPage() {
                     rows={4}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     label="강사명"
                     value={formData.instructor_name}
@@ -520,7 +520,7 @@ export default function LecturesAdminPage() {
                     required
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     label="강사 소개"
                     value={formData.instructor_bio}
@@ -528,7 +528,7 @@ export default function LecturesAdminPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormControl fullWidth>
                     <InputLabel>카테고리</InputLabel>
                     <Select
@@ -544,7 +544,7 @@ export default function LecturesAdminPage() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormControl fullWidth>
                     <InputLabel>난이도</InputLabel>
                     <Select
@@ -558,7 +558,7 @@ export default function LecturesAdminPage() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
                     label="기간"
                     value={formData.duration}
@@ -567,7 +567,7 @@ export default function LecturesAdminPage() {
                     placeholder="예: 8주, 2개월"
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <DatePicker
                     label="시작일"
                     value={formData.start_date}
@@ -575,7 +575,7 @@ export default function LecturesAdminPage() {
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <DatePicker
                     label="종료일"
                     value={formData.end_date}
@@ -583,7 +583,7 @@ export default function LecturesAdminPage() {
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TimePicker
                     label="시작 시간"
                     value={formData.start_time}
@@ -591,7 +591,7 @@ export default function LecturesAdminPage() {
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TimePicker
                     label="종료 시간"
                     value={formData.end_time}
@@ -599,7 +599,7 @@ export default function LecturesAdminPage() {
                     slotProps={{ textField: { fullWidth: true } }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     label="일정 상세"
                     value={formData.schedule_details}
@@ -608,7 +608,7 @@ export default function LecturesAdminPage() {
                     placeholder="예: 매주 화요일, 목요일"
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormControl fullWidth>
                     <InputLabel>강의 형태</InputLabel>
                     <Select
@@ -622,7 +622,7 @@ export default function LecturesAdminPage() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
                     label="수강료"
                     type="number"
@@ -631,7 +631,7 @@ export default function LecturesAdminPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <TextField
                     label="최대 인원"
                     type="number"
@@ -641,7 +641,7 @@ export default function LecturesAdminPage() {
                   />
                 </Grid>
                 {formData.location_type !== 'online' && (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <TextField
                       label="장소 주소"
                       value={formData.location_address}
@@ -651,7 +651,7 @@ export default function LecturesAdminPage() {
                   </Grid>
                 )}
                 {formData.location_type !== 'offline' && (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <TextField
                       label="온라인 링크"
                       value={formData.location_url}
@@ -661,7 +661,7 @@ export default function LecturesAdminPage() {
                     />
                   </Grid>
                 )}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormControl fullWidth>
                     <InputLabel>상태</InputLabel>
                     <Select
@@ -677,7 +677,7 @@ export default function LecturesAdminPage() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -688,7 +688,7 @@ export default function LecturesAdminPage() {
                     label="등록 가능"
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormControlLabel
                     control={
                       <Switch

@@ -4,8 +4,21 @@ import React, { useState } from 'react'
 import '@material/web/icon/icon'
 import '@material/web/ripple/ripple'
 
+// Type declarations for Material 3 web components
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'md-icon': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'md-ripple': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
+
 // Forward declaration for M3Icon (imported from index.tsx to avoid circular dependency)
-const M3Icon = ({ children }: { children: string }) => <md-icon>{children}</md-icon>
+const M3Icon = ({ children }: { children: string }) => {
+  const MdIcon = 'md-icon' as any
+  return <MdIcon>{children}</MdIcon>
+}
 
 // M3AppBar Component
 interface M3AppBarProps {
@@ -140,7 +153,10 @@ export const M3Avatar: React.FC<M3AvatarProps> = ({
       ) : (
         children
       )}
-      {onClick && <md-ripple />}
+      {onClick && (() => {
+        const MdRipple = 'md-ripple' as any
+        return <MdRipple />
+      })()}
     </div>
   )
 }
@@ -341,14 +357,14 @@ export const M3Box: React.FC<M3BoxProps> = ({
   onClick,
   component: Component = 'div'
 }) => {
-  return (
-    <Component
-      className={`m3-box ${className}`}
-      style={sx}
-      onClick={onClick}
-    >
-      {children}
-    </Component>
+  return React.createElement(
+    Component,
+    {
+      className: `m3-box ${className}`,
+      style: sx,
+      onClick: onClick
+    },
+    children
   )
 }
 
@@ -380,7 +396,7 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
   className = '',
   sx = {}
 }) => {
-  const variantMap: Record<string, keyof JSX.IntrinsicElements> = {
+  const variantMap: Record<string, string> = {
     'display-large': 'h1',
     'display-medium': 'h1',
     'display-small': 'h2',
@@ -426,10 +442,11 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
     'label-small': { fontSize: 'var(--md-sys-typescale-label-small-size)', lineHeight: 'var(--md-sys-typescale-label-small-line-height)' }
   }
 
-  return (
-    <Component
-      className={`m3-typography m3-typography--${variant} ${className}`}
-      style={{
+  return React.createElement(
+    Component,
+    {
+      className: `m3-typography m3-typography--${variant} ${className}`,
+      style: {
         ...typographyStyles[variant],
         color: colorMap[color],
         textAlign: align,
@@ -441,10 +458,9 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
           ? 'var(--md-sys-typescale-font-family-brand)'
           : 'var(--md-sys-typescale-font-family-plain)',
         ...sx
-      }}
-    >
-      {children}
-    </Component>
+      }
+    },
+    children
   )
 }
 
@@ -617,7 +633,10 @@ export const M3MenuItem: React.FC<M3MenuItemProps> = ({
     >
       {icon && <span style={{ display: 'flex', alignItems: 'center', color: 'var(--md-sys-color-on-surface-variant)' }}>{icon}</span>}
       <span style={{ flex: 1 }}>{children}</span>
-      <md-ripple />
+      {(() => {
+        const MdRipple = 'md-ripple' as any
+        return <MdRipple />
+      })()}
     </div>
   )
 }

@@ -257,7 +257,7 @@ export default function NewsManagementPage() {
     : newsPosts.filter(p => p.category === 'achievement')
 
   return (
-    <AuthGuard requiredRole="admin">
+    <AuthGuard requireAdmin>
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* 헤더 */}
         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -291,7 +291,7 @@ export default function NewsManagementPage() {
         {/* 뉴스 그리드 */}
         <Grid container spacing={3}>
           {filteredPosts.map((post) => (
-            <Grid item xs={12} md={6} lg={4} key={post.id}>
+            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={post.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {post.thumbnail_image && (
                   <CardMedia
@@ -399,7 +399,7 @@ export default function NewsManagementPage() {
           ))}
 
           {filteredPosts.length === 0 && !loading && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Alert severity="info">
                 {currentTab === 0 ? '등록된 뉴스가 없습니다' : `등록된 ${getCategoryLabel(['', 'news', 'event', 'achievement'][currentTab])}가 없습니다`}
               </Alert>

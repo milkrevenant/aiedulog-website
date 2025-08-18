@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -20,6 +20,7 @@ import {
   Box,
   List,
   ListItem,
+  ListItemButton,
   ListItemAvatar,
   ListItemText,
   Avatar,
@@ -228,15 +229,8 @@ export default function NotificationsPage() {
           return (
             <React.Fragment key={notification.id}>
               <ListItem
-                button
-                onClick={() => handleNotificationClick(notification)}
                 sx={{
-                  py: 2,
-                  px: 3,
-                  backgroundColor: !notification.is_read ? 'action.hover' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'action.selected',
-                  },
+                  p: 0,
                 }}
                 secondaryAction={
                   <IconButton
@@ -245,60 +239,73 @@ export default function NotificationsPage() {
                       e.stopPropagation();
                       handleMenuOpen(e, notification);
                     }}
+                    sx={{ mr: 2 }}
                   >
                     <MoreVertIcon />
                   </IconButton>
                 }
               >
-                <ListItemAvatar>
-                  <Avatar
-                    sx={{
-                      bgcolor: `${color}.lighter`,
-                      color: `${color}.main`,
-                    }}
-                  >
-                    <IconComponent />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography
-                        variant="body1"
-                        fontWeight={!notification.is_read ? 'bold' : 'normal'}
-                      >
-                        {notification.title}
-                      </Typography>
-                      {!notification.is_read && (
-                        <Chip
-                          label="새 알림"
-                          size="small"
-                          color="primary"
-                          sx={{ height: 20 }}
-                        />
-                      )}
-                    </Box>
-                  }
-                  secondary={
-                    <>
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.primary"
-                      >
-                        {notification.message}
-                      </Typography>
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mt: 0.5 }}
-                      >
-                        {getRelativeTime(notification.created_at)}
-                      </Typography>
-                    </>
-                  }
-                />
+                <ListItemButton
+                  onClick={() => handleNotificationClick(notification)}
+                  sx={{
+                    py: 2,
+                    px: 3,
+                    backgroundColor: !notification.is_read ? 'action.hover' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'action.selected',
+                    },
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Avatar
+                      sx={{
+                        bgcolor: `${color}.lighter`,
+                        color: `${color}.main`,
+                      }}
+                    >
+                      <IconComponent />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography
+                          variant="body1"
+                          fontWeight={!notification.is_read ? 'bold' : 'normal'}
+                        >
+                          {notification.title}
+                        </Typography>
+                        {!notification.is_read && (
+                          <Chip
+                            label="새 알림"
+                            size="small"
+                            color="primary"
+                            sx={{ height: 20 }}
+                          />
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          color="text.primary"
+                        >
+                          {notification.message}
+                        </Typography>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.5 }}
+                        >
+                          {getRelativeTime(notification.created_at)}
+                        </Typography>
+                      </>
+                    }
+                  />
+                </ListItemButton>
               </ListItem>
               {index < notificationList.length - 1 && <Divider />}
             </React.Fragment>

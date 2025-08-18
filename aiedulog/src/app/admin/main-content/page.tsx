@@ -283,7 +283,7 @@ function MainContentManagement() {
               <Typography variant="h6" sx={{ mb: 3 }}>히어로 섹션 편집</Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
                     label="제목"
@@ -308,7 +308,7 @@ function MainContentManagement() {
                     sx={{ mb: 2 }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
                     label="메인 버튼 텍스트"
@@ -356,7 +356,7 @@ function MainContentManagement() {
 
               <Grid container spacing={2}>
                 {featureCards.map((card, index) => (
-                  <Grid item xs={12} md={6} lg={4} key={card.id}>
+                  <Grid size={{ xs: 12, md: 6, lg: 4 }} key={card.id}>
                     <Card>
                       <CardContent>
                         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>

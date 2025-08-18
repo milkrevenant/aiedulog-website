@@ -127,29 +127,33 @@ export default function ImageUpload({
   return (
     <M3Box>
       {error && (
-        <M3Alert severity="error" style={{ marginBottom: '16px' }} onClose={() => setError(null)}>
-          {error}
-        </M3Alert>
+        <M3Box sx={{ marginBottom: '16px' }}>
+          <M3Alert severity="error">
+            {error}
+          </M3Alert>
+        </M3Box>
       )}
       
       {images.length < maxImages && (
-        <M3Card
-          variant="outlined"
-          style={{
-            padding: '24px',
-            marginBottom: '16px',
-            textAlign: 'center',
-            backgroundColor: dragActive ? 'var(--md-sys-color-surface-container-high)' : 'var(--md-sys-color-surface)',
-            border: '2px dashed',
-            borderColor: dragActive ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
+        <div
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
+          style={{ marginBottom: '16px' }}
         >
+          <M3Box
+            sx={{
+              padding: '24px',
+              textAlign: 'center',
+              backgroundColor: dragActive ? 'var(--md-sys-color-surface-container-high)' : 'var(--md-sys-color-surface)',
+              border: '2px dashed',
+              borderColor: dragActive ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              borderRadius: '12px'
+            }}
+          >
           <input
             type="file"
             id="image-upload"
@@ -185,7 +189,8 @@ export default function ImageUpload({
               )}
             </M3Box>
           </label>
-        </M3Card>
+          </M3Box>
+        </div>
       )}
       
       {images.length > 0 && (
@@ -231,7 +236,6 @@ export default function ImageUpload({
                   <M3IconButton
                     icon="delete"
                     variant="standard"
-                    style={{ color: 'rgba(255, 255, 255, 0.9)' }}
                     onClick={() => handleRemoveImage(index)}
                   />
                 </div>

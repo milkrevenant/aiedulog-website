@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
@@ -28,6 +28,7 @@ import {
   List,
   ListItem,
   ListItemAvatar,
+  CircularProgress,
   ListItemText,
   ListItemButton,
   CardMedia
@@ -74,7 +75,7 @@ function TabPanel(props: TabPanelProps) {
   )
 }
 
-export default function SearchPage() {
+function SearchContent() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -537,9 +538,9 @@ export default function SearchPage() {
                 <Chip
                   key={tag.name}
                   label={`#${tag.name} (${tag.count})`}
-                  size="large"
+                  size="medium"
                   onClick={() => router.push(`/board/${tag.name}`)}
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, fontSize: '1rem' }}
                 />
               ))}
             </Stack>
@@ -553,5 +554,17 @@ export default function SearchPage() {
         </TabPanel>
       </Container>
     </Box>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    }>
+      <SearchContent />
+    </Suspense>
   )
 }

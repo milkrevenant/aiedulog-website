@@ -24,8 +24,8 @@
 ## 📋 Phase 5: 최적화 및 배포
 - [ ] 성능 최적화
 - [ ] SEO 최적화
-- [ ] AWS 배포
-- [ ] 도메인 연결
+- [x] ~~AWS 배포~~ → Vercel 배포 (완료!)
+- [ ] 도메인 연결 (가비아 DNS 설정 대기)
 
 ## 🔧 기술 스택
 - **Frontend**: Next.js 15.4.6, Material UI v7

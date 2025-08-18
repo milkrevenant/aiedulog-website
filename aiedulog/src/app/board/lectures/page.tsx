@@ -483,12 +483,12 @@ export default function LecturesBoardPage() {
         <Grid container spacing={3} justifyContent="center">
           {loading ? (
             [...Array(6)].map((_, i) => (
-              <Grid item xs={12} md={6} lg={4} key={i}>
+              <Grid size={{ xs: 12, md: 6, lg: 4 }} key={i}>
                 <Skeleton variant="rectangular" height={400} />
               </Grid>
             ))
           ) : filteredLectures.length === 0 ? (
-            <Grid item>
+            <Grid>
               <Paper sx={{ p: 4, textAlign: 'center' }}>
                 <Typography variant="h6" color="text.secondary">
                   검색 결과가 없습니다.
@@ -497,7 +497,7 @@ export default function LecturesBoardPage() {
             </Grid>
           ) : (
             filteredLectures.map((lecture) => (
-              <Grid item xs={12} md={6} lg={4} key={lecture.id}>
+              <Grid size={{ xs: 12, md: 6, lg: 4 }} key={lecture.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   {lecture.thumbnail_image && (
                     <CardMedia
@@ -794,41 +794,41 @@ export default function LecturesBoardPage() {
                 <Box>
                   <Typography variant="h6" gutterBottom>강의 정보</Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body2" color="text.secondary">카테고리</Typography>
                       <Typography variant="body1">{getCategoryLabel(selectedLecture.category)}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body2" color="text.secondary">난이도</Typography>
                       <Typography variant="body1">{getLevelLabel(selectedLecture.level)}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body2" color="text.secondary">기간</Typography>
                       <Typography variant="body1">{selectedLecture.duration}</Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body2" color="text.secondary">수강료</Typography>
                       <Typography variant="body1">
                         {selectedLecture.price > 0 ? `${selectedLecture.price.toLocaleString()}원` : '무료'}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body2" color="text.secondary">일정</Typography>
                       <Typography variant="body1">
                         {new Date(selectedLecture.start_date).toLocaleDateString()} ~ {selectedLecture.end_date && new Date(selectedLecture.end_date).toLocaleDateString()}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Typography variant="body2" color="text.secondary">시간</Typography>
                       <Typography variant="body1">
                         {selectedLecture.start_time} ~ {selectedLecture.end_time}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <Typography variant="body2" color="text.secondary">일정 상세</Typography>
                       <Typography variant="body1">{selectedLecture.schedule_details}</Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                       <Typography variant="body2" color="text.secondary">장소</Typography>
                       <Typography variant="body1">
                         {selectedLecture.location_type === 'online' ? 

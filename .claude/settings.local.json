@@ -15,10 +15,24 @@
       "Bash(git push:*)",
       "Bash(rm:*)",
       "Bash(git commit:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(find:*)",
+      "Bash(vercel:*)",
+      "Bash(chmod:*)",
+      "Bash(./fix-grid.sh:*)",
+      "Bash(/Users/stillclie_mac/Documents/ug/aideulog/fix-grid.sh:*)"
     ],
     "deny": [],
     "ask": [],
     "defaultMode": "acceptEdits"
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

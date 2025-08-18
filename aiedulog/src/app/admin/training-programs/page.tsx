@@ -220,7 +220,7 @@ export default function TrainingProgramsPage() {
   }
 
   return (
-    <AuthGuard requiredRole="admin">
+    <AuthGuard requireAdmin>
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* 헤더 */}
         <Box sx={{ mb: 4 }}>
@@ -234,7 +234,7 @@ export default function TrainingProgramsPage() {
 
         {/* 프로그램 그리드 */}
         <Grid container spacing={3}>
-          <Grid item xs={12} lg={8}>
+          <Grid size={{ xs: 12, lg: 8 }}>
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="h6">프로그램 목록</Typography>
               <Button
@@ -248,7 +248,7 @@ export default function TrainingProgramsPage() {
 
             <Grid container spacing={2}>
               {programs.map((program) => (
-                <Grid item xs={12} md={6} key={program.id}>
+                <Grid size={{ xs: 12, md: 6 }} key={program.id}>
                   <Card sx={{ height: '100%' }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -348,7 +348,7 @@ export default function TrainingProgramsPage() {
               ))}
 
               {programs.length === 0 && !loading && (
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Alert severity="info">
                     등록된 연수 프로그램이 없습니다
                   </Alert>
@@ -358,7 +358,7 @@ export default function TrainingProgramsPage() {
           </Grid>
 
           {/* 강사 프로필 섹션 */}
-          <Grid item xs={12} lg={4}>
+          <Grid size={{ xs: 12, lg: 4 }}>
             <Typography variant="h6" gutterBottom>
               강사 프로필
             </Typography>
@@ -467,7 +467,7 @@ export default function TrainingProgramsPage() {
               </LocalizationProvider>
 
               <Grid container spacing={2}>
-                <Grid item xs={4}>
+                <Grid size={4}>
                   <TextField
                     label="시작 시간"
                     fullWidth
@@ -476,7 +476,7 @@ export default function TrainingProgramsPage() {
                     placeholder="14:00"
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={4}>
                   <TextField
                     label="종료 시간"
                     fullWidth
@@ -485,7 +485,7 @@ export default function TrainingProgramsPage() {
                     placeholder="16:00"
                   />
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={4}>
                   <TextField
                     label="연수 시간"
                     type="number"
@@ -555,7 +555,7 @@ export default function TrainingProgramsPage() {
               />
 
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="최대 참가자"
                     type="number"
@@ -564,7 +564,7 @@ export default function TrainingProgramsPage() {
                     onChange={(e) => setEditingProgram({ ...editingProgram, max_participants: parseInt(e.target.value) })}
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="참가비 (원)"
                     type="number"

@@ -35,47 +35,6 @@ import '@material/web/tabs/primary-tab'
 import '@material/web/tabs/secondary-tab'
 import '@material/web/icon/icon'
 
-// TypeScript declarations for Material Web Components
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'md-filled-button': any
-      'md-outlined-button': any
-      'md-text-button': any
-      'md-filled-tonal-button': any
-      'md-elevated-button': any
-      'md-outlined-text-field': any
-      'md-filled-text-field': any
-      'md-checkbox': any
-      'md-radio': any
-      'md-switch': any
-      'md-fab': any
-      'md-branded-fab': any
-      'md-icon-button': any
-      'md-filled-icon-button': any
-      'md-filled-tonal-icon-button': any
-      'md-outlined-icon-button': any
-      'md-chip-set': any
-      'md-assist-chip': any
-      'md-filter-chip': any
-      'md-input-chip': any
-      'md-suggestion-chip': any
-      'md-dialog': any
-      'md-list': any
-      'md-list-item': any
-      'md-menu': any
-      'md-menu-item': any
-      'md-circular-progress': any
-      'md-linear-progress': any
-      'md-ripple': any
-      'md-tabs': any
-      'md-primary-tab': any
-      'md-secondary-tab': any
-      'md-icon': any
-    }
-  }
-}
-
 // Button wrapper component
 interface M3ButtonProps {
   variant?: 'filled' | 'outlined' | 'text' | 'filled-tonal' | 'elevated'
@@ -143,17 +102,23 @@ export const M3Button: React.FC<M3ButtonProps> = ({
     )
   }
 
+  const MdOutlinedButton = 'md-outlined-button' as any
+  const MdTextButton = 'md-text-button' as any
+  const MdFilledTonalButton = 'md-filled-tonal-button' as any
+  const MdElevatedButton = 'md-elevated-button' as any
+  const MdFilledButton = 'md-filled-button' as any
+
   switch (variant) {
     case 'outlined':
-      return <md-outlined-button {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</md-outlined-button>
+      return <MdOutlinedButton {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</MdOutlinedButton>
     case 'text':
-      return <md-text-button {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</md-text-button>
+      return <MdTextButton {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</MdTextButton>
     case 'filled-tonal':
-      return <md-filled-tonal-button {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</md-filled-tonal-button>
+      return <MdFilledTonalButton {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</MdFilledTonalButton>
     case 'elevated':
-      return <md-elevated-button {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</md-elevated-button>
+      return <MdElevatedButton {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</MdElevatedButton>
     default:
-      return <md-filled-button {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</md-filled-button>
+      return <MdFilledButton {...props}>{icon && <span className="material-icons" slot={leading ? 'icon' : trailing ? 'trailing-icon' : ''}>{icon}</span>}{children}</MdFilledButton>
   }
 }
 
@@ -216,10 +181,13 @@ export const M3TextField: React.FC<M3TextFieldProps> = ({
   }
 
   // Prevent hydration mismatch by not setting empty string attributes
+  const MdFilledTextField = 'md-filled-text-field' as any
+  const MdOutlinedTextField = 'md-outlined-text-field' as any
+  
   if (variant === 'filled') {
-    return <md-filled-text-field {...props} />
+    return <MdFilledTextField {...props} />
   }
-  return <md-outlined-text-field {...props} />
+  return <MdOutlinedTextField {...props} />
 }
 
 // FAB wrapper component
@@ -291,20 +259,23 @@ export const M3FAB: React.FC<M3FABProps> = ({
     style
   }
 
+  const MdBrandedFab = 'md-branded-fab' as any
+  const MdFab = 'md-fab' as any
+
   if (variant === 'branded') {
     return (
-      <md-branded-fab {...props}>
+      <MdBrandedFab {...props}>
         {icon && <span className="material-icons" slot="icon">{icon}</span>}
         {children}
-      </md-branded-fab>
+      </MdBrandedFab>
     )
   }
 
   return (
-    <md-fab {...props}>
+    <MdFab {...props}>
       {icon && <span className="material-icons" slot="icon">{icon}</span>}
       {children}
-    </md-fab>
+    </MdFab>
   )
 }
 
@@ -343,6 +314,8 @@ export const M3Card: React.FC<M3CardProps> = ({
     }
   }
 
+  const MdRipple = 'md-ripple' as any
+  
   return (
     <div 
       className={`m3-card ${className}`}
@@ -351,7 +324,7 @@ export const M3Card: React.FC<M3CardProps> = ({
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      {onClick && <md-ripple />}
+      {onClick && <MdRipple />}
       {children}
     </div>
   )
@@ -401,15 +374,21 @@ export const M3Chip: React.FC<M3ChipProps> = ({
     label: children
   }
 
+  const MdFilterChip = 'md-filter-chip' as any
+  const MdInputChip = 'md-input-chip' as any
+  const MdSuggestionChip = 'md-suggestion-chip' as any
+  const MdAssistChip = 'md-assist-chip' as any
+  const MdIcon = 'md-icon' as any
+  
   switch (variant) {
     case 'filter':
-      return <md-filter-chip {...props}>{icon && <md-icon slot="icon">{icon}</md-icon>}</md-filter-chip>
+      return <MdFilterChip {...props}>{icon && <MdIcon slot="icon">{icon}</MdIcon>}</MdFilterChip>
     case 'input':
-      return <md-input-chip {...props} remove={!!onRemove}>{avatar && <img slot="icon" src={avatar} />}{icon && <md-icon slot="icon">{icon}</md-icon>}</md-input-chip>
+      return <MdInputChip {...props} remove={!!onRemove}>{avatar && <img slot="icon" src={avatar} />}{icon && <MdIcon slot="icon">{icon}</MdIcon>}</MdInputChip>
     case 'suggestion':
-      return <md-suggestion-chip {...props}>{icon && <md-icon slot="icon">{icon}</md-icon>}</md-suggestion-chip>
+      return <MdSuggestionChip {...props}>{icon && <MdIcon slot="icon">{icon}</MdIcon>}</MdSuggestionChip>
     default:
-      return <md-assist-chip {...props}>{icon && <md-icon slot="icon">{icon}</md-icon>}</md-assist-chip>
+      return <MdAssistChip {...props}>{icon && <MdIcon slot="icon">{icon}</MdIcon>}</MdAssistChip>
   }
 }
 
@@ -478,16 +457,21 @@ export const M3IconButton: React.FC<M3IconButtonProps> = ({
   }
 
   const iconElement = <span className="material-icons">{icon}</span>
+  
+  const MdFilledIconButton = 'md-filled-icon-button' as any
+  const MdFilledTonalIconButton = 'md-filled-tonal-icon-button' as any
+  const MdOutlinedIconButton = 'md-outlined-icon-button' as any
+  const MdIconButton = 'md-icon-button' as any
 
   switch (variant) {
     case 'filled':
-      return <md-filled-icon-button {...props}>{iconElement}</md-filled-icon-button>
+      return <MdFilledIconButton {...props}>{iconElement}</MdFilledIconButton>
     case 'filled-tonal':
-      return <md-filled-tonal-icon-button {...props}>{iconElement}</md-filled-tonal-icon-button>
+      return <MdFilledTonalIconButton {...props}>{iconElement}</MdFilledTonalIconButton>
     case 'outlined':
-      return <md-outlined-icon-button {...props}>{iconElement}</md-outlined-icon-button>
+      return <MdOutlinedIconButton {...props}>{iconElement}</MdOutlinedIconButton>
     default:
-      return <md-icon-button {...props}>{iconElement}</md-icon-button>
+      return <MdIconButton {...props}>{iconElement}</MdIconButton>
   }
 }
 
