@@ -76,44 +76,58 @@ npm run build
 - Unescaped entities: 4개 error
 - Missing dependencies: 4개 warning
 
+## 🎨 디자인 수정 필요
+**Announcement Section 카드 배경색 변경 검토**
+- 현재: `#D5DEF2` (라인 893)
+- 외부 배경: `#F8F9FF` (라인 887)
+- 색상 옵션:
+  - 파란색 계열: `#E0E7F6`, `#DCE4F2`, `#E3E9F3`
+  - 따뜻한 계열: `#F5F0E8`, `#FAF6F0`, `#F8F4ED`
+  - 중성 계열: `#EAEEF3`, `#F0F2F5`, `#E8EAED`
+  - Material 3: `#E7E0EC`, `#E6E1E5`
+  - Alpha 투명도: `alpha('#3B608F', 0.1)`
+
 ## 🎯 즉시 해야 할 작업 (우선순위)
-1. [ ] **강의 홍보 시스템 구현**
-   - `/admin/lectures` 페이지 생성
-   - 강의 등록/수정 폼 구현
-   - lectures 테이블 DB 스키마 작성
+1. [x] **강의 홍보 시스템 구현** ✅
+   - ✅ `/admin/lectures` 페이지 생성 (완료)
+   - ✅ 강의 등록/수정 폼 구현 (완료)
+   - ✅ lectures 테이블 DB 스키마 작성 (완료)
 
 2. [ ] **강의 신청 기능**
+   - 공개 강의 페이지 생성 (/lectures)
    - 참가 신청 버튼 및 로직
-   - 신청자 목록 관리
+   - 신청자 목록 관리 (admin에서 완료)
 
 3. [ ] **일정 관리 달력**
    - FullCalendar 또는 MUI 달력 통합
    - 강의 일정 표시
 
-## 📂 작업할 파일 위치
+## 📂 작업 완료 상황
 ```
-생성 예정:
-- /src/app/admin/lectures/page.tsx
-- /src/lib/lectures-system.sql
-- /src/app/lectures/page.tsx (공개 페이지)
+✅ 생성 완료:
+- /src/app/admin/lectures/page.tsx (강의 관리 페이지)
+- /src/lib/lectures-system.sql (DB 스키마)
 
-수정 예정:
-- /src/app/admin/page.tsx (메뉴 추가)
+⏳ 생성 예정:
+- /src/app/lectures/page.tsx (공개 페이지)
+- /src/app/lectures/[id]/page.tsx (강의 상세 페이지)
+
+✅ 수정 완료:
+- /src/app/admin/page.tsx (메뉴 이미 포함됨)
 ```
 
 ## ⚠️ 현재 이슈/블로커
-- 없음
+- **필수**: Supabase에 SQL 실행 필요 (아래 2개 파일)
+  1. `/src/lib/add-profile-fields.sql`
+  2. `/src/lib/lectures-system.sql`
 
 ## 📍 마지막 완료 작업
-- ✅ **Vercel 배포 성공!**
-  - 모든 TypeScript 에러 해결
-  - MUI Grid v7 마이그레이션 완료
-  - Material 3 웹 컴포넌트 타입 이슈 해결
-  - useSearchParams Suspense 래핑
-- ✅ 랜딩 페이지 콘텐츠 관리 시스템 완료
-  - 4개 관리 페이지 (연수, 모임, 뉴스, 공지사항)
-  - MUI x-date-pickers 통합
-  - Supabase client import 수정
+- ✅ **강의 관리 시스템 백엔드 구현**
+  - lectures, lecture_registrations 테이블 스키마 생성
+  - RLS 정책 설정 완료
+  - 참가자 수 자동 업데이트 트리거 구현
+  - Admin 강의 관리 페이지 완료 (CRUD 기능)
+  - 수강 신청자 관리 기능 구현
 
 ## 📚 중요 참조 문서
 - **배포 에러 기록**: `VERCEL_BUILD_ERRORS_LOG.md`
@@ -137,17 +151,20 @@ npm run build
    - CNAME: `cname.vercel-dns.com`
 
 ## 📝 세션 종료 시점
-- **종료 시간**: 2025-08-19 15:30 (한국시간)
+- **종료 시간**: 2025-08-19 18:20 (한국시간)
 - **마지막 작업**: 
-  1. 회원가입 기능 완전 구현
-  2. 실시간 이메일 중복 체크 추가
-  3. 3단계 가입 프로세스 완성
-  4. 프로필 필드 확장 (school, interests)
+  1. 강의 관리 시스템 백엔드 완전 구현
+  2. lectures 테이블 스키마 및 RLS 정책 작성
+  3. Admin 강의 관리 페이지 구현 (기존 파일 활용)
+  4. 수강 신청자 관리 기능 완료
 
 - **다음 세션 작업**: 
-  1. Supabase profiles 테이블에 SQL 실행 (add-profile-fields.sql)
-  2. 가입 완료 후 이메일 인증 테스트
-  3. 강의 홍보 시스템 구현
+  1. ⚠️ **Supabase SQL 실행 (필수!)**
+     - `/src/lib/add-profile-fields.sql`
+     - `/src/lib/lectures-system.sql`
+  2. 공개 강의 목록 페이지 생성 (/lectures)
+  3. 강의 상세 및 신청 페이지 구현
+  4. 이메일 인증 테스트
 
 ## 📌 중요 변경사항
 - **Git 히스토리 정리됨**: test-connection.js의 하드코딩된 키 제거
@@ -160,14 +177,28 @@ npm run build
   - 프로필 확장 필드 추가 (school, interests)
 
 ## ⚠️ 필수 작업
-**Supabase에서 SQL 실행 필요**:
+**Supabase에서 SQL 실행 필요** (2개 파일):
+
+### 1. 프로필 필드 추가
 ```sql
--- /src/lib/add-profile-fields.sql 내용을 Supabase SQL Editor에서 실행
+-- /src/lib/add-profile-fields.sql 내용
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS school text;
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS interests text[] DEFAULT '{}';
 ```
 
+### 2. 강의 시스템 테이블 생성
+```sql
+-- /src/lib/lectures-system.sql 전체 내용 실행
+-- lectures, lecture_registrations 테이블 생성
+-- RLS 정책, 트리거, 인덱스 포함
+```
+
+## 🔍 작업 확인 사항
+- 서버 실행: http://localhost:3001
+- Admin 강의 관리: http://localhost:3001/admin/lectures
+- 기존 lectures 테이블 확인 (이미 있을 수 있음)
+
 ---
-*업데이트: 2025-08-19 15:30*
+*업데이트: 2025-08-19 18:20*
