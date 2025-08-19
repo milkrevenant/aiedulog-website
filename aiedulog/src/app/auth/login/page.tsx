@@ -35,7 +35,7 @@ import {
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
+  // const [isSignUp, setIsSignUp] = useState(false) // 회원가입은 별도 페이지로 이동
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -51,35 +51,22 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      if (isSignUp) {
-        // 회원가입
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${location.origin}/auth/callback`,
-          }
-        })
-        if (error) throw error
-        router.push('/auth/signup-success')
-      } else {
-        // 로그인
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (error) throw error
-        
-        // 사용자 권한 확인
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', authData.user.id)
-          .single()
-        
-        // 모든 사용자는 피드로 리다이렉트
-        router.push('/feed')
-      }
+      // 로그인
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      
+      // 사용자 권한 확인
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single()
+      
+      // 모든 사용자는 피드로 리다이렉트
+      router.push('/feed')
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -131,7 +118,7 @@ export default function LoginPage() {
               <School sx={{ fontSize: 32, color: 'primary.main' }} />
             </Box>
             <Typography variant="h4" fontWeight={600} textAlign="center">
-              {isSignUp ? '회원가입' : '로그인'}
+              로그인
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center">
               AIedulog
@@ -195,29 +182,27 @@ export default function LoginPage() {
                 }}
               />
 
-              {!isSignUp && (
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        size="small"
-                      />
-                    }
-                    label={<Typography variant="body2">로그인 상태 유지</Typography>}
-                  />
-                  <Link href="/auth/forgot-password">
-                    <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
-                      비밀번호 찾기
-                    </Typography>
-                  </Link>
-                </Stack>
-              )}
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={<Typography variant="body2">로그인 상태 유지</Typography>}
+                />
+                <Link href="/auth/forgot-password">
+                  <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
+                    비밀번호 찾기
+                  </Typography>
+                </Link>
+              </Stack>
 
               {error && (
                 <Alert 
-                  severity={isSignUp && error.includes('성공') ? 'success' : 'error'}
+                  severity="error"
                   sx={{ borderRadius: 2 }}
                 >
                   {error}
@@ -241,7 +226,7 @@ export default function LoginPage() {
                 {loading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  isSignUp ? '회원가입' : '로그인'
+                  '로그인'
                 )}
               </Button>
             </Stack>
@@ -300,16 +285,17 @@ export default function LoginPage() {
           {/* Switch Auth Mode */}
           <Box sx={{ mt: 4, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              {isSignUp ? '이미 계정이 있으신가요?' : '아직 회원이 아니신가요?'}{' '}
-              <Typography
-                component="span"
-                variant="body2"
-                color="primary"
-                sx={{ cursor: 'pointer', fontWeight: 600 }}
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
-                {isSignUp ? '로그인' : '회원가입'}
-              </Typography>
+              아직 회원이 아니신가요?{' '}
+              <Link href="/auth/signup">
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="primary"
+                  sx={{ cursor: 'pointer', fontWeight: 600 }}
+                >
+                  회원가입
+                </Typography>
+              </Link>
             </Typography>
           </Box>
 
