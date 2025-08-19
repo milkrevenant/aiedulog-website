@@ -23,7 +23,7 @@ import {
   Divider,
   Grid,
   Fab,
-  Slide,
+  Menu as MuiMenu,
   List,
   ListItem,
   ListItemButton,
@@ -50,7 +50,9 @@ import {
   RemoveRedEye,
   Newspaper,
   Notifications,
-  Message
+  Message,
+  ExpandLess,
+  ExpandMore
 } from '@mui/icons-material'
 import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
@@ -65,8 +67,10 @@ export default function Home() {
   const router = useRouter()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<HTMLElement | null>(null)
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [mobileAboutOpen, setMobileAboutOpen] = useState(false)
+  const [mobileShareOpen, setMobileShareOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -180,7 +184,7 @@ export default function Home() {
         ],
         featured: {
           label: '인기 자료',
-          title: 'ChatGPT 활용 수업 사례집',
+          title: 'AI 활용 수업 사례집',
           href: '#'
         }
       }
@@ -200,7 +204,7 @@ export default function Home() {
   return (
     <Box sx={{ 
       minHeight: '100vh', 
-      bgcolor: '#F8F9FF', // Material Theme: background
+      bgcolor: '#FAFCFE', // Material Theme: background
       fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
     }}>
       {/* Navbar */}
@@ -224,7 +228,7 @@ export default function Home() {
               sx={{ 
                 fontWeight: 600,
                 fontSize: '1.25rem',
-                color: '#3B608F', // Material Theme: primary
+                color: '#2E86AB', // Material Theme: primary
                 textDecoration: 'none',
                 letterSpacing: '-0.02em',
               }}
@@ -268,7 +272,7 @@ export default function Home() {
                       borderRadius: 1,
                       transition: 'all 0.2s',
                       '&:hover': { 
-                        bgcolor: alpha('#3B608F', 0.08), // Material Theme: primary with alpha
+                        bgcolor: alpha('#2E86AB', 0.08), // Material Theme: primary with alpha
                       }
                     }}
                   >
@@ -318,7 +322,7 @@ export default function Home() {
                               bgcolor: '#fff',
                               borderRadius: 2,
                               boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-                              width: 'auto',
+                              minWidth: 450,
                               overflow: 'hidden',
                               animation: openMenu === item.key ? 'slideDown 0.3s ease-out' : 'none',
                               '@keyframes slideDown': {
@@ -342,7 +346,7 @@ export default function Home() {
                             onMouseLeave={handleMenuClose}
                           >
                             <Grid container>
-                              <Grid size={{ xs: 12, md: 8 }}>
+                              <Grid size={{ xs: 12, md: 5 }}>
                                 <Box sx={{ p: 3 }}>
                                   {item.dropdown.sections.map((section, idx) => (
                                     <Box key={idx} sx={{ mb: idx < item.dropdown.sections.length - 1 ? 2 : 0 }}>
@@ -374,7 +378,7 @@ export default function Home() {
                                 </Box>
                               </Grid>
                               {item.dropdown.featured && (
-                                <Grid size={{ xs: 12, md: 4 }}>
+                                <Grid size={{ xs: 12, md: 7 }}>
                                   <Box 
                                     sx={{ 
                                       bgcolor: '#FFFFFF', // 흰색 배경
@@ -396,7 +400,7 @@ export default function Home() {
                                     <CalendarMonth 
                                       sx={{ 
                                         fontSize: 40,
-                                        color: '#3B608F' // Material Theme: primary
+                                        color: '#2E86AB' // Material Theme: primary
                                       }} 
                                     />
                                     <Box sx={{ textAlign: 'center' }}>
@@ -445,7 +449,7 @@ export default function Home() {
             }}>
               {/* Mobile menu - 햄버거 메뉴 */}
               <IconButton
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={(e) => setMobileMenuAnchor(e.currentTarget)}
                 sx={{ 
                   display: { xs: 'flex', md: 'none' },
                   color: '#191C20' // Material Theme: onBackground
@@ -487,63 +491,92 @@ export default function Home() {
                   </Button>
                 </>
               ) : (
-                /* Login Button */
-                <Button
-                  component={Link}
-                  href="/auth/login"
-                  variant="contained"
-                  startIcon={<Login />}
-                  sx={{
-                    bgcolor: '#3B608F', // Material Theme: primary
-                    color: '#FFFFFF', // Material Theme: onPrimary
-                    borderRadius: '20px',
-                    px: 3,
-                    py: 1,
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    boxShadow: 'none',
-                    '&:hover': {
-                      bgcolor: '#204876', // Material Theme: onPrimaryContainer
+                /* Login and Signup Buttons */
+                <>
+                  <Button
+                    component={Link}
+                    href="/auth/login"
+                    variant="contained"
+                    startIcon={<Login />}
+                    sx={{
+                      bgcolor: '#2E86AB', // Material Theme: primary
+                      color: '#FFFFFF', // Material Theme: onPrimary
+                      borderRadius: '20px',
+                      px: 3,
+                      py: 1,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      textTransform: 'none',
                       boxShadow: 'none',
-                    }
-                  }}
-                >
-                  로그인
-                </Button>
+                      '&:hover': {
+                        bgcolor: '#204876', // Material Theme: onPrimaryContainer
+                        boxShadow: 'none',
+                      }
+                    }}
+                  >
+                    로그인
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/auth/signup"
+                    variant="outlined"
+                    sx={{
+                      borderColor: '#2E86AB',
+                      color: '#2E86AB',
+                      borderRadius: '20px',
+                      px: 3,
+                      py: 1,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      textTransform: 'none',
+                      '&:hover': {
+                        borderColor: '#204876',
+                        bgcolor: alpha('#2E86AB', 0.04),
+                      }
+                    }}
+                  >
+                    회원가입
+                  </Button>
+                </>
               )}
             </Box>
           </Toolbar>
         </Container>
       </AppBar>
 
-      {/* Mobile Menu Slide */}
-      <Slide direction="down" in={mobileMenuOpen} mountOnEnter unmountOnExit>
-        <Paper
-          sx={{
+      {/* Mobile Menu - Menu 컴포넌트로 변경 */}
+      <MuiMenu
+        anchorEl={mobileMenuAnchor}
+        open={Boolean(mobileMenuAnchor)}
+        onClose={() => setMobileMenuAnchor(null)}
+        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+        PaperProps={{
+          sx: {
             position: 'fixed',
-            top: 64, // AppBar 높이
-            left: 0,
+            left: '0 !important',
             right: 0,
-            zIndex: 1200,
-            bgcolor: 'background.paper',
+            width: '100vw',
+            maxWidth: '100vw',
+            borderRadius: 0,
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             maxHeight: '70vh',
             overflow: 'auto',
-            display: { xs: 'block', md: 'none' },
-          }}
-        >
-          <List sx={{ py: 2 }}>
+            mt: 0.5
+          }
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+        }}
+      >
+          <List sx={{ py: 0 }}>
             {/* 연구회 */}
             <ListItem disablePadding>
               <ListItemButton
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  // Navigate to 연구회
-                }}
+                onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
               >
                 <ListItemIcon>
-                  <Groups sx={{ color: '#3B608F' }} />
+                  <Groups sx={{ color: '#2E86AB' }} />
                 </ListItemIcon>
                 <ListItemText 
                   primary="연구회" 
@@ -552,19 +585,48 @@ export default function Home() {
                     fontWeight: 500
                   }}
                 />
+                {mobileAboutOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
             </ListItem>
+            <Collapse in={mobileAboutOpen} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding sx={{ py: 0 }}>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="연구회 소개" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="조직도" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="연혁" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="정기 모임" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="연수 프로그램" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Collapse>
+            
+            <Divider />
 
             {/* 자료공유 */}
             <ListItem disablePadding>
               <ListItemButton
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  // Navigate to 자료공유
-                }}
+                onClick={() => setMobileShareOpen(!mobileShareOpen)}
               >
                 <ListItemIcon>
-                  <FolderShared sx={{ color: '#3B608F' }} />
+                  <FolderShared sx={{ color: '#2E86AB' }} />
                 </ListItemIcon>
                 <ListItemText 
                   primary="자료공유" 
@@ -573,19 +635,51 @@ export default function Home() {
                     fontWeight: 500
                   }}
                 />
+                {mobileShareOpen ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
             </ListItem>
+            <Collapse in={mobileShareOpen} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding sx={{ py: 0 }}>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="AI 도구 활용" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="수업 지도안" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="평가 자료" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="논문 및 보고서" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem sx={{ pl: 4, py: 0 }}>
+                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                    <ListItemText primary="세미나 자료" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Collapse>
+            
+            <Divider />
 
             {/* 비전 */}
             <ListItem disablePadding>
               <ListItemButton
                 onClick={() => {
-                  setMobileMenuOpen(false)
+                  setMobileMenuAnchor(null)
                   // Navigate to 비전
                 }}
               >
                 <ListItemIcon>
-                  <RemoveRedEye sx={{ color: '#3B608F' }} />
+                  <RemoveRedEye sx={{ color: '#2E86AB' }} />
                 </ListItemIcon>
                 <ListItemText 
                   primary="비전" 
@@ -596,17 +690,19 @@ export default function Home() {
                 />
               </ListItemButton>
             </ListItem>
+            
+            <Divider />
 
             {/* 뉴스 */}
             <ListItem disablePadding>
               <ListItemButton
                 onClick={() => {
-                  setMobileMenuOpen(false)
+                  setMobileMenuAnchor(null)
                   // Navigate to 뉴스
                 }}
               >
                 <ListItemIcon>
-                  <Newspaper sx={{ color: '#3B608F' }} />
+                  <Newspaper sx={{ color: '#2E86AB' }} />
                 </ListItemIcon>
                 <ListItemText 
                   primary="뉴스" 
@@ -627,10 +723,10 @@ export default function Home() {
                   <ListItemButton
                     component={Link}
                     href="/notifications"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => setMobileMenuAnchor(null)}
                   >
                     <ListItemIcon>
-                      <Notifications sx={{ color: '#3B608F' }} />
+                      <Notifications sx={{ color: '#2E86AB' }} />
                     </ListItemIcon>
                     <ListItemText 
                       primary="알림" 
@@ -647,10 +743,10 @@ export default function Home() {
                   <ListItemButton
                     component={Link}
                     href="/messages"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => setMobileMenuAnchor(null)}
                   >
                     <ListItemIcon>
-                      <Message sx={{ color: '#3B608F' }} />
+                      <Message sx={{ color: '#2E86AB' }} />
                     </ListItemIcon>
                     <ListItemText 
                       primary="메시지" 
@@ -664,8 +760,7 @@ export default function Home() {
               </>
             )}
           </List>
-        </Paper>
-      </Slide>
+      </MuiMenu>
 
       {/* Hero Section - Grid Layout */}
       <Container maxWidth="xl" sx={{ pt: 8, pb: 8 }}>
@@ -752,7 +847,7 @@ export default function Home() {
             },
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: '#F8F9FF', // Material Theme: background
+            bgcolor: '#FAFCFE', // Material Theme: background
             borderRadius: 3,
             overflow: 'hidden',
             minHeight: 400,
@@ -770,7 +865,7 @@ export default function Home() {
 
           {/* Card 1 */}
           <Card sx={{ 
-            bgcolor: '#D5DEF2', // 그리드 안 카드 색상
+            bgcolor: '#E3F2FD', // 그리드 안 카드 색상
             borderRadius: 3,
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
             p: 3,
@@ -790,12 +885,12 @@ export default function Home() {
               </Typography>
               <Typography variant="h6" sx={{ 
                 fontWeight: 600,
-                fontSize: '1.25rem',
+                fontSize: '1.5rem',
                 mb: 1
               }}>
                 학교 문화와 AI의 만남
               </Typography>
-              <Typography variant="body2" sx={{ 
+              <Typography variant="body1" sx={{ 
                 color: '#41484D', // Material Theme: onSurfaceVariant
                 mb: 3,
                 lineHeight: 1.6,
@@ -807,15 +902,15 @@ export default function Home() {
                 fullWidth
                 variant="outlined"
                 sx={{
-                  borderColor: '#805611', // Material Theme: secondary
-                  color: '#805611', // Material Theme: secondary
+                  borderColor: '#A23B72', // Material Theme: secondary
+                  color: '#A23B72', // Material Theme: secondary
                   borderRadius: '20px',
                   py: 1.5,
                   textTransform: 'none',
                   fontWeight: 500,
                   '&:hover': {
-                    borderColor: '#633F00', // Material Theme: onSecondaryContainer
-                    bgcolor: alpha('#805611', 0.08) // Material Theme: secondary with alpha
+                    borderColor: '#7A2959', // Material Theme: onSecondaryContainer
+                    bgcolor: alpha('#A23B72', 0.08) // Material Theme: secondary with alpha
                   }
                 }}
               >
@@ -826,7 +921,7 @@ export default function Home() {
 
           {/* Card 2 */}
           <Card sx={{ 
-            bgcolor: '#D5DEF2', // 그리드 안 카드 색상
+            bgcolor: '#E3F2FD', // 그리드 안 카드 색상
             borderRadius: 3,
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
             p: 3,
@@ -846,12 +941,12 @@ export default function Home() {
               </Typography>
               <Typography variant="h6" sx={{ 
                 fontWeight: 600,
-                fontSize: '1.25rem',
+                fontSize: '1.5rem',
                 mb: 1
               }}>
                 교육의 본질은 학생의 성장을 돕는 일
               </Typography>
-              <Typography variant="body2" sx={{ 
+              <Typography variant="body1" sx={{ 
                 color: '#41484D', // Material Theme: onSurfaceVariant
                 mb: 3,
                 lineHeight: 1.6,
@@ -863,19 +958,19 @@ export default function Home() {
                 fullWidth
                 variant="outlined"
                 sx={{
-                  borderColor: '#805611', // Material Theme: secondary
-                  color: '#805611', // Material Theme: secondary
+                  borderColor: '#A23B72', // Material Theme: secondary
+                  color: '#A23B72', // Material Theme: secondary
                   borderRadius: '20px',
                   py: 1.5,
                   textTransform: 'none',
                   fontWeight: 500,
                   '&:hover': {
-                    borderColor: '#633F00', // Material Theme: onSecondaryContainer
-                    bgcolor: alpha('#805611', 0.08) // Material Theme: secondary with alpha
+                    borderColor: '#7A2959', // Material Theme: onSecondaryContainer
+                    bgcolor: alpha('#A23B72', 0.08) // Material Theme: secondary with alpha
                   }
                 }}
               >
-                게시글 더 읽기
+                게시글 읽기
               </Button>
             </CardContent>
           </Card>
@@ -884,13 +979,13 @@ export default function Home() {
 
       {/* Announcement Section */}
       <Box sx={{ 
-        bgcolor: '#F8F9FF', // Material Theme: background
+        bgcolor: '#FAFCFE', // Material Theme: background
         pt: 4,
         pb: 4
       }}>
         <Container maxWidth="xl">
           <Card sx={{
-            bgcolor: '#D5DEF2', // 그리드 안 카드 색상
+            bgcolor: '#E3F2FD', // 그리드 안 카드 색상
             borderRadius: 3,
             p: 5,
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
@@ -899,12 +994,12 @@ export default function Home() {
               display: 'grid',
               gridTemplateColumns: {
                 xs: '1fr',
-                sm: '1fr', // 태블릿: 1열
-                md: 'repeat(3, 1fr)' // 데스크톱: 3열
+                sm: '2fr 1fr', // 태블릿: 2:1 비율
+                md: '3fr 2fr' // 데스크톱: 3:2 비율
               },
               gridTemplateRows: {
                 xs: 'auto',
-                sm: 'auto auto', // 태블릿: 2행
+                sm: 'auto', // 태블릿: 1행
                 md: 'auto' // 데스크톱: 1행
               },
               gap: 4,
@@ -913,19 +1008,23 @@ export default function Home() {
               <Box sx={{ 
                 gridColumn: {
                   xs: '1',
-                  sm: '1', // 태블릿: 1열 전체
-                  md: 'span 2' // 데스크톱: 2칸
+                  sm: '1', // 태블릿: 첫 번째 칸
+                  md: '1' // 데스크톱: 첫 번째 칸 (3fr)
                 },
                 gridRow: {
                   xs: '1',
                   sm: '1', // 태블릿: 1행
                   md: '1' // 데스크톱: 1행
-                }
+                },
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center' // 세로 중앙 정렬
               }}>
                 <Typography variant="h3" sx={{
-                  fontSize: '2rem',
-                  fontWeight: 600,
-                  mb: 2
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                  fontWeight: 700,
+                  mb: 2,
+                  lineHeight: 1.2
                 }}>
                   2025년 전남에듀테크교육연구회 연수
                 </Typography>
@@ -960,12 +1059,12 @@ export default function Home() {
               <Box sx={{ 
                 gridColumn: {
                   xs: '1',
-                  sm: '1', // 태블릿: 1열 전체
-                  md: 'span 1' // 데스크톱: 1칸
+                  sm: '2', // 태블릿: 두 번째 칸
+                  md: '2' // 데스크톱: 두 번째 칸 (2fr)
                 },
                 gridRow: {
                   xs: '2',
-                  sm: '2', // 태블릿: 2행
+                  sm: '1', // 태블릿: 1행
                   md: '1' // 데스크톱: 1행
                 },
                 height: { md: '100%' } // 데스크톱에서 높이 100%
@@ -975,7 +1074,7 @@ export default function Home() {
                   gap: 2, 
                   flexDirection: { 
                     xs: 'column', 
-                    sm: 'row', // 태블릿: 가로 배치
+                    sm: 'column', // 태블릿: 세로 배치
                     md: 'row' // 데스크톱: 가로 배치
                   },
                   height: '100%'
@@ -984,7 +1083,7 @@ export default function Home() {
                     flex: 1,
                     minWidth: { xs: 140, sm: 0, md: 'auto' },
                     minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
-                    bgcolor: '#FFDDB4', // Material Theme: secondaryContainer
+                    bgcolor: '#F5C2DD', // Material Theme: secondaryContainer
                     borderRadius: 2,
                     p: 3,
                     boxShadow: 'none',
@@ -998,7 +1097,7 @@ export default function Home() {
                     <Typography variant="overline" sx={{
                       fontSize: '0.7rem',
                       fontWeight: 600,
-                      color: '#633F00' // Material Theme: onSecondaryContainer
+                      color: '#7A2959' // Material Theme: onSecondaryContainer
                     }}>
                       Model details
                     </Typography>
@@ -1007,12 +1106,12 @@ export default function Home() {
                       mt: 1,
                       fontSize: { xs: '1rem', sm: '1.25rem' }
                     }}>
-                      2025년 상반기 연수
+                      2025년 상반기 연수 : MCP
                     </Typography>
                     <ArrowOutward sx={{ 
                       fontSize: 20,
                       mt: 2,
-                      color: '#633F00' // Material Theme: onSecondaryContainer
+                      color: '#7A2959' // Material Theme: onSecondaryContainer
                     }} />
                   </Card>
                   
@@ -1020,7 +1119,7 @@ export default function Home() {
                     flex: 1,
                     minWidth: { xs: 140, sm: 0, md: 'auto' },
                     minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
-                    bgcolor: '#FFDDB4', // Material Theme: secondaryContainer
+                    bgcolor: '#F5C2DD', // Material Theme: secondaryContainer
                     borderRadius: 2,
                     p: 3,
                     boxShadow: 'none',
@@ -1034,7 +1133,7 @@ export default function Home() {
                     <Typography variant="overline" sx={{
                       fontSize: '0.7rem',
                       fontWeight: 600,
-                      color: '#633F00' // Material Theme: onSecondaryContainer
+                      color: '#7A2959' // Material Theme: onSecondaryContainer
                     }}>
                       Model details
                     </Typography>
@@ -1043,12 +1142,12 @@ export default function Home() {
                       mt: 1,
                       fontSize: { xs: '1rem', sm: '1.25rem' }
                     }}>
-                      2025년 하반기 연수
+                      2025년 하반기 연수 : CLI 활용 자동채점
                     </Typography>
                     <ArrowOutward sx={{ 
                       fontSize: 20,
                       mt: 2,
-                      color: '#633F00' // Material Theme: onSecondaryContainer
+                      color: '#7A2959' // Material Theme: onSecondaryContainer
                     }} />
                   </Card>
                 </Box>
@@ -1077,7 +1176,7 @@ export default function Home() {
               href="/auth/signup"
               variant="contained"
               sx={{
-                bgcolor: '#3B608F', // Material Theme: primary
+                bgcolor: '#2E86AB', // Material Theme: primary
                 color: '#FFFFFF', // Material Theme: onPrimary
                 borderRadius: '20px',
                 px: 4,
@@ -1447,30 +1546,32 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* 모바일 플로팅 메뉴 버튼 */}
-      <Box
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          position: 'fixed',
-          bottom: 20,
-          left: 20,
-          zIndex: 1200,
-        }}
-      >
-        <Fab
-          color="primary"
-          aria-label="menu"
-          onClick={() => setMobileDrawerOpen(true)}
+      {/* 모바일 플로팅 메뉴 버튼 - 로그인한 경우에만 표시 */}
+      {user && (
+        <Box
           sx={{
-            bgcolor: '#3B608F',
-            '&:hover': {
-              bgcolor: '#204876'
-            }
+            display: { xs: 'block', md: 'none' },
+            position: 'fixed',
+            bottom: 20,
+            left: 20,
+            zIndex: 1200,
           }}
         >
-          <MenuIcon />
-        </Fab>
-      </Box>
+          <Fab
+            color="primary"
+            aria-label="menu"
+            onClick={() => setMobileDrawerOpen(true)}
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              '&:hover': {
+                bgcolor: theme.palette.primary.dark
+              }
+            }}
+          >
+            <MenuIcon />
+          </Fab>
+        </Box>
+      )}
 
       {/* FeedSidebar (모바일 Drawer) */}
       <FeedSidebar 

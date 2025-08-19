@@ -2,44 +2,44 @@
 
 import { createTheme } from '@mui/material/styles'
 
-// Material Theme Colors from material-theme.json
+// Material Theme Colors from material-theme.json (Updated 2025-08-19)
 export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#3B608F',
-      light: '#6EAEFF',
-      dark: '#204876',
+      main: '#2E86AB',
+      light: '#9BCFED',
+      dark: '#1A5A7A',
       contrastText: '#FFFFFF',
     },
     secondary: {
-      main: '#805611',
-      light: '#F5BC6F',
-      dark: '#633F00',
+      main: '#A23B72',
+      light: '#D8A5C2',
+      dark: '#7A2959',
       contrastText: '#FFFFFF',
     },
     tertiary: {
-      main: '#5A5891',
-      light: '#E3DFFF',
-      dark: '#434078',
+      main: '#E6800F',
+      light: '#FFBE7F',
+      dark: '#B36200',
       contrastText: '#FFFFFF',
     },
     error: {
-      main: '#904A45',
-      light: '#FFDAD6',
-      dark: '#73332F',
+      main: '#C73E1D',
+      light: '#FFDAD4',
+      dark: '#99291A',
       contrastText: '#FFFFFF',
     },
     warning: {
-      main: '#F5A623',
-      light: '#FFDDB4',
-      dark: '#633F00',
+      main: '#F18F01',
+      light: '#FFE4CC',
+      dark: '#B36200',
       contrastText: '#FFFFFF',
     },
     info: {
-      main: '#5A5891',
-      light: '#E3DFFF',
-      dark: '#434078',
+      main: '#2E86AB',
+      light: '#C8E6FF',
+      dark: '#1A5A7A',
       contrastText: '#FFFFFF',
     },
     success: {
@@ -49,16 +49,16 @@ export const theme = createTheme({
       contrastText: '#FFFFFF',
     },
     background: {
-      default: '#F8F9FF',
+      default: '#FAFCFE',
       paper: '#FFFFFF',
     },
     surface: {
-      default: '#F7F9FF',
-      variant: '#DCE3E9',
+      default: '#F9FBFE',
+      variant: '#E3EDF4',
     },
     text: {
-      primary: '#191C20',
-      secondary: '#41484D',
+      primary: '#191C1F',
+      secondary: '#424A52',
     },
   },
   typography: {

@@ -65,6 +65,8 @@ export default function FeedPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [hasMorePosts, setHasMorePosts] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -73,7 +75,7 @@ export default function FeedPage() {
   const theme = useTheme()
 
   // 게시글 목록 가져오기
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (offset = 0, append = false) => {
     const { data, error } = await supabase
       .from('posts')
       .select(`
@@ -97,6 +99,7 @@ export default function FeedPage() {
       `)
       .eq('is_published', true)
       .order('created_at', { ascending: false })
+      .range(offset, offset + 19)
       .limit(20)
 
     if (data) {
@@ -118,7 +121,17 @@ export default function FeedPage() {
           isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
         }
       })
-      setPosts(postsWithStats)
+      
+      if (append) {
+        setPosts(prev => [...prev, ...postsWithStats])
+      } else {
+        setPosts(postsWithStats)
+      }
+      
+      // 더 이상 게시글이 없으면 hasMorePosts를 false로
+      if (data.length < 20) {
+        setHasMorePosts(false)
+      }
     }
   }, [supabase, user?.id])
 
@@ -225,6 +238,17 @@ export default function FeedPage() {
     setImagePreview(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  const handleLoadMore = async () => {
+    if (!hasMorePosts || loadingMore) return
+    
+    setLoadingMore(true)
+    try {
+      await fetchPosts(posts.length, true)
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -335,24 +359,25 @@ export default function FeedPage() {
         display: 'flex',
         justifyContent: 'center',
         py: 3, 
-        px: 3
+        px: 3  // 모든 구간 패딩 통일
       }}>
         <Stack 
           direction="row"
-          spacing={{ xs: 0, md: 3 }}
+          spacing={{ xs: 0, md: 3 }}  // md(900px)부터만 spacing 적용
           alignItems="flex-start"
           sx={{
             width: '100%',
-            maxWidth: { 
-              xs: '100%',    // 모바일: 전체 너비
-              sm: 600,       // 600px부터: 피드 600px 고정
-              md: 900,       // 태블릿: 사이드바(260) + 간격(24) + 피드(600) = 884
-              lg: 1320       // 데스크탑: 사이드바(260) + 간격(24) + 피드(720) + 간격(24) + 채팅(320) = 1348 (실제 콘텐츠)
-            },
-            mx: 'auto'
+            maxWidth: 1400,  // 최대 너비 제한
+            mx: 'auto',
+            justifyContent: {
+              xs: 'center',    // 모바일: 가운데 정렬
+              sm: 'center',    // 600-899px: 가운데 정렬 (사이드바 없음)
+              md: 'center',    // 900px-1199px: 가운데 정렬
+              lg: 'center'     // 1200px 이상: 가운데 정렬
+            }
           }}
         >
-          {/* 왼쪽 사이드바 - 데스크탑/태블릿만 표시 */}
+          {/* 왼쪽 사이드바 - 900px 이상에서 표시 */}
           <Box
             sx={{
               display: { xs: 'none', md: 'block' },
@@ -387,10 +412,21 @@ export default function FeedPage() {
             maxWidth: { 
               xs: '100%',      // 모바일: 100% 너비
               sm: 600,         // 600px 이상: 고정 600px
-              lg: 720          // lg 이후: 최대 720px까지 확장 (600 * 1.2)
+              md: 'calc(100% - 260px - 24px)', // 900px-1199px: 사이드바 있을 때
+              lg: 600          // lg 이후: 600px 고정 (사이드바와 채팅 사이)
             },
-            flex: '0 0 auto',  // 고정 너비 유지
-            overflow: 'hidden'  // overflow 방지
+            flex: { 
+              xs: '1 1 auto',  // 모바일: 유연한 너비
+              sm: '0 1 600px', // 600-899px: 고정 600px, 축소 가능
+              md: '1 1 auto'   // 900px 이상: 유연한 너비
+            },
+            minWidth: 0,       // flexbox 오버플로우 방지
+            mx: { 
+              xs: 'auto',      // 모바일: 가운데 정렬
+              sm: 'auto',      // 600-899px: 가운데 정렬 (중요!)
+              md: 'auto',      // 900px-1199px: 가운데 정렬
+              lg: 0            // 1200px 이상: 사이드바/채팅과 함께 배치
+            }
           }}>
             {/* 글 작성 영역 */}
             <Card sx={{ mb: 3, overflow: 'hidden' }}>
@@ -651,14 +687,22 @@ export default function FeedPage() {
         </Stack>
 
             {/* 더 보기 버튼 */}
-            <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
-              <Button variant="outlined" size="large">
-                더 많은 게시글 보기
-              </Button>
-            </Box>
+            {hasMorePosts && (
+              <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
+                <Button 
+                  variant="outlined" 
+                  size="large"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  startIcon={loadingMore ? <CircularProgress size={20} /> : null}
+                >
+                  {loadingMore ? '불러오는 중...' : '더 많은 게시글 보기'}
+                </Button>
+              </Box>
+            )}
           </Box>
 
-          {/* 오른쪽 채팅 영역 - 데스크탑만 */}
+          {/* 오른쪽 채팅 영역 - 1200px 이상에서만 */}
           <Box
             sx={{
               width: 320,

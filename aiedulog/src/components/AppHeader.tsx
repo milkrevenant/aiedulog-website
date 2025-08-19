@@ -120,15 +120,15 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
           </Typography>
 
           {/* Material 3 검색창 */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: '2px 4px',
-              display: { xs: 'none', sm: 'flex' },  // 모바일에서 숨김
-              alignItems: 'center',
-              flex: 1,
-              maxWidth: 600,
-              mx: 'auto',
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: '2px 4px',
+                display: { xs: 'none', sm: 'flex' },  // 모바일에서 숨김
+                alignItems: 'center',
+                width: '100%',
+                maxWidth: 600,
               borderRadius: 10,
               bgcolor: alpha(theme.palette.action.selected, 0.04),
               border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
@@ -169,7 +169,8 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
               }}
               inputProps={{ 'aria-label': 'search' }}
             />
-          </Paper>
+            </Paper>
+          </Box>
 
           {/* 우측 아이콘들 */}
           <Stack direction="row" spacing={1} sx={{ ml: 'auto', alignItems: 'center' }}>
@@ -196,8 +197,22 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
             </IconButton>
           </Stack>
         </Toolbar>
+      </Paper>
         
-        {/* 모바일 검색창 - 검색 아이콘 위치에서 왼쪽으로 확장 */}
+      {/* 모바일 검색창 - 검색 아이콘 위치에서 왼쪽으로 확장 */}
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          position: 'sticky', 
+          top: 64, 
+          zIndex: 1099,
+          borderRadius: 0,
+          backdropFilter: 'blur(20px)',
+          bgcolor: alpha(theme.palette.background.paper, 0.95),
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          display: { xs: 'block', sm: 'none' }
+        }}
+      >
         <Box
           sx={{
             display: { xs: 'flex', sm: 'none' },

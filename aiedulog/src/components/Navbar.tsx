@@ -33,6 +33,7 @@ import {
   Settings,
   Search,
   Chat,
+  Menu as MenuIcon,
 } from '@mui/icons-material'
 import NotificationIcon from '@/components/NotificationIcon'
 
@@ -41,6 +42,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const supabase = createClient()
@@ -87,6 +89,14 @@ export default function Navbar() {
     setAnchorEl(null)
   }
 
+  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMobileMenuAnchor(event.currentTarget)
+  }
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuAnchor(null)
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     handleClose()
@@ -103,19 +113,32 @@ export default function Navbar() {
   ]
 
   return (
-    <AppBar
-      position="sticky"
-      elevation={0}
-      sx={{
-        bgcolor: alpha(theme.palette.background.paper, 0.9),
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-      }}
-    >
-      <Container maxWidth="lg">
+    <>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          bgcolor: alpha(theme.palette.background.paper, 0.9),
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ minHeight: 64, height: 64 }}>
-          {/* Logo - 햄버거 메뉴 다음에 위치 */}
+          {/* 햄버거 메뉴 버튼 - 모바일/태블릿에서만 표시 */}
+          <IconButton
+            sx={{ 
+              display: { xs: 'flex', md: 'none' },
+              mr: 2 
+            }}
+            onClick={handleMobileMenuOpen}
+            color="inherit"
+          >
+            <MenuIcon />
+          </IconButton>
+
+          {/* Logo */}
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
             <Typography
               variant="h6"
@@ -131,8 +154,16 @@ export default function Navbar() {
             </Typography>
           </Box>
 
-          {/* Desktop Menu - 가운데 정렬 */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', gap: 1 }}>
+          {/* Flex spacer for desktop */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'block' } }} />
+
+          {/* Desktop Menu Items and Icons - Right aligned with consistent spacing */}
+          <Box sx={{ 
+            display: { xs: 'none', md: 'flex' }, 
+            alignItems: 'center', 
+            gap: 2  // 일정한 간격 설정
+          }}>
+            {/* Menu Items */}
             {menuItems.map((item) => (
               <Button
                 key={item.href}
@@ -143,6 +174,7 @@ export default function Navbar() {
                     ? theme.palette.primary.main 
                     : theme.palette.text.primary,
                   fontWeight: pathname.startsWith(item.href.split('?')[0]) ? 600 : 400,
+                  minWidth: 'auto',
                   '&:hover': {
                     bgcolor: alpha(theme.palette.primary.main, 0.08),
                   },
@@ -151,48 +183,88 @@ export default function Navbar() {
                 {item.label}
               </Button>
             ))}
-          </Box>
 
-          {/* 모바일에서 로고 가운데 정렬을 위한 spacer */}
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, flexGrow: 1 }} />
-
-          {/* Search Bar and User Menu */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* Search Bar */}
-            <Paper
-              sx={{
-                display: { xs: 'none', sm: 'flex' },
-                alignItems: 'center',
-                width: 240,
-                height: 40,
-                px: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.04),
-                boxShadow: 'none',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 10,
-              }}
-            >
-              <Search sx={{ color: 'text.secondary', mr: 1 }} />
-              <InputBase
-                placeholder="검색..."
-                sx={{ flex: 1 }}
-              />
-            </Paper>
-
-            {user ? (
+            {/* Notification and Chat Icons - 로그인 상태일 때만 표시 */}
+            {user && (
               <>
                 <NotificationIcon />
-                
-                {/* Chat Icon */}
                 <IconButton
                   onClick={() => router.push('/chat')}
                   sx={{ color: theme.palette.text.primary }}
                 >
                   <Chat />
                 </IconButton>
+              </>
+            )}
 
-                {/* User Avatar */}
+            {/* User Auth Section */}
+            {user ? (
+              <IconButton
+                size="large"
+                onClick={handleMenu}
+                sx={{ p: 0.5 }}
+              >
+                <Avatar 
+                  src={profile?.avatar_url || undefined}
+                  sx={{ 
+                    width: 36, 
+                    height: 36, 
+                    bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main
+                  }}
+                >
+                  {!profile?.avatar_url && user.email?.[0].toUpperCase()}
+                </Avatar>
+              </IconButton>
+            ) : (
+              <>
+                <Button
+                  component={Link}
+                  href="/auth/login"
+                  variant="text"
+                  sx={{ 
+                    color: theme.palette.text.primary,
+                    fontWeight: 400,
+                    minWidth: 'auto',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    },
+                  }}
+                >
+                  로그인
+                </Button>
+                <Button
+                  component={Link}
+                  href="/auth/signup"
+                  variant="contained"
+                  sx={{ 
+                    borderRadius: 8,
+                    minWidth: 'auto',
+                    bgcolor: theme.palette.primary.main,
+                    '&:hover': {
+                      bgcolor: theme.palette.primary.dark,
+                    },
+                  }}
+                >
+                  회원가입
+                </Button>
+              </>
+            )}
+          </Box>
+
+          {/* Mobile spacer */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, flexGrow: 1 }} />
+
+          {/* Mobile User Menu */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
+            {user ? (
+              <>
+                <NotificationIcon />
+                <IconButton
+                  onClick={() => router.push('/chat')}
+                  sx={{ color: theme.palette.text.primary }}
+                >
+                  <Chat />
+                </IconButton>
                 <IconButton
                   size="large"
                   onClick={handleMenu}
@@ -201,8 +273,8 @@ export default function Navbar() {
                   <Avatar 
                     src={profile?.avatar_url || undefined}
                     sx={{ 
-                      width: 36, 
-                      height: 36, 
+                      width: 32, 
+                      height: 32, 
                       bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main
                     }}
                   >
@@ -211,22 +283,35 @@ export default function Navbar() {
                 </IconButton>
               </>
             ) : (
-              <Button
-                component={Link}
-                href="/auth/login"
-                variant="contained"
-                startIcon={<Login />}
-                sx={{ 
-                  borderRadius: 8,
-                  px: { xs: 2, sm: 3 },
-                  fontSize: { xs: '0.875rem', sm: '1rem' },
-                  minWidth: { xs: 'auto', sm: 100 }
-                }}
-              >
-                로그인
-              </Button>
+              <>
+                <Button
+                  component={Link}
+                  href="/auth/login"
+                  variant="text"
+                  size="small"
+                  sx={{ 
+                    minWidth: 'auto',
+                    color: theme.palette.text.primary,
+                  }}
+                >
+                  로그인
+                </Button>
+                <Button
+                  component={Link}
+                  href="/auth/signup"
+                  variant="contained"
+                  size="small"
+                  sx={{ 
+                    borderRadius: 8,
+                    minWidth: 'auto'
+                  }}
+                >
+                  회원가입
+                </Button>
+              </>
             )}
           </Box>
+
 
           {/* User Dropdown Menu */}
           <Menu
@@ -280,5 +365,47 @@ export default function Navbar() {
         </Toolbar>
       </Container>
     </AppBar>
+
+    {/* Mobile Menu - Menu 컴포넌트로 바로 아래 드롭다운 */}
+    <Menu
+      anchorEl={mobileMenuAnchor}
+      open={Boolean(mobileMenuAnchor)}
+      onClose={handleMobileMenuClose}
+      transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+      anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+      sx={{ 
+        display: { xs: 'block', md: 'none' },
+        mt: 0.5,
+        '& .MuiPaper-root': {
+          width: '100vw',
+          maxWidth: '100%',
+          borderRadius: 0,
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        }
+      }}
+    >
+      {menuItems.map((item) => (
+        <MenuItem
+          key={item.href}
+          onClick={() => {
+            router.push(item.href)
+            handleMobileMenuClose()
+          }}
+          sx={{
+            py: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            '&:last-child': {
+              borderBottom: 'none'
+            }
+          }}
+        >
+          <Typography variant="body1">
+            {item.label}
+          </Typography>
+        </MenuItem>
+      ))}
+    </Menu>
+  </>
   )
 }

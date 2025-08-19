@@ -167,7 +167,6 @@ export default function NotificationIcon() {
       <IconButton
         onClick={handleClick}
         sx={{ 
-          ml: 1,
           color: unreadCount > 0 ? 'primary.main' : 'text.secondary'
         }}
       >

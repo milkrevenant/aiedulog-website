@@ -55,6 +55,7 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
   const router = useRouter()
   const theme = useTheme()
   const [educationOpen, setEducationOpen] = useState(false)
+  const [trendOpen, setTrendOpen] = useState(false)
   const [jobOpen, setJobOpen] = useState(false)
 
   const menuItems = [
@@ -84,10 +85,16 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
       ]
     },
     { 
-      label: '에듀테크 트렌드', 
+      label: '교육 트렌드', 
       icon: <TrendingUp />, 
-      href: '/board/tech',
-      color: 'warning' as const
+      href: '/board/trend/all',
+      color: 'warning' as const,
+      subItems: [
+        { label: '전체', href: '/board/trend/all' },
+        { label: 'AI', href: '/board/trend/ai' },
+        { label: '에듀테크', href: '/board/trend/edutech' },
+        { label: 'SW', href: '/board/trend/sw' }
+      ]
     },
     { 
       label: '구인구직', 
@@ -110,32 +117,9 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
 
   const utilityItems = [
     { 
-      label: '채팅', 
-      icon: <Chat />, 
-      href: '/chat' 
-    },
-    { 
-      label: '알림', 
-      icon: <Notifications />, 
-      href: '/notifications' 
-    },
-    { 
       label: '북마크', 
       icon: <BookmarkBorder />, 
       href: '/bookmarks' 
-    },
-  ]
-
-  const profileItems = [
-    { 
-      label: '마이페이지', 
-      icon: <Dashboard />, 
-      href: '/dashboard' 
-    },
-    { 
-      label: '프로필 설정', 
-      icon: <Settings />, 
-      href: '/settings/profile' 
     },
   ]
 
@@ -211,6 +195,8 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                     if (item.subItems) {
                       if (item.label === '교육 자료실') {
                         setEducationOpen(!educationOpen)
+                      } else if (item.label === '교육 트렌드') {
+                        setTrendOpen(!trendOpen)
                       } else if (item.label === '구인구직') {
                         setJobOpen(!jobOpen)
                       }
@@ -239,6 +225,8 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                   {item.subItems && (
                     item.label === '교육 자료실' 
                       ? (educationOpen ? <ExpandLess /> : <ExpandMore />)
+                      : item.label === '교육 트렌드'
+                      ? (trendOpen ? <ExpandLess /> : <ExpandMore />)
                       : item.label === '구인구직'
                       ? (jobOpen ? <ExpandLess /> : <ExpandMore />)
                       : null
@@ -247,7 +235,7 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
               </ListItem>
               {item.subItems && (
                 <Collapse 
-                  in={item.label === '교육 자료실' ? educationOpen : item.label === '구인구직' ? jobOpen : false} 
+                  in={item.label === '교육 자료실' ? educationOpen : item.label === '교육 트렌드' ? trendOpen : item.label === '구인구직' ? jobOpen : false} 
                   timeout="auto" 
                   unmountOnExit>
                   <List component="div" disablePadding>
@@ -309,32 +297,6 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
           ))}
         </List>
 
-        <Divider sx={{ mx: 2 }} />
-
-        {/* 프로필 메뉴 */}
-        <List sx={{ px: 1, py: 1 }}>
-          {profileItems.map((item) => (
-            <ListItem key={item.href} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => {
-                  router.push(item.href)
-                  onMobileToggle?.()
-                }}
-                sx={{ borderRadius: 2 }}
-              >
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.9rem'
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
 
         {/* 관리자 메뉴 */}
         {adminItems.length > 0 && (
