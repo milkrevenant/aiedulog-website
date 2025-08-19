@@ -21,7 +21,8 @@ import {
   Collapse,
   ClickAwayListener,
   Divider,
-  Grid
+  Grid,
+  Fab
 } from '@mui/material'
 import Link from 'next/link'
 import { 
@@ -38,15 +39,56 @@ import {
   CalendarMonth
 } from '@mui/icons-material'
 import Image from 'next/image'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import NotificationIcon from '@/components/NotificationIcon'
+import FeedSidebar from '@/components/FeedSidebar'
+import { createClient } from '@/lib/supabase/client'
+import { User } from '@supabase/supabase-js'
 
 export default function Home() {
   const theme = useTheme()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<any>(null)
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        setProfile(profileData)
+      }
+    }
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null)
+      
+      if (session?.user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        setProfile(profileData)
+      } else {
+        setProfile(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, menu: string) => {
     // 타이머가 있으면 취소
@@ -284,7 +326,7 @@ export default function Home() {
                             onMouseLeave={handleMenuClose}
                           >
                             <Grid container>
-                              <Grid size={8}>
+                              <Grid size={{ xs: 12, md: 8 }}>
                                 <Box sx={{ p: 3 }}>
                                   {item.dropdown.sections.map((section, idx) => (
                                     <Box key={idx} sx={{ mb: idx < item.dropdown.sections.length - 1 ? 2 : 0 }}>
@@ -316,7 +358,7 @@ export default function Home() {
                                 </Box>
                               </Grid>
                               {item.dropdown.featured && (
-                                <Grid size={4}>
+                                <Grid size={{ xs: 12, md: 4 }}>
                                   <Box 
                                     sx={{ 
                                       bgcolor: '#FFFFFF', // 흰색 배경
@@ -396,42 +438,46 @@ export default function Home() {
                 <MenuIcon />
               </IconButton>
 
-              {/* Notification Icon */}
-              <NotificationIcon />
-              
-              {/* Chat Icon */}
-              <IconButton
-                sx={{ 
-                  color: '#191C20' // Material Theme: onBackground
-                }}
-              >
-                <Chat />
-              </IconButton>
-
-              {/* Login Button */}
-              <Button
-                component={Link}
-                href="/auth/login"
-                variant="contained"
-                startIcon={<Login />}
-                sx={{
-                  bgcolor: '#3B608F', // Material Theme: primary
-                  color: '#FFFFFF', // Material Theme: onPrimary
-                  borderRadius: '20px',
-                  px: 3,
-                  py: 1,
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  textTransform: 'none',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: '#204876', // Material Theme: onPrimaryContainer
+              {user ? (
+                <>
+                  {/* Notification Icon */}
+                  <NotificationIcon />
+                  
+                  {/* Chat Icon */}
+                  <IconButton
+                    sx={{ 
+                      color: '#191C20' // Material Theme: onBackground
+                    }}
+                  >
+                    <Chat />
+                  </IconButton>
+                </>
+              ) : (
+                /* Login Button */
+                <Button
+                  component={Link}
+                  href="/auth/login"
+                  variant="contained"
+                  startIcon={<Login />}
+                  sx={{
+                    bgcolor: '#3B608F', // Material Theme: primary
+                    color: '#FFFFFF', // Material Theme: onPrimary
+                    borderRadius: '20px',
+                    px: 3,
+                    py: 1,
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    textTransform: 'none',
                     boxShadow: 'none',
-                  }
-                }}
-              >
-                로그인
-              </Button>
+                    '&:hover': {
+                      bgcolor: '#204876', // Material Theme: onPrimaryContainer
+                      boxShadow: 'none',
+                    }
+                  }}
+                >
+                  로그인
+                </Button>
+              )}
             </Box>
           </Toolbar>
         </Container>
@@ -556,14 +602,14 @@ export default function Home() {
                 color: '#41484D', // Material Theme: onSurfaceVariant
                 mb: 1
               }}>
-                CLAUDE.AI
+                금성고등학교 곽수창
               </Typography>
               <Typography variant="h6" sx={{ 
                 fontWeight: 600,
                 fontSize: '1.25rem',
                 mb: 1
               }}>
-                Meet Claude Opus 4.1
+                학교 문화와 AI의 만남
               </Typography>
               <Typography variant="body2" sx={{ 
                 color: '#41484D', // Material Theme: onSurfaceVariant
@@ -571,24 +617,25 @@ export default function Home() {
                 lineHeight: 1.6,
                 flex: 1
               }}>
-                Claude Opus 4.1, our most intelligent AI model, is now available.
+                적극적인 AI 도구 활용을 통한 학교 업무 과정의 혁신을 이끌어내다.
               </Typography>
               <Button
                 fullWidth
                 variant="contained"
                 sx={{
-                  bgcolor: '#3B608F', // Material Theme: primary
-                  color: '#FFFFFF', // Material Theme: onPrimary
+                  borderColor: '#805611', // Material Theme: secondary
+                  color: '#805611', // Material Theme: secondary
                   borderRadius: '20px',
                   py: 1.5,
                   textTransform: 'none',
                   fontWeight: 500,
                   '&:hover': {
-                    bgcolor: '#204876' // Material Theme: onPrimaryContainer
+                    borderColor: '#633F00', // Material Theme: onSecondaryContainer
+                    bgcolor: alpha('#805611', 0.08) // Material Theme: secondary with alpha
                   }
                 }}
               >
-                Talk to Claude
+                게시글 읽기
               </Button>
             </CardContent>
           </Card>
@@ -611,14 +658,14 @@ export default function Home() {
                 color: '#41484D', // Material Theme: onSurfaceVariant
                 mb: 1
               }}>
-                API
+                완도고등학교 공지훈
               </Typography>
               <Typography variant="h6" sx={{ 
                 fontWeight: 600,
                 fontSize: '1.25rem',
                 mb: 1
               }}>
-                Build with Claude
+                교육의 본질은 학생의 성장을 돕는 일
               </Typography>
               <Typography variant="body2" sx={{ 
                 color: '#41484D', // Material Theme: onSurfaceVariant
@@ -626,7 +673,7 @@ export default function Home() {
                 lineHeight: 1.6,
                 flex: 1
               }}>
-                Create AI-powered applications and custom experiences using Claude.
+                모든 교육적 행위와 기술의 활용은 학생의 성장을 지원해야 합니다.
               </Typography>
               <Button
                 fullWidth
@@ -644,7 +691,7 @@ export default function Home() {
                   }
                 }}
               >
-                Learn more
+                게시글 더 읽기
               </Button>
             </CardContent>
           </Card>
@@ -676,15 +723,14 @@ export default function Home() {
                   fontWeight: 600,
                   mb: 2
                 }}>
-                  Claude Opus 4.1 and Sonnet 4
+                  2025년 전남에듀테크교육연구회 연수
                 </Typography>
                 <Typography variant="body1" sx={{
                   color: '#41484D', // Material Theme: onSurfaceVariant
                   lineHeight: 1.6,
                   mb: 3
                 }}>
-                  Our most powerful models yet, pushing the frontier for coding and AI agents—and
-                  enabling Claude to handle hours of work across Claude and Claude Code.
+                  전남에서 가장 혁신적이고 선도적으로 교육을 만들어나가는 연수 과정에서 당신의 역량과 비전을 같이 실천해보세요. 연수 참여와 연수에 대한 의견 개진은 언제나 열려 있습니다.
                 </Typography>
                 <Button
                   variant="outlined"
@@ -703,7 +749,7 @@ export default function Home() {
                     }
                   }}
                 >
-                  Read announcement
+                  공지글 확인하기
                 </Button>
               </Box>
               
@@ -735,7 +781,7 @@ export default function Home() {
                       mt: 1,
                       fontSize: { xs: '1rem', sm: '1.25rem' }
                     }}>
-                      Opus 4.1
+                      2025년 상반기 연수
                     </Typography>
                     <ArrowOutward sx={{ 
                       fontSize: 20,
@@ -770,7 +816,7 @@ export default function Home() {
                       mt: 1,
                       fontSize: { xs: '1rem', sm: '1.25rem' }
                     }}>
-                      Sonnet 4
+                      2025년 하반기 연수
                     </Typography>
                     <ArrowOutward sx={{ 
                       fontSize: 20,
@@ -1188,6 +1234,39 @@ export default function Home() {
           </Box>
         </Container>
       </Box>
+
+      {/* 모바일 플로팅 메뉴 버튼 */}
+      <Box
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          position: 'fixed',
+          bottom: 20,
+          left: 20,
+          zIndex: 1200,
+        }}
+      >
+        <Fab
+          color="primary"
+          aria-label="menu"
+          onClick={() => setMobileDrawerOpen(true)}
+          sx={{
+            bgcolor: '#3B608F',
+            '&:hover': {
+              bgcolor: '#204876'
+            }
+          }}
+        >
+          <MenuIcon />
+        </Fab>
+      </Box>
+
+      {/* FeedSidebar (모바일 Drawer) */}
+      <FeedSidebar 
+        user={user} 
+        profile={profile}
+        mobileOpen={mobileDrawerOpen}
+        onMobileToggle={() => setMobileDrawerOpen(false)}
+      />
     </Box>
   )
 }

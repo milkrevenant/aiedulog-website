@@ -216,7 +216,12 @@ export default function Navbar() {
                 href="/auth/login"
                 variant="contained"
                 startIcon={<Login />}
-                sx={{ borderRadius: 8 }}
+                sx={{ 
+                  borderRadius: 8,
+                  px: { xs: 2, sm: 3 },
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  minWidth: { xs: 'auto', sm: 100 }
+                }}
               >
                 로그인
               </Button>

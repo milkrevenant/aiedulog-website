@@ -25,7 +25,8 @@
       "Bash(vercel:*)",
       "Bash(chmod:*)",
       "Bash(./fix-grid.sh:*)",
-      "Bash(/Users/stillclie_mac/Documents/ug/aideulog/fix-grid.sh:*)"
+      "Bash(/Users/stillclie_mac/Documents/ug/aideulog/fix-grid.sh:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": [],
