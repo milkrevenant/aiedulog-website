@@ -22,7 +22,13 @@ import {
   ClickAwayListener,
   Divider,
   Grid,
-  Fab
+  Fab,
+  Slide,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon
 } from '@mui/material'
 import Link from 'next/link'
 import { 
@@ -36,7 +42,15 @@ import {
   Login,
   Chat,
   Search,
-  CalendarMonth
+  CalendarMonth,
+  Close,
+  Logout,
+  Groups,
+  FolderShared,
+  RemoveRedEye,
+  Newspaper,
+  Notifications,
+  Message
 } from '@mui/icons-material'
 import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
@@ -44,9 +58,11 @@ import NotificationIcon from '@/components/NotificationIcon'
 import FeedSidebar from '@/components/FeedSidebar'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const theme = useTheme()
+  const router = useRouter()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -427,7 +443,7 @@ export default function Home() {
               alignItems: 'center', 
               gap: 2 
             }}>
-              {/* Mobile menu - 햄버거 메뉴를 노티 아이콘 왼쪽에 배치 */}
+              {/* Mobile menu - 햄버거 메뉴 */}
               <IconButton
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 sx={{ 
@@ -440,17 +456,35 @@ export default function Home() {
 
               {user ? (
                 <>
-                  {/* Notification Icon */}
-                  <NotificationIcon />
+                  {/* Desktop: Notification and Chat Icons */}
+                  <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+                    <NotificationIcon />
+                    <IconButton
+                      sx={{ 
+                        color: '#191C20' // Material Theme: onBackground
+                      }}
+                    >
+                      <Chat />
+                    </IconButton>
+                  </Box>
                   
-                  {/* Chat Icon */}
-                  <IconButton
-                    sx={{ 
-                      color: '#191C20' // Material Theme: onBackground
+                  {/* Logout Button */}
+                  <Button
+                    onClick={async () => {
+                      await supabase.auth.signOut()
+                      router.push('/')
                     }}
+                    variant="text"
+                    sx={{
+                      color: '#191C20',
+                      textTransform: 'none',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                    }}
+                    startIcon={<Logout />}
                   >
-                    <Chat />
-                  </IconButton>
+                    로그아웃
+                  </Button>
                 </>
               ) : (
                 /* Login Button */
@@ -482,6 +516,156 @@ export default function Home() {
           </Toolbar>
         </Container>
       </AppBar>
+
+      {/* Mobile Menu Slide */}
+      <Slide direction="down" in={mobileMenuOpen} mountOnEnter unmountOnExit>
+        <Paper
+          sx={{
+            position: 'fixed',
+            top: 64, // AppBar 높이
+            left: 0,
+            right: 0,
+            zIndex: 1200,
+            bgcolor: 'background.paper',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            maxHeight: '70vh',
+            overflow: 'auto',
+            display: { xs: 'block', md: 'none' },
+          }}
+        >
+          <List sx={{ py: 2 }}>
+            {/* 연구회 */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  // Navigate to 연구회
+                }}
+              >
+                <ListItemIcon>
+                  <Groups sx={{ color: '#3B608F' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="연구회" 
+                  primaryTypographyProps={{
+                    fontSize: '1rem',
+                    fontWeight: 500
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+
+            {/* 자료공유 */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  // Navigate to 자료공유
+                }}
+              >
+                <ListItemIcon>
+                  <FolderShared sx={{ color: '#3B608F' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="자료공유" 
+                  primaryTypographyProps={{
+                    fontSize: '1rem',
+                    fontWeight: 500
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+
+            {/* 비전 */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  // Navigate to 비전
+                }}
+              >
+                <ListItemIcon>
+                  <RemoveRedEye sx={{ color: '#3B608F' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="비전" 
+                  primaryTypographyProps={{
+                    fontSize: '1rem',
+                    fontWeight: 500
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+
+            {/* 뉴스 */}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  // Navigate to 뉴스
+                }}
+              >
+                <ListItemIcon>
+                  <Newspaper sx={{ color: '#3B608F' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="뉴스" 
+                  primaryTypographyProps={{
+                    fontSize: '1rem',
+                    fontWeight: 500
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+
+            {user && (
+              <>
+                <Divider sx={{ my: 1 }} />
+                
+                {/* 알림 */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={Link}
+                    href="/notifications"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <ListItemIcon>
+                      <Notifications sx={{ color: '#3B608F' }} />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="알림" 
+                      primaryTypographyProps={{
+                        fontSize: '1rem',
+                        fontWeight: 500
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+
+                {/* 메시지 */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={Link}
+                    href="/messages"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <ListItemIcon>
+                      <Message sx={{ color: '#3B608F' }} />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="메시지" 
+                      primaryTypographyProps={{
+                        fontSize: '1rem',
+                        fontWeight: 500
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </>
+            )}
+          </List>
+        </Paper>
+      </Slide>
 
       {/* Hero Section - Grid Layout */}
       <Container maxWidth="xl" sx={{ pt: 8, pb: 8 }}>
@@ -712,12 +896,32 @@ export default function Home() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
           }}>
             <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', md: 'row' },
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: '1fr', // 태블릿: 1열
+                md: 'repeat(3, 1fr)' // 데스크톱: 3열
+              },
+              gridTemplateRows: {
+                xs: 'auto',
+                sm: 'auto auto', // 태블릿: 2행
+                md: 'auto' // 데스크톱: 1행
+              },
               gap: 4,
-              alignItems: 'center'
+              alignItems: 'stretch' // center -> stretch로 변경
             }}>
-              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 66%' } }}>
+              <Box sx={{ 
+                gridColumn: {
+                  xs: '1',
+                  sm: '1', // 태블릿: 1열 전체
+                  md: 'span 2' // 데스크톱: 2칸
+                },
+                gridRow: {
+                  xs: '1',
+                  sm: '1', // 태블릿: 1행
+                  md: '1' // 데스크톱: 1행
+                }
+              }}>
                 <Typography variant="h3" sx={{
                   fontSize: '2rem',
                   fontWeight: 600,
@@ -753,11 +957,33 @@ export default function Home() {
                 </Button>
               </Box>
               
-              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 33%' } }}>
-                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row', md: 'row' } }}>
+              <Box sx={{ 
+                gridColumn: {
+                  xs: '1',
+                  sm: '1', // 태블릿: 1열 전체
+                  md: 'span 1' // 데스크톱: 1칸
+                },
+                gridRow: {
+                  xs: '2',
+                  sm: '2', // 태블릿: 2행
+                  md: '1' // 데스크톱: 1행
+                },
+                height: { md: '100%' } // 데스크톱에서 높이 100%
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 2, 
+                  flexDirection: { 
+                    xs: 'column', 
+                    sm: 'row', // 태블릿: 가로 배치
+                    md: 'row' // 데스크톱: 가로 배치
+                  },
+                  height: '100%'
+                }}>
                   <Card sx={{
-                    minWidth: { xs: 140, sm: 160 },
                     flex: 1,
+                    minWidth: { xs: 140, sm: 0, md: 'auto' },
+                    minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
                     bgcolor: '#FFDDB4', // Material Theme: secondaryContainer
                     borderRadius: 2,
                     p: 3,
@@ -791,8 +1017,9 @@ export default function Home() {
                   </Card>
                   
                   <Card sx={{
-                    minWidth: { xs: 140, sm: 160 },
                     flex: 1,
+                    minWidth: { xs: 140, sm: 0, md: 'auto' },
+                    minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
                     bgcolor: '#FFDDB4', // Material Theme: secondaryContainer
                     borderRadius: 2,
                     p: 3,
@@ -896,7 +1123,7 @@ export default function Home() {
         <Container maxWidth="xl">
           <Grid container spacing={6} justifyContent="center">
             {/* Footer columns */}
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -966,7 +1193,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -975,7 +1202,7 @@ export default function Home() {
                   fontSize: '0.875rem'
                 }}
               >
-                자료공유
+                자료 & 사례
               </Typography>
               <Stack spacing={1.5}>
                 <MuiLink 
@@ -1022,21 +1249,6 @@ export default function Home() {
                 >
                   논문 및 보고서
                 </MuiLink>
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
-                  fontWeight: 600,
-                  mb: 2,
-                  fontSize: '0.875rem'
-                }}
-              >
-                활용 사례
-              </Typography>
-              <Stack spacing={1.5}>
                 <MuiLink 
                   href="#" 
                   underline="none"
@@ -1073,7 +1285,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
@@ -1121,7 +1333,7 @@ export default function Home() {
               </Stack>
             </Grid>
 
-            <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
+            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
