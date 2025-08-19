@@ -621,7 +621,7 @@ export default function Home() {
               </Typography>
               <Button
                 fullWidth
-                variant="contained"
+                variant="outlined"
                 sx={{
                   borderColor: '#805611', // Material Theme: secondary
                   color: '#805611', // Material Theme: secondary
