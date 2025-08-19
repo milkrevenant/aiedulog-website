@@ -9,6 +9,23 @@
   - Material 3 웹 컴포넌트 타입 이슈 해결
   - useSearchParams Suspense 래핑
 
+- **프로젝트 정리 및 최적화**
+  - 문서 파일들을 `docs` 폴더로 정리
+  - 불필요한 테스트 파일 제거 (test-connection.js, test-supabase/)
+  - fix-grid.sh 스크립트 제거 (Grid 마이그레이션 완료)
+  - Git 히스토리에서 민감한 정보 제거 (BFG Repo-Cleaner 사용)
+
+- **UI/UX 개선**
+  - Navbar: 비로그인 사용자에게 알림/채팅 아이콘 숨김
+  - Main 페이지: FeedSidebar 통합 (모바일 햄버거 메뉴)
+  - Main 페이지: 콘텐츠 업데이트 (교육자 소개 카드)
+  - 모바일 로그인 버튼 반응형 크기 조정
+
+- **AWS 마이그레이션 계획 수립**
+  - AWS Amplify 옵션 분석
+  - 스케일링 전략 문서화
+  - 단계별 마이그레이션 경로 정의
+
 ## 2025-08-18
 ### ✅ 완료
 - **랜딩 페이지 콘텐츠 관리 시스템**
