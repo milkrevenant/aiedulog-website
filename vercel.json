@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd aiedulog && npm run build",
+  "outputDirectory": "aiedulog/.next",
+  "installCommand": "cd aiedulog && npm install",
+  "framework": "nextjs"
+}

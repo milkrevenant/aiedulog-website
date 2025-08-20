@@ -2,23 +2,12 @@
 
 ## 📋 현재 Phase 3: 핵심 기능 구현
 - [x] 랜딩 페이지 콘텐츠 관리 시스템
-  - [x] 연수 프로그램 관리
-  - [x] 정기 모임 관리
-  - [x] 뉴스 관리
-  - [x] 공지사항 관리
 - [x] 회원가입 시스템
-  - [x] 3단계 가입 프로세스
-  - [x] 실시간 이메일 중복 체크
-  - [x] 프로필 확장 필드 (school, interests)
-  - [ ] 이메일 인증 테스트
-- [ ] 강의 홍보 시스템
-  - [ ] 강의 등록/수정 페이지
-  - [ ] 참가 신청 기능
-  - [ ] 일정 관리 달력
+- [x] SQL 마이그레이션 시스템 구축 ✅ NEW
+- [x] MFA UI 구현 (TOTP, WebAuthn) ✅ NEW
+- [ ] 강의 신청 기능 (공개 페이지)
+- [ ] 일정 관리 달력
 - [ ] 구인구직 게시판
-  - [ ] 전문 구인구직 페이지
-  - [ ] 연락처 공유 시스템
-  - [ ] 매칭 알고리즘
 
 ## 📋 Phase 4: 고급 기능 (예정)
 - [ ] AI 챗봇 통합
@@ -43,12 +32,22 @@
 - GitHub: https://github.com/milkrevenant/aiedulog-website
 - Supabase: https://supabase.com/dashboard/project/nnfpdhtpbjijdctslexc
 
-## 🔧 긴급 작업
-- [ ] Supabase profiles 테이블 SQL 실행 (`/src/lib/add-profile-fields.sql`)
-- [ ] 회원가입 후 이메일 인증 테스트
-- [ ] Vercel 재배포 확인
+## 🔧 다음 세션 태스크
+
+### 코드 품질 (High Priority)
+- [ ] ESLint 에러 140개 해결 (any 타입)
+- [ ] ESLint 경고 226개 중 50% 감소
+- [ ] React Hooks 의존성 배열 수정
+
+### 기능 구현
+- [ ] 강의 목록 페이지 (/lectures)
+- [ ] 강의 상세 페이지 (/lectures/[id])
+- [ ] 참가 신청 버튼 및 로직
+
+### 배포
+- [ ] 가비아 도메인 연결
 
 ---
 *프로젝트 시작: 2025-08-15*
 *현재 진행률: Phase 3 (75%)*
-*마지막 업데이트: 2025-08-19 15:30*
+*마지막 업데이트: 2025-08-20 15:00*

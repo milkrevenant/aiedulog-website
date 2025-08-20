@@ -176,29 +176,48 @@ npm run build
   - identities 배열로 중복 계정 검증
   - 프로필 확장 필드 추가 (school, interests)
 
-## ⚠️ 필수 작업
-**Supabase에서 SQL 실행 필요** (2개 파일):
+## ✅ 완료된 작업 (2025-08-20)
 
-### 1. 프로필 필드 추가
-```sql
--- /src/lib/add-profile-fields.sql 내용
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS school text;
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS interests text[] DEFAULT '{}';
-```
+### SQL 마이그레이션 시스템 구축
+- ✅ 5개 마이그레이션 파일 생성 및 실행
+- ✅ schema_migrations 테이블로 추적
+- ✅ 중복 실행 방지 시스템 구현
 
-### 2. 강의 시스템 테이블 생성
-```sql
--- /src/lib/lectures-system.sql 전체 내용 실행
--- lectures, lecture_registrations 테이블 생성
--- RLS 정책, 트리거, 인덱스 포함
-```
+### 코드 품질 개선
+- ✅ TypeScript 타입 체크 통과
+- ✅ ESLint 366개 문제 확인 (140 에러, 226 경고)
+- ✅ Prettier 포맷팅 완료
+- ✅ 빌드 테스트 성공
 
-## 🔍 작업 확인 사항
-- 서버 실행: http://localhost:3001
-- Admin 강의 관리: http://localhost:3001/admin/lectures
-- 기존 lectures 테이블 확인 (이미 있을 수 있음)
+### 파일 구조 정리
+- ✅ sql-archive 폴더 삭제
+- ✅ checklist 폴더 삭제 (구 버전)
+- ✅ 문서 통합 (DEPLOYMENT_HISTORY.md)
+- ✅ .env.local.example 생성
+
+## 🎯 다음 세션 작업 목록
+
+### 1. ESLint 에러 해결 (우선순위: 높음)
+- [ ] any 타입 제거 (140개)
+- [ ] 미사용 변수 정리
+- [ ] React Hooks 의존성 수정
+- [ ] 목표: 에러 0개, 경고 50개 이하
+
+### 2. 강의 신청 기능 구현
+- [ ] 공개 강의 목록 페이지 (/lectures)
+- [ ] 강의 상세 페이지 (/lectures/[id])
+- [ ] 참가 신청 버튼 및 로직
+- [ ] 신청 완료 이메일 발송
+
+### 3. 일정 관리 달력
+- [ ] FullCalendar 또는 MUI Calendar 통합
+- [ ] 강의 일정 표시
+- [ ] 모바일 반응형 달력 뷰
+
+### 4. 가비아 도메인 연결
+- [ ] Vercel Dashboard에서 도메인 추가
+- [ ] DNS A 레코드: 76.76.21.21
+- [ ] CNAME: cname.vercel-dns.com
 
 ---
-*업데이트: 2025-08-19 18:20*
+*업데이트: 2025-08-20 15:00*
