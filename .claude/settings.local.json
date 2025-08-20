@@ -30,7 +30,8 @@
       "Bash(npx eslint:*)",
       "Bash(git checkout:*)",
       "Bash(npx prettier:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "mcp__supabase__execute_sql"
     ],
     "deny": [],
     "ask": [],
