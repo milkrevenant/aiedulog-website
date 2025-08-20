@@ -26,7 +26,9 @@
       "Bash(chmod:*)",
       "Bash(./fix-grid.sh:*)",
       "Bash(/Users/stillclie_mac/Documents/ug/aideulog/fix-grid.sh:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import MFAVerification from '@/components/MFAVerification'
 import {
   Box,
   Container,
@@ -40,6 +41,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [showMFA, setShowMFA] = useState(false)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+  const [tempUserId, setTempUserId] = useState<string | null>(null)
   
   const router = useRouter()
   const supabase = createClient()
@@ -51,13 +55,41 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      // 로그인
+      // 로그인 시도
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (error) throw error
       
+      if (error) {
+        // MFA가 필요한 경우 체크
+        if (error.message.includes('mfa') || error.message.includes('factor')) {
+          // MFA 필요 - 사용자 ID 저장하고 MFA 화면으로 전환
+          setTempUserId(authData?.user?.id || null)
+          
+          // MFA factors 확인
+          const { data: factors } = await supabase.auth.mfa.listFactors()
+          if (factors?.totp && factors.totp.length > 0) {
+            setMfaFactorId(factors.totp[0].id)
+            setShowMFA(true)
+            setLoading(false)
+            return
+          }
+        }
+        throw error
+      }
+      
+      // MFA가 설정된 사용자인지 확인
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      if (factors?.totp && factors.totp.length > 0 && factors.totp[0].status === 'verified') {
+        // MFA 필요
+        setMfaFactorId(factors.totp[0].id)
+        setShowMFA(true)
+        setLoading(false)
+        return
+      }
+      
+      // MFA가 필요없거나 완료된 경우
       // 사용자 권한 확인
       const { data: profileData } = await supabase
         .from('profiles')
@@ -69,9 +101,21 @@ export default function LoginPage() {
       router.push('/feed')
     } catch (error: any) {
       setError(error.message)
-    } finally {
       setLoading(false)
     }
+  }
+
+  const handleMFASuccess = () => {
+    // MFA 인증 성공 후 피드로 이동
+    router.push('/feed')
+  }
+
+  const handleMFACancel = () => {
+    // MFA 취소 시 로그인 화면으로 돌아가기
+    setShowMFA(false)
+    setMfaFactorId(null)
+    setPassword('')
+    setError('2단계 인증이 취소되었습니다.')
   }
 
   const handleGoogleLogin = async () => {
@@ -80,6 +124,28 @@ export default function LoginPage() {
 
   const handleAppleLogin = async () => {
     setError('Apple 로그인은 준비 중입니다.')
+  }
+
+  // MFA 화면 표시
+  if (showMFA && mfaFactorId) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+        }}
+      >
+        <Container maxWidth="sm">
+          <MFAVerification
+            factorId={mfaFactorId}
+            onSuccess={handleMFASuccess}
+            onCancel={handleMFACancel}
+          />
+        </Container>
+      </Box>
+    )
   }
 
   return (

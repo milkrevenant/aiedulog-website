@@ -31,7 +31,9 @@ import {
   ArrowBack,
   Edit,
   CheckCircle,
-  CloudUpload
+  CloudUpload,
+  Security,
+  ChevronRight
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 
@@ -362,6 +364,45 @@ export default function ProfileSettingsPage() {
                 )}
               </Box>
             </Stack>
+          </CardContent>
+        </Card>
+
+        {/* 보안 설정 섹션 */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              보안 설정
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            
+            <Box
+              sx={{
+                p: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  borderColor: 'primary.main'
+                }
+              }}
+              onClick={() => router.push('/settings/security')}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Security sx={{ color: 'primary.main', fontSize: 32 }} />
+                <Box flex={1}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    2단계 인증
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    계정 보안을 강화하고 무단 접근을 방지합니다
+                  </Typography>
+                </Box>
+                <ChevronRight color="action" />
+              </Stack>
+            </Box>
           </CardContent>
         </Card>
 
