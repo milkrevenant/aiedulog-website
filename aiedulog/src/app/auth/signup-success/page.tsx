@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Button, 
-  Paper,
-  Stack
-} from '@mui/material'
-import { 
-  CheckCircleOutline,
-  EmailOutlined,
-  LoginOutlined
-} from '@mui/icons-material'
+import { Box, Container, Typography, Button, Paper, Stack } from '@mui/material'
+import { CheckCircleOutline, EmailOutlined, LoginOutlined } from '@mui/icons-material'
 import confetti from 'canvas-confetti'
 
 export default function SignupSuccessPage() {
@@ -26,7 +15,7 @@ export default function SignupSuccessPage() {
     confetti({
       particleCount: 100,
       spread: 70,
-      origin: { y: 0.6 }
+      origin: { y: 0.6 },
     })
 
     // 카운트다운
@@ -57,7 +46,7 @@ export default function SignupSuccessPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          py: 4
+          py: 4,
         }}
       >
         <Paper
@@ -66,21 +55,21 @@ export default function SignupSuccessPage() {
             p: 4,
             textAlign: 'center',
             borderRadius: 2,
-            background: 'linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%)'
+            background: 'linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%)',
           }}
         >
-          <CheckCircleOutline 
-            sx={{ 
-              fontSize: 80, 
+          <CheckCircleOutline
+            sx={{
+              fontSize: 80,
               color: 'success.main',
-              mb: 2
-            }} 
+              mb: 2,
+            }}
           />
-          
+
           <Typography variant="h4" gutterBottom fontWeight="bold">
             회원가입 완료!
           </Typography>
-          
+
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
             전남에듀테크교육연구회에 오신 것을 환영합니다!
           </Typography>
@@ -106,22 +95,13 @@ export default function SignupSuccessPage() {
             >
               로그인 페이지로
             </Button>
-            
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={() => router.push('/')}
-              fullWidth
-            >
+
+            <Button variant="outlined" size="large" onClick={() => router.push('/')} fullWidth>
               홈으로 돌아가기
             </Button>
           </Stack>
 
-          <Typography 
-            variant="caption" 
-            color="text.secondary" 
-            sx={{ mt: 3, display: 'block' }}
-          >
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 3, display: 'block' }}>
             {countdown > 0 && `${countdown}초 후 로그인 페이지로 이동합니다...`}
           </Typography>
         </Paper>

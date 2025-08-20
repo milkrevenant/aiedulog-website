@@ -5,11 +5,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import AuthGuard from '@/components/AuthGuard'
-import { 
-  Box, 
-  Container, 
-  Paper, 
-  Typography, 
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
   Button,
   Card,
   CardContent,
@@ -23,7 +23,7 @@ import {
   LinearProgress,
   useTheme,
   alpha,
-  Grid
+  Grid,
 } from '@mui/material'
 import {
   Dashboard,
@@ -46,7 +46,7 @@ import {
   Assignment,
   WorkspacePremium,
   Security,
-  PhotoCamera
+  PhotoCamera,
 } from '@mui/icons-material'
 import { usePermission } from '@/hooks/usePermission'
 import AppHeader from '@/components/AppHeader'
@@ -57,26 +57,26 @@ const roleConfig = {
     label: '관리자',
     color: 'error' as const,
     icon: <AdminPanelSettings />,
-    description: '시스템 전체 관리 권한'
+    description: '시스템 전체 관리 권한',
   },
   moderator: {
     label: '운영진',
     color: 'warning' as const,
     icon: <SupervisorAccount />,
-    description: '콘텐츠 및 사용자 관리'
+    description: '콘텐츠 및 사용자 관리',
   },
   verified: {
     label: '인증 교사',
     color: 'success' as const,
     icon: <VerifiedUser />,
-    description: '칼럼 작성 및 강의 등록'
+    description: '칼럼 작성 및 강의 등록',
   },
   member: {
     label: '일반 회원',
     color: 'info' as const,
     icon: <Person />,
-    description: '기본 커뮤니티 활동'
-  }
+    description: '기본 커뮤니티 활동',
+  },
 }
 
 function DashboardContent() {
@@ -86,7 +86,7 @@ function DashboardContent() {
   const router = useRouter()
   const supabase = createClient()
   const theme = useTheme()
-  
+
   // 권한 확인 hooks
   const { can } = usePermission()
   const canManageUsers = can('manage_users' as any)
@@ -96,22 +96,24 @@ function DashboardContent() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
-      
+
       // 프로필 및 권한 정보 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -150,79 +152,79 @@ function DashboardContent() {
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 4 }}>
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
-      
+
       {/* 마이페이지 서브 헤더 */}
       <Paper elevation={0} sx={{ borderRadius: 0, mb: 3 }}>
         <Container maxWidth="lg">
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 3 }}>
-              <Stack direction="row" spacing={3} alignItems="center">
-                <Box sx={{ position: 'relative' }}>
-                  <Avatar 
-                    src={profile?.avatar_url || undefined}
-                    sx={{ 
-                      width: 80, 
-                      height: 80,
-                      bgcolor: alpha(theme.palette[roleInfo.color].main, 0.1),
-                      color: roleInfo.color + '.main',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        transform: 'scale(1.05)'
-                      }
-                    }}
-                    onClick={() => router.push('/settings/profile')}
-                  >
-                    {!profile?.avatar_url && roleInfo.icon}
-                  </Avatar>
-                  <IconButton
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      bgcolor: 'background.paper',
-                      boxShadow: 2,
-                      '&:hover': { bgcolor: 'background.paper' }
-                    }}
-                    onClick={() => router.push('/settings/profile')}
-                  >
-                    <PhotoCamera fontSize="small" />
-                  </IconButton>
-                </Box>
-                <Box>
-                  <Typography variant="h4" fontWeight="bold">
-                    마이페이지
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip 
-                      label={roleInfo.label}
-                      color={roleInfo.color}
-                      size="small"
-                      icon={roleInfo.icon}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      {user.email}
-                    </Typography>
-                  </Stack>
-                </Box>
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="contained"
-                  startIcon={<Settings />}
+            <Stack direction="row" spacing={3} alignItems="center">
+              <Box sx={{ position: 'relative' }}>
+                <Avatar
+                  src={profile?.avatar_url || undefined}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    bgcolor: alpha(theme.palette[roleInfo.color].main, 0.1),
+                    color: roleInfo.color + '.main',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                    },
+                  }}
                   onClick={() => router.push('/settings/profile')}
                 >
-                  프로필 설정
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="inherit"
-                  startIcon={<Logout />}
-                  onClick={handleSignOut}
+                  {!profile?.avatar_url && roleInfo.icon}
+                </Avatar>
+                <IconButton
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    bgcolor: 'background.paper',
+                    boxShadow: 2,
+                    '&:hover': { bgcolor: 'background.paper' },
+                  }}
+                  onClick={() => router.push('/settings/profile')}
                 >
-                  로그아웃
-                </Button>
-              </Stack>
+                  <PhotoCamera fontSize="small" />
+                </IconButton>
+              </Box>
+              <Box>
+                <Typography variant="h4" fontWeight="bold">
+                  마이페이지
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label={roleInfo.label}
+                    color={roleInfo.color}
+                    size="small"
+                    icon={roleInfo.icon}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {user.email}
+                  </Typography>
+                </Stack>
+              </Box>
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                startIcon={<Settings />}
+                onClick={() => router.push('/settings/profile')}
+              >
+                프로필 설정
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<Logout />}
+                onClick={handleSignOut}
+              >
+                로그아웃
+              </Button>
+            </Stack>
           </Stack>
         </Container>
         <LinearProgress variant="determinate" value={100} sx={{ height: 2 }} />
@@ -230,17 +232,11 @@ function DashboardContent() {
 
       <Container maxWidth="lg">
         {/* 역할별 환영 메시지 */}
-        <Alert 
-          severity={roleInfo.color}
-          icon={roleInfo.icon}
-          sx={{ mb: 3 }}
-        >
+        <Alert severity={roleInfo.color} icon={roleInfo.icon} sx={{ mb: 3 }}>
           <Typography variant="subtitle1" fontWeight="medium">
             {roleInfo.label} 권한으로 로그인하셨습니다
           </Typography>
-          <Typography variant="body2">
-            {roleInfo.description}
-          </Typography>
+          <Typography variant="body2">{roleInfo.description}</Typography>
         </Alert>
 
         {/* 통계 카드 */}
@@ -262,7 +258,7 @@ function DashboardContent() {
               </CardContent>
             </Card>
           </Grid>
-          
+
           {(role === 'admin' || role === 'moderator') && (
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card>
@@ -282,7 +278,7 @@ function DashboardContent() {
               </Card>
             </Grid>
           )}
-          
+
           {role === 'verified' && (
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <Card>
@@ -344,7 +340,7 @@ function DashboardContent() {
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
           빠른 메뉴
         </Typography>
-        
+
         <Grid container spacing={3}>
           {/* 모든 사용자 공통 메뉴 */}
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -359,7 +355,9 @@ function DashboardContent() {
                 </Stack>
               </CardContent>
               <CardActions>
-                <Button size="small" color="primary">작성하기</Button>
+                <Button size="small" color="primary">
+                  작성하기
+                </Button>
               </CardActions>
             </Card>
           </Grid>
@@ -379,11 +377,13 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="error">관리하기</Button>
+                    <Button size="small" color="error">
+                      관리하기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
@@ -396,7 +396,9 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="error">설정하기</Button>
+                    <Button size="small" color="error">
+                      설정하기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -413,7 +415,9 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="error">보기</Button>
+                    <Button size="small" color="error">
+                      보기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -435,7 +439,9 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="warning">관리하기</Button>
+                    <Button size="small" color="warning">
+                      관리하기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -452,7 +458,9 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="warning">관리하기</Button>
+                    <Button size="small" color="warning">
+                      관리하기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -474,7 +482,9 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="success">작성하기</Button>
+                    <Button size="small" color="success">
+                      작성하기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -491,7 +501,9 @@ function DashboardContent() {
                     </Stack>
                   </CardContent>
                   <CardActions>
-                    <Button size="small" color="success">등록하기</Button>
+                    <Button size="small" color="success">
+                      등록하기
+                    </Button>
                   </CardActions>
                 </Card>
               </Grid>
@@ -512,7 +524,9 @@ function DashboardContent() {
                   </Stack>
                 </CardContent>
                 <CardActions>
-                  <Button size="small" color="info">신청하기</Button>
+                  <Button size="small" color="info">
+                    신청하기
+                  </Button>
                 </CardActions>
               </Card>
             </Grid>
@@ -573,5 +587,5 @@ export default function DashboardPage() {
     <AuthGuard requireAuth>
       <DashboardContent />
     </AuthGuard>
-  );
+  )
 }

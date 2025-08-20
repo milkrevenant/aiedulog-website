@@ -164,9 +164,7 @@ export default function RegularMeetingsPage() {
         if (error) throw error
       } else {
         // 추가
-        const { error } = await supabase
-          .from('regular_meetings')
-          .insert([editingMeeting])
+        const { error } = await supabase.from('regular_meetings').insert([editingMeeting])
 
         if (error) throw error
       }
@@ -182,38 +180,53 @@ export default function RegularMeetingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'primary'
-      case 'ongoing': return 'success'
-      case 'completed': return 'default'
-      case 'cancelled': return 'error'
-      default: return 'default'
+      case 'scheduled':
+        return 'primary'
+      case 'ongoing':
+        return 'success'
+      case 'completed':
+        return 'default'
+      case 'cancelled':
+        return 'error'
+      default:
+        return 'default'
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'scheduled': return '예정'
-      case 'ongoing': return '진행중'
-      case 'completed': return '완료'
-      case 'cancelled': return '취소'
-      default: return status
+      case 'scheduled':
+        return '예정'
+      case 'ongoing':
+        return '진행중'
+      case 'completed':
+        return '완료'
+      case 'cancelled':
+        return '취소'
+      default:
+        return status
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'scheduled': return <EventAvailableIcon />
-      case 'ongoing': return <VideoCallIcon />
-      case 'completed': return <EventIcon />
-      case 'cancelled': return <EventBusyIcon />
-      default: return <EventIcon />
+      case 'scheduled':
+        return <EventAvailableIcon />
+      case 'ongoing':
+        return <VideoCallIcon />
+      case 'completed':
+        return <EventIcon />
+      case 'cancelled':
+        return <EventBusyIcon />
+      default:
+        return <EventIcon />
     }
   }
 
   // 상태별로 모임 그룹화
-  const upcomingMeetings = meetings.filter(m => m.status === 'scheduled')
-  const ongoingMeetings = meetings.filter(m => m.status === 'ongoing')
-  const pastMeetings = meetings.filter(m => m.status === 'completed' || m.status === 'cancelled')
+  const upcomingMeetings = meetings.filter((m) => m.status === 'scheduled')
+  const ongoingMeetings = meetings.filter((m) => m.status === 'ongoing')
+  const pastMeetings = meetings.filter((m) => m.status === 'completed' || m.status === 'cancelled')
 
   return (
     <AuthGuard requireAdmin>
@@ -228,11 +241,7 @@ export default function RegularMeetingsPage() {
               전남에듀테크교육연구회 정기 모임 일정을 관리합니다
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAdd}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
             모임 추가
           </Button>
         </Box>
@@ -248,7 +257,9 @@ export default function RegularMeetingsPage() {
                   </Avatar>
                   <Box>
                     <Typography variant="h5">{upcomingMeetings.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">예정된 모임</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      예정된 모임
+                    </Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -263,7 +274,9 @@ export default function RegularMeetingsPage() {
                   </Avatar>
                   <Box>
                     <Typography variant="h5">{ongoingMeetings.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">진행중 모임</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      진행중 모임
+                    </Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -278,7 +291,9 @@ export default function RegularMeetingsPage() {
                   </Avatar>
                   <Box>
                     <Typography variant="h5">{pastMeetings.length}</Typography>
-                    <Typography variant="body2" color="text.secondary">완료된 모임</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      완료된 모임
+                    </Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -292,8 +307,12 @@ export default function RegularMeetingsPage() {
                     <GroupIcon />
                   </Avatar>
                   <Box>
-                    <Typography variant="h5">{meetings.reduce((acc, m) => acc + m.current_participants, 0)}</Typography>
-                    <Typography variant="body2" color="text.secondary">총 참가자</Typography>
+                    <Typography variant="h5">
+                      {meetings.reduce((acc, m) => acc + m.current_participants, 0)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      총 참가자
+                    </Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -306,7 +325,11 @@ export default function RegularMeetingsPage() {
           {/* 예정된 모임 */}
           <Grid size={{ xs: 12, lg: 4 }}>
             <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <EventAvailableIcon color="primary" />
                 예정된 모임
               </Typography>
@@ -340,8 +363,8 @@ export default function RegularMeetingsPage() {
                       <IconButton size="small" onClick={() => handleEdit(meeting)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         onClick={() => {
                           setSelectedMeeting(meeting)
                           setDeleteDialogOpen(true)
@@ -354,7 +377,7 @@ export default function RegularMeetingsPage() {
                 ))}
                 {upcomingMeetings.length === 0 && (
                   <ListItem>
-                    <ListItemText 
+                    <ListItemText
                       primary="예정된 모임이 없습니다"
                       secondary="새로운 모임을 추가해주세요"
                     />
@@ -367,7 +390,11 @@ export default function RegularMeetingsPage() {
           {/* 진행중 모임 */}
           <Grid size={{ xs: 12, lg: 4 }}>
             <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <VideoCallIcon color="success" />
                 진행중 모임
               </Typography>
@@ -404,7 +431,7 @@ export default function RegularMeetingsPage() {
                 ))}
                 {ongoingMeetings.length === 0 && (
                   <ListItem>
-                    <ListItemText 
+                    <ListItemText
                       primary="진행중인 모임이 없습니다"
                       secondary="현재 진행중인 모임이 없습니다"
                     />
@@ -417,7 +444,11 @@ export default function RegularMeetingsPage() {
           {/* 지난 모임 */}
           <Grid size={{ xs: 12, lg: 4 }}>
             <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <EventIcon color="action" />
                 지난 모임
               </Typography>
@@ -438,7 +469,7 @@ export default function RegularMeetingsPage() {
                           <Typography variant="caption" color="text.secondary">
                             {new Date(meeting.meeting_date).toLocaleDateString('ko-KR')}
                           </Typography>
-                          <Chip 
+                          <Chip
                             label={getStatusLabel(meeting.status)}
                             color={getStatusColor(meeting.status)}
                             size="small"
@@ -448,8 +479,8 @@ export default function RegularMeetingsPage() {
                       }
                     />
                     <ListItemSecondaryAction>
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         onClick={() => {
                           setSelectedMeeting(meeting)
                           setDeleteDialogOpen(true)
@@ -462,7 +493,7 @@ export default function RegularMeetingsPage() {
                 ))}
                 {pastMeetings.length === 0 && (
                   <ListItem>
-                    <ListItemText 
+                    <ListItemText
                       primary="지난 모임이 없습니다"
                       secondary="아직 완료된 모임이 없습니다"
                     />
@@ -475,9 +506,7 @@ export default function RegularMeetingsPage() {
 
         {/* 모임 추가/수정 다이얼로그 */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            {selectedMeeting ? '정기 모임 수정' : '정기 모임 추가'}
-          </DialogTitle>
+          <DialogTitle>{selectedMeeting ? '정기 모임 수정' : '정기 모임 추가'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
@@ -494,7 +523,9 @@ export default function RegularMeetingsPage() {
                 multiline
                 rows={3}
                 value={editingMeeting.description || ''}
-                onChange={(e) => setEditingMeeting({ ...editingMeeting, description: e.target.value })}
+                onChange={(e) =>
+                  setEditingMeeting({ ...editingMeeting, description: e.target.value })
+                }
               />
 
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
@@ -516,7 +547,9 @@ export default function RegularMeetingsPage() {
                     label="시작 시간"
                     fullWidth
                     value={editingMeeting.start_time || ''}
-                    onChange={(e) => setEditingMeeting({ ...editingMeeting, start_time: e.target.value })}
+                    onChange={(e) =>
+                      setEditingMeeting({ ...editingMeeting, start_time: e.target.value })
+                    }
                     placeholder="14:00"
                   />
                 </Grid>
@@ -525,7 +558,9 @@ export default function RegularMeetingsPage() {
                     label="종료 시간"
                     fullWidth
                     value={editingMeeting.end_time || ''}
-                    onChange={(e) => setEditingMeeting({ ...editingMeeting, end_time: e.target.value })}
+                    onChange={(e) =>
+                      setEditingMeeting({ ...editingMeeting, end_time: e.target.value })
+                    }
                     placeholder="16:00"
                   />
                 </Grid>
@@ -542,7 +577,9 @@ export default function RegularMeetingsPage() {
                 label="온라인 링크"
                 fullWidth
                 value={editingMeeting.online_link || ''}
-                onChange={(e) => setEditingMeeting({ ...editingMeeting, online_link: e.target.value })}
+                onChange={(e) =>
+                  setEditingMeeting({ ...editingMeeting, online_link: e.target.value })
+                }
                 placeholder="https://zoom.us/..."
               />
 
@@ -551,16 +588,28 @@ export default function RegularMeetingsPage() {
                 type="number"
                 fullWidth
                 value={editingMeeting.max_participants || ''}
-                onChange={(e) => setEditingMeeting({ ...editingMeeting, max_participants: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setEditingMeeting({
+                    ...editingMeeting,
+                    max_participants: parseInt(e.target.value),
+                  })
+                }
               />
 
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
                 <DatePicker
                   label="등록 마감일"
-                  value={editingMeeting.registration_deadline ? new Date(editingMeeting.registration_deadline) : null}
+                  value={
+                    editingMeeting.registration_deadline
+                      ? new Date(editingMeeting.registration_deadline)
+                      : null
+                  }
                   onChange={(date) => {
                     if (date) {
-                      setEditingMeeting({ ...editingMeeting, registration_deadline: date.toISOString() })
+                      setEditingMeeting({
+                        ...editingMeeting,
+                        registration_deadline: date.toISOString(),
+                      })
                     }
                   }}
                   slotProps={{ textField: { fullWidth: true } }}
@@ -571,7 +620,9 @@ export default function RegularMeetingsPage() {
                 <InputLabel>상태</InputLabel>
                 <Select
                   value={editingMeeting.status || 'scheduled'}
-                  onChange={(e) => setEditingMeeting({ ...editingMeeting, status: e.target.value as any })}
+                  onChange={(e) =>
+                    setEditingMeeting({ ...editingMeeting, status: e.target.value as any })
+                  }
                   label="상태"
                 >
                   <MenuItem value="scheduled">예정</MenuItem>
@@ -594,9 +645,7 @@ export default function RegularMeetingsPage() {
         <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
           <DialogTitle>모임 삭제</DialogTitle>
           <DialogContent>
-            <Typography>
-              "{selectedMeeting?.title}" 모임을 삭제하시겠습니까?
-            </Typography>
+            <Typography>"{selectedMeeting?.title}" 모임을 삭제하시겠습니까?</Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>

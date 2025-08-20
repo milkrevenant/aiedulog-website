@@ -19,7 +19,7 @@ import {
   Drawer,
   useTheme,
   alpha,
-  Collapse
+  Collapse,
 } from '@mui/material'
 import {
   Home,
@@ -40,7 +40,7 @@ import {
   Person,
   ExpandLess,
   ExpandMore,
-  Event
+  Event,
 } from '@mui/icons-material'
 
 interface FeedSidebarProps {
@@ -51,7 +51,13 @@ interface FeedSidebarProps {
   isStatic?: boolean
 }
 
-export default function FeedSidebar({ user, profile, mobileOpen = false, onMobileToggle, isStatic = false }: FeedSidebarProps) {
+export default function FeedSidebar({
+  user,
+  profile,
+  mobileOpen = false,
+  onMobileToggle,
+  isStatic = false,
+}: FeedSidebarProps) {
   const router = useRouter()
   const theme = useTheme()
   const [educationOpen, setEducationOpen] = useState(false)
@@ -59,21 +65,21 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
   const [jobOpen, setJobOpen] = useState(false)
 
   const menuItems = [
-    { 
-      label: '홈', 
-      icon: <Home />, 
+    {
+      label: '홈',
+      icon: <Home />,
       href: '/feed',
-      color: 'primary' as const
+      color: 'primary' as const,
     },
-    { 
-      label: '자유게시판', 
-      icon: <Forum />, 
+    {
+      label: '자유게시판',
+      icon: <Forum />,
       href: '/board/general',
-      color: 'info' as const
+      color: 'info' as const,
     },
-    { 
-      label: '교육 자료실', 
-      icon: <School />, 
+    {
+      label: '교육 자료실',
+      icon: <School />,
       href: '/board/education/all',
       color: 'success' as const,
       subItems: [
@@ -81,63 +87,66 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
         { label: '초등학교', href: '/board/education/ele' },
         { label: '중학교', href: '/board/education/mid' },
         { label: '고등학교', href: '/board/education/high' },
-        { label: '공통', href: '/board/education/common' }
-      ]
+        { label: '공통', href: '/board/education/common' },
+      ],
     },
-    { 
-      label: '교육 트렌드', 
-      icon: <TrendingUp />, 
+    {
+      label: '교육 트렌드',
+      icon: <TrendingUp />,
       href: '/board/trend/all',
       color: 'warning' as const,
       subItems: [
         { label: '전체', href: '/board/trend/all' },
         { label: 'AI', href: '/board/trend/ai' },
         { label: '에듀테크', href: '/board/trend/edutech' },
-        { label: 'SW', href: '/board/trend/sw' }
-      ]
+        { label: 'SW', href: '/board/trend/sw' },
+      ],
     },
-    { 
-      label: '구인구직', 
-      icon: <Work />, 
+    {
+      label: '구인구직',
+      icon: <Work />,
       href: '/board/job/all',
       color: 'error' as const,
       subItems: [
         { label: '전체', href: '/board/job/all' },
         { label: '구인', href: '/board/job/hiring' },
-        { label: '구직', href: '/board/job/seeking' }
-      ]
+        { label: '구직', href: '/board/job/seeking' },
+      ],
     },
-    { 
-      label: '강의 홍보', 
-      icon: <Event />, 
+    {
+      label: '강의 홍보',
+      icon: <Event />,
       href: '/board/lectures',
-      color: 'secondary' as const
+      color: 'secondary' as const,
     },
   ]
 
   const utilityItems = [
-    { 
-      label: '북마크', 
-      icon: <BookmarkBorder />, 
-      href: '/bookmarks' 
+    {
+      label: '북마크',
+      icon: <BookmarkBorder />,
+      href: '/bookmarks',
     },
   ]
 
   // 관리자 메뉴
-  const adminItems = (profile?.role === 'admin' || profile?.role === 'moderator') ? [
-    { 
-      label: '관리자 대시보드', 
-      icon: <AdminPanelSettings />, 
-      href: '/admin',
-      color: 'error' as const
-    },
-    { 
-      label: '사용자 관리', 
-      icon: <Group />, 
-      href: '/admin/users',
-      color: 'error' as const
-    },
-  ] : []
+  const adminItems =
+    profile?.role === 'admin' || profile?.role === 'moderator'
+      ? [
+          {
+            label: '관리자 대시보드',
+            icon: <AdminPanelSettings />,
+            href: '/admin',
+            color: 'error' as const,
+          },
+          {
+            label: '사용자 관리',
+            icon: <Group />,
+            href: '/admin/users',
+            color: 'error' as const,
+          },
+        ]
+      : []
 
   const sidebarContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -146,10 +155,10 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
         <Stack direction="row" alignItems="center" spacing={2}>
           <Avatar
             src={profile?.avatar_url || undefined}
-            sx={{ 
-              width: 48, 
+            sx={{
+              width: 48,
               height: 48,
-              bgcolor: profile?.avatar_url ? 'transparent' : 'primary.main'
+              bgcolor: profile?.avatar_url ? 'transparent' : 'primary.main',
             }}
           >
             {!profile?.avatar_url && profile?.email?.[0]?.toUpperCase()}
@@ -163,21 +172,13 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
             </Typography>
           </Box>
         </Stack>
-        
+
         {/* 역할 배지 */}
         <Box sx={{ mt: 2 }}>
-          {profile?.role === 'admin' && (
-            <Chip label="관리자" color="error" size="small" />
-          )}
-          {profile?.role === 'moderator' && (
-            <Chip label="운영진" color="warning" size="small" />
-          )}
-          {profile?.role === 'verified' && (
-            <Chip label="인증 교사" color="success" size="small" />
-          )}
-          {profile?.role === 'member' && (
-            <Chip label="일반 회원" color="default" size="small" />
-          )}
+          {profile?.role === 'admin' && <Chip label="관리자" color="error" size="small" />}
+          {profile?.role === 'moderator' && <Chip label="운영진" color="warning" size="small" />}
+          {profile?.role === 'verified' && <Chip label="인증 교사" color="success" size="small" />}
+          {profile?.role === 'member' && <Chip label="일반 회원" color="default" size="small" />}
         </Box>
       </Box>
 
@@ -208,36 +209,56 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                   sx={{
                     borderRadius: 2,
                     '&:hover': {
-                      bgcolor: alpha(theme.palette[item.color].main, 0.08)
-                    }
+                      bgcolor: alpha(theme.palette[item.color].main, 0.08),
+                    },
                   }}
                 >
                   <ListItemIcon sx={{ color: `${item.color}.main`, minWidth: 40 }}>
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText 
+                  <ListItemText
                     primary={item.label}
                     primaryTypographyProps={{
                       fontSize: '0.9rem',
-                      fontWeight: 500
+                      fontWeight: 500,
                     }}
                   />
-                  {item.subItems && (
-                    item.label === '교육 자료실' 
-                      ? (educationOpen ? <ExpandLess /> : <ExpandMore />)
-                      : item.label === '교육 트렌드'
-                      ? (trendOpen ? <ExpandLess /> : <ExpandMore />)
-                      : item.label === '구인구직'
-                      ? (jobOpen ? <ExpandLess /> : <ExpandMore />)
-                      : null
-                  )}
+                  {item.subItems &&
+                    (item.label === '교육 자료실' ? (
+                      educationOpen ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )
+                    ) : item.label === '교육 트렌드' ? (
+                      trendOpen ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )
+                    ) : item.label === '구인구직' ? (
+                      jobOpen ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )
+                    ) : null)}
                 </ListItemButton>
               </ListItem>
               {item.subItems && (
-                <Collapse 
-                  in={item.label === '교육 자료실' ? educationOpen : item.label === '교육 트렌드' ? trendOpen : item.label === '구인구직' ? jobOpen : false} 
-                  timeout="auto" 
-                  unmountOnExit>
+                <Collapse
+                  in={
+                    item.label === '교육 자료실'
+                      ? educationOpen
+                      : item.label === '교육 트렌드'
+                        ? trendOpen
+                        : item.label === '구인구직'
+                          ? jobOpen
+                          : false
+                  }
+                  timeout="auto"
+                  unmountOnExit
+                >
                   <List component="div" disablePadding>
                     {item.subItems.map((subItem) => (
                       <ListItem key={subItem.href} disablePadding sx={{ pl: 2 }}>
@@ -250,14 +271,14 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                             borderRadius: 2,
                             py: 0.5,
                             '&:hover': {
-                              bgcolor: alpha(theme.palette[item.color].main, 0.04)
-                            }
+                              bgcolor: alpha(theme.palette[item.color].main, 0.04),
+                            },
                           }}
                         >
-                          <ListItemText 
+                          <ListItemText
                             primary={subItem.label}
                             primaryTypographyProps={{
-                              fontSize: '0.85rem'
+                              fontSize: '0.85rem',
                             }}
                           />
                         </ListItemButton>
@@ -283,20 +304,17 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                 }}
                 sx={{ borderRadius: 2 }}
               >
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText
                   primary={item.label}
                   primaryTypographyProps={{
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
                   }}
                 />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
-
 
         {/* 관리자 메뉴 */}
         {adminItems.length > 0 && (
@@ -317,21 +335,21 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
                       router.push(item.href)
                       onMobileToggle?.()
                     }}
-                    sx={{ 
+                    sx={{
                       borderRadius: 2,
                       '&:hover': {
-                        bgcolor: alpha(theme.palette.error.main, 0.08)
-                      }
+                        bgcolor: alpha(theme.palette.error.main, 0.08),
+                      },
                     }}
                   >
                     <ListItemIcon sx={{ color: 'error.main', minWidth: 40 }}>
                       {item.icon}
                     </ListItemIcon>
-                    <ListItemText 
+                    <ListItemText
                       primary={item.label}
                       primaryTypographyProps={{
                         fontSize: '0.9rem',
-                        color: 'error.main'
+                        color: 'error.main',
                       }}
                     />
                   </ListItemButton>
@@ -365,14 +383,14 @@ export default function FeedSidebar({ user, profile, mobileOpen = false, onMobil
       open={mobileOpen}
       onClose={onMobileToggle}
       ModalProps={{
-        keepMounted: true // 모바일 성능 향상
+        keepMounted: true, // 모바일 성능 향상
       }}
       sx={{
-        '& .MuiDrawer-paper': { 
-          boxSizing: 'border-box', 
+        '& .MuiDrawer-paper': {
+          boxSizing: 'border-box',
           width: 260,
-          pt: 2
-        }
+          pt: 2,
+        },
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pb: 1 }}>

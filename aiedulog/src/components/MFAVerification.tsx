@@ -17,14 +17,7 @@ import {
   useTheme,
   alpha,
 } from '@mui/material'
-import {
-  Lock,
-  Smartphone,
-  Fingerprint,
-  Key,
-  ArrowBack,
-  CheckCircle,
-} from '@mui/icons-material'
+import { Lock, Smartphone, Fingerprint, Key, ArrowBack, CheckCircle } from '@mui/icons-material'
 
 interface MFAVerificationProps {
   factorId: string
@@ -33,18 +26,18 @@ interface MFAVerificationProps {
   showBackupOption?: boolean
 }
 
-export default function MFAVerification({ 
-  factorId, 
-  onSuccess, 
+export default function MFAVerification({
+  factorId,
+  onSuccess,
   onCancel,
-  showBackupOption = true 
+  showBackupOption = true,
 }: MFAVerificationProps) {
   const [code, setCode] = useState('')
   const [useBackupCode, setUseBackupCode] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [challengeId, setChallengeId] = useState<string | null>(null)
-  
+
   const supabase = createClient()
   const theme = useTheme()
 
@@ -56,9 +49,9 @@ export default function MFAVerification({
   const initializeChallenge = async () => {
     try {
       const { data, error } = await supabase.auth.mfa.challenge({
-        factorId
+        factorId,
       })
-      
+
       if (error) throw error
       setChallengeId(data.id)
     } catch (error: any) {
@@ -68,19 +61,19 @@ export default function MFAVerification({
 
   const handleVerify = async () => {
     if (!code || code.length !== 6 || !challengeId) return
-    
+
     setLoading(true)
     setError(null)
-    
+
     try {
       const { data, error } = await supabase.auth.mfa.verify({
         factorId,
         challengeId,
-        code
+        code,
       })
-      
+
       if (error) throw error
-      
+
       onSuccess()
     } catch (error: any) {
       setError('인증 코드가 올바르지 않습니다. 다시 시도해주세요.')
@@ -95,7 +88,7 @@ export default function MFAVerification({
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 6)
     setCode(value)
-    
+
     // Auto-submit when 6 digits are entered
     if (value.length === 6 && challengeId) {
       handleVerify()
@@ -141,13 +134,13 @@ export default function MFAVerification({
               <Smartphone sx={{ fontSize: 32, color: 'primary.main' }} />
             )}
           </Box>
-          
+
           <Typography variant="h5" gutterBottom fontWeight={600}>
             2단계 인증
           </Typography>
-          
+
           <Typography variant="body2" color="text.secondary">
-            {useBackupCode 
+            {useBackupCode
               ? '백업 코드 중 하나를 입력하세요'
               : '인증 앱에 표시된 6자리 코드를 입력하세요'}
           </Typography>
@@ -159,23 +152,25 @@ export default function MFAVerification({
           value={code}
           onChange={handleCodeChange}
           onKeyPress={handleKeyPress}
-          placeholder={useBackupCode ? "백업 코드" : "000000"}
-          label={useBackupCode ? "백업 코드" : "인증 코드"}
+          placeholder={useBackupCode ? '백업 코드' : '000000'}
+          label={useBackupCode ? '백업 코드' : '인증 코드'}
           variant="outlined"
           disabled={loading}
           inputProps={{
             maxLength: useBackupCode ? 20 : 6,
-            style: useBackupCode ? {} : {
-              fontSize: '1.5rem',
-              letterSpacing: '0.5em',
-              textAlign: 'center',
-              fontWeight: 600,
-            },
+            style: useBackupCode
+              ? {}
+              : {
+                  fontSize: '1.5rem',
+                  letterSpacing: '0.5em',
+                  textAlign: 'center',
+                  fontWeight: 600,
+                },
           }}
           sx={{
             '& input': {
               py: 2,
-            }
+            },
           }}
         />
 
@@ -223,12 +218,7 @@ export default function MFAVerification({
           )}
 
           {onCancel && (
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={onCancel}
-              startIcon={<ArrowBack />}
-            >
+            <Button fullWidth variant="outlined" onClick={onCancel} startIcon={<ArrowBack />}>
               취소
             </Button>
           )}

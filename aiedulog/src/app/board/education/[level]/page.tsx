@@ -35,7 +35,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material'
 import {
   Favorite,
@@ -59,7 +59,7 @@ import {
   FolderZip,
   Download,
   Close,
-  CloudUpload
+  CloudUpload,
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
@@ -69,7 +69,7 @@ const levelInfo = {
   ele: { name: '초등학교', color: 'info' as const },
   mid: { name: '중학교', color: 'warning' as const },
   high: { name: '고등학교', color: 'error' as const },
-  common: { name: '공통', color: 'success' as const }
+  common: { name: '공통', color: 'success' as const },
 }
 
 // 파일 아이콘 반환 함수
@@ -99,7 +99,7 @@ const formatFileSize = (bytes: number) => {
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
 export default function EducationLevelPage() {
@@ -119,21 +119,25 @@ export default function EducationLevelPage() {
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  
+
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const router = useRouter()
   const supabase = createClient()
   const theme = useTheme()
 
-  const currentLevel = levelInfo[level as keyof typeof levelInfo] || { name: '전체', color: 'primary' as const }
+  const currentLevel = levelInfo[level as keyof typeof levelInfo] || {
+    name: '전체',
+    color: 'primary' as const,
+  }
 
   // 게시글 목록 가져오기
   const fetchPosts = useCallback(async () => {
     let query = supabase
       .from('posts')
-      .select(`
+      .select(
+        `
         *,
         profiles!posts_author_id_fkey (
           id,
@@ -151,7 +155,8 @@ export default function EducationLevelPage() {
         bookmarks (
           user_id
         )
-      `)
+      `
+      )
       .eq('is_published', true)
       .eq('category', 'education')
       .order('created_at', { ascending: false })
@@ -165,19 +170,20 @@ export default function EducationLevelPage() {
     const { data, error } = await query
 
     if (data) {
-      const postsWithStats = data.map(post => ({
+      const postsWithStats = data.map((post) => ({
         ...post,
         author: {
           name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
           email: post.profiles?.email,
           role: post.profiles?.role || 'member',
           isVerified: post.profiles?.role === 'verified',
-          avatar_url: post.profiles?.avatar_url
+          avatar_url: post.profiles?.avatar_url,
         },
         likes: post.post_likes?.length || 0,
         comments: post.comments?.length || 0,
         isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-        isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
+        isBookmarked:
+          post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
       }))
       setPosts(postsWithStats)
     }
@@ -185,21 +191,23 @@ export default function EducationLevelPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
-      
+
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -214,28 +222,28 @@ export default function EducationLevelPage() {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setSelectedImages(prev => [...prev, ...files])
+    setSelectedImages((prev) => [...prev, ...files])
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     // 파일 크기 체크 (50MB)
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       if (file.size > 50 * 1024 * 1024) {
         alert(`${file.name}은 50MB를 초과합니다.`)
         return false
       }
       return true
     })
-    setSelectedFiles(prev => [...prev, ...validFiles])
+    setSelectedFiles((prev) => [...prev, ...validFiles])
   }
 
   const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -251,12 +259,12 @@ export default function EducationLevelPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    
+
     const files = Array.from(e.dataTransfer.files)
     const imageFiles: File[] = []
     const docFiles: File[] = []
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
       if (file.type.startsWith('image/')) {
         imageFiles.push(file)
       } else {
@@ -268,72 +276,72 @@ export default function EducationLevelPage() {
         }
       }
     })
-    
+
     if (imageFiles.length > 0) {
-      setSelectedImages(prev => [...prev, ...imageFiles])
+      setSelectedImages((prev) => [...prev, ...imageFiles])
     }
     if (docFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...docFiles])
+      setSelectedFiles((prev) => [...prev, ...docFiles])
     }
   }
 
   const handlePost = async () => {
     if (!newPostTitle.trim() || !newPost.trim() || !user) return
-    
+
     setPostLoading(true)
     setUploadingFiles(true)
-    
+
     try {
-      let imageUrls: string[] = []
-      let fileUrls: string[] = []
-      let fileMetadata: any[] = []
-      
+      const imageUrls: string[] = []
+      const fileUrls: string[] = []
+      const fileMetadata: any[] = []
+
       // 이미지 업로드
       if (selectedImages.length > 0) {
         for (const image of selectedImages) {
           const fileExt = image.name.split('.').pop()
           const fileName = `${user.id}/${Date.now()}_${Math.random()}.${fileExt}`
-          
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('post-images')
             .upload(fileName, image)
-          
+
           if (uploadError) throw uploadError
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('post-images')
-            .getPublicUrl(uploadData.path)
-          
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('post-images').getPublicUrl(uploadData.path)
+
           imageUrls.push(publicUrl)
         }
       }
-      
+
       // 파일 업로드
       if (selectedFiles.length > 0) {
         for (const file of selectedFiles) {
           const fileExt = file.name.split('.').pop()
           const fileName = `${user.id}/${Date.now()}_${file.name}`
-          
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('education-files')
             .upload(fileName, file)
-          
+
           if (uploadError) throw uploadError
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('education-files')
-            .getPublicUrl(uploadData.path)
-          
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('education-files').getPublicUrl(uploadData.path)
+
           fileUrls.push(publicUrl)
           fileMetadata.push({
             name: file.name,
             size: file.size,
             type: file.type,
-            url: publicUrl
+            url: publicUrl,
           })
         }
       }
-      
+
       // 게시글 생성
       const { data, error } = await supabase
         .from('posts')
@@ -345,13 +353,13 @@ export default function EducationLevelPage() {
           school_level: selectedLevel,
           image_urls: imageUrls,
           file_urls: fileUrls,
-          file_metadata: fileMetadata
+          file_metadata: fileMetadata,
         })
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       if (data) {
         // 새 게시글을 목록 맨 앞에 추가
         const newPostData = {
@@ -361,14 +369,14 @@ export default function EducationLevelPage() {
             email: profile?.email,
             role: profile?.role || 'member',
             isVerified: profile?.role === 'verified',
-            avatar_url: profile?.avatar_url
+            avatar_url: profile?.avatar_url,
           },
           likes: 0,
           comments: 0,
           isLiked: false,
-          isBookmarked: false
+          isBookmarked: false,
         }
-        
+
         setPosts([newPostData, ...posts])
         setNewPostTitle('')
         setNewPost('')
@@ -385,65 +393,53 @@ export default function EducationLevelPage() {
   }
 
   const handleLike = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isLiked) {
-      await supabase
-        .from('post_likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('post_likes')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
     }
 
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { 
-            ...p, 
-            isLiked: !p.isLiked,
-            likes: p.isLiked ? p.likes - 1 : p.likes + 1
-          }
-        : p
-    ))
+    setPosts(
+      posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              isLiked: !p.isLiked,
+              likes: p.isLiked ? p.likes - 1 : p.likes + 1,
+            }
+          : p
+      )
+    )
   }
 
   const handleBookmark = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isBookmarked) {
-      await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('bookmarks').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('bookmarks')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id })
     }
 
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, isBookmarked: !p.isBookmarked }
-        : p
-    ))
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p)))
   }
 
   if (loading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <AppHeader user={user} profile={profile} />
-        <Box sx={{ 
-          display: 'flex',
-          justifyContent: 'center',
-          py: 3, 
-          px: 3
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            py: 3,
+            px: 3,
+          }}
+        >
           <Stack spacing={2} sx={{ width: '100%', maxWidth: 600 }}>
             {[1, 2, 3].map((i) => (
               <Card key={i}>
@@ -472,25 +468,27 @@ export default function EducationLevelPage() {
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
 
-      <Box sx={{ 
-        display: 'flex',
-        justifyContent: 'center',
-        py: 3, 
-        px: 3
-      }}>
-        <Stack 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          py: 3,
+          px: 3,
+        }}
+      >
+        <Stack
           direction="row"
           spacing={{ xs: 0, md: 3 }}
           alignItems="flex-start"
           sx={{
             width: '100%',
-            maxWidth: { 
+            maxWidth: {
               xs: '100%',
               sm: 600,
               md: 900,
-              lg: 1320
+              lg: 1320,
             },
-            mx: 'auto'
+            mx: 'auto',
           }}
         >
           {/* 왼쪽 사이드바 */}
@@ -498,7 +496,7 @@ export default function EducationLevelPage() {
             sx={{
               display: { xs: 'none', md: 'block' },
               width: 260,
-              flexShrink: 0
+              flexShrink: 0,
             }}
           >
             <Paper
@@ -511,28 +509,26 @@ export default function EducationLevelPage() {
                 borderRadius: 2,
                 border: 1,
                 borderColor: 'divider',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
             >
-              <FeedSidebar 
-                user={user} 
-                profile={profile}
-                isStatic={true}
-              />
+              <FeedSidebar user={user} profile={profile} isStatic={true} />
             </Paper>
           </Box>
 
           {/* 메인 게시판 영역 */}
-          <Box sx={{ 
-            width: '100%',
-            maxWidth: { 
-              xs: '100%',
-              sm: 600,
-              lg: 720
-            },
-            flex: '0 0 auto',
-            overflow: 'hidden'
-          }}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: {
+                xs: '100%',
+                sm: 600,
+                lg: 720,
+              },
+              flex: '0 0 auto',
+              overflow: 'hidden',
+            }}
+          >
             {/* 게시판 헤더 */}
             <Paper
               elevation={0}
@@ -541,7 +537,7 @@ export default function EducationLevelPage() {
                 mb: 3,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.success.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
+                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
               }}
             >
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -550,7 +546,7 @@ export default function EducationLevelPage() {
                     width: 56,
                     height: 56,
                     bgcolor: alpha(theme.palette.success.main, 0.2),
-                    color: 'success.main'
+                    color: 'success.main',
                   }}
                 >
                   <School />
@@ -565,32 +561,32 @@ export default function EducationLevelPage() {
                 </Box>
                 {/* 학교급 필터 버튼들 */}
                 <Stack direction="row" spacing={1}>
-                  <Chip 
-                    label="전체" 
+                  <Chip
+                    label="전체"
                     onClick={() => router.push('/board/education')}
                     color={level === 'all' ? 'primary' : 'default'}
                     variant={level === 'all' ? 'filled' : 'outlined'}
                   />
-                  <Chip 
-                    label="초등" 
+                  <Chip
+                    label="초등"
                     onClick={() => router.push('/board/education/ele')}
                     color={level === 'ele' ? 'info' : 'default'}
                     variant={level === 'ele' ? 'filled' : 'outlined'}
                   />
-                  <Chip 
-                    label="중등" 
+                  <Chip
+                    label="중등"
                     onClick={() => router.push('/board/education/mid')}
                     color={level === 'mid' ? 'warning' : 'default'}
                     variant={level === 'mid' ? 'filled' : 'outlined'}
                   />
-                  <Chip 
-                    label="고등" 
+                  <Chip
+                    label="고등"
                     onClick={() => router.push('/board/education/high')}
                     color={level === 'high' ? 'error' : 'default'}
                     variant={level === 'high' ? 'filled' : 'outlined'}
                   />
-                  <Chip 
-                    label="공통" 
+                  <Chip
+                    label="공통"
                     onClick={() => router.push('/board/education/common')}
                     color={level === 'common' ? 'success' : 'default'}
                     variant={level === 'common' ? 'filled' : 'outlined'}
@@ -634,7 +630,7 @@ export default function EducationLevelPage() {
                     value={newPost}
                     onChange={(e) => setNewPost(e.target.value)}
                   />
-                  
+
                   {/* 드래그 앤 드롭 영역 */}
                   <Box
                     onDragOver={handleDragOver}
@@ -648,19 +644,19 @@ export default function EducationLevelPage() {
                       textAlign: 'center',
                       bgcolor: isDragging ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
                       transition: 'all 0.2s',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                     onClick={() => {
                       // 클릭하면 파일 선택 다이얼로그 열기
                       fileInputRef.current?.click()
                     }}
                   >
-                    <CloudUpload 
-                      sx={{ 
-                        fontSize: 48, 
+                    <CloudUpload
+                      sx={{
+                        fontSize: 48,
                         color: isDragging ? 'primary.main' : 'text.secondary',
-                        mb: 1
-                      }} 
+                        mb: 1,
+                      }}
                     />
                     <Typography variant="body1" color="text.secondary">
                       파일을 드래그하여 놓거나 클릭하여 선택하세요
@@ -669,21 +665,21 @@ export default function EducationLevelPage() {
                       이미지, PDF, DOC, PPT, HWP, ZIP 파일 지원 (최대 50MB)
                     </Typography>
                   </Box>
-                  
+
                   {/* 선택된 이미지 미리보기 */}
                   {selectedImages.length > 0 && (
                     <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                       {selectedImages.map((image, index) => (
                         <Box key={index} sx={{ position: 'relative' }}>
-                          <img 
-                            src={URL.createObjectURL(image)} 
+                          <img
+                            src={URL.createObjectURL(image)}
                             alt={`Preview ${index}`}
-                            style={{ 
-                              width: 100, 
-                              height: 100, 
+                            style={{
+                              width: 100,
+                              height: 100,
                               objectFit: 'cover',
-                              borderRadius: 8
-                            }} 
+                              borderRadius: 8,
+                            }}
                           />
                           <IconButton
                             size="small"
@@ -691,7 +687,7 @@ export default function EducationLevelPage() {
                               position: 'absolute',
                               top: -8,
                               right: -8,
-                              bgcolor: 'background.paper'
+                              bgcolor: 'background.paper',
                             }}
                             onClick={() => handleRemoveImage(index)}
                           >
@@ -701,22 +697,17 @@ export default function EducationLevelPage() {
                       ))}
                     </Stack>
                   )}
-                  
+
                   {/* 선택된 파일 목록 */}
                   {selectedFiles.length > 0 && (
                     <List dense>
                       {selectedFiles.map((file, index) => (
                         <ListItem key={index}>
-                          <ListItemIcon>
-                            {getFileIcon(file.name)}
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={file.name}
-                            secondary={formatFileSize(file.size)}
-                          />
+                          <ListItemIcon>{getFileIcon(file.name)}</ListItemIcon>
+                          <ListItemText primary={file.name} secondary={formatFileSize(file.size)} />
                           <ListItemSecondaryAction>
-                            <IconButton 
-                              edge="end" 
+                            <IconButton
+                              edge="end"
                               size="small"
                               onClick={() => handleRemoveFile(index)}
                             >
@@ -727,7 +718,7 @@ export default function EducationLevelPage() {
                       ))}
                     </List>
                   )}
-                  
+
                   <Divider />
                   <Stack direction="row" justifyContent="space-between">
                     <Stack direction="row" spacing={1}>
@@ -747,14 +738,14 @@ export default function EducationLevelPage() {
                         accept=".pdf,.doc,.docx,.ppt,.pptx,.hwp,.zip,.rar"
                         onChange={handleFileSelect}
                       />
-                      <Button 
+                      <Button
                         startIcon={<PhotoCamera />}
                         onClick={() => imageInputRef.current?.click()}
                         disabled={uploadingFiles}
                       >
                         이미지
                       </Button>
-                      <Button 
+                      <Button
                         startIcon={<AttachFile />}
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadingFiles}
@@ -762,8 +753,8 @@ export default function EducationLevelPage() {
                         파일 첨부
                       </Button>
                     </Stack>
-                    <Button 
-                      variant="contained" 
+                    <Button
+                      variant="contained"
                       endIcon={uploadingFiles ? <CircularProgress size={20} /> : <CloudUpload />}
                       onClick={handlePost}
                       disabled={!newPostTitle.trim() || !newPost.trim() || postLoading}
@@ -778,13 +769,13 @@ export default function EducationLevelPage() {
             {/* 게시글 목록 */}
             <Stack spacing={2}>
               {posts.map((post) => (
-                <Card 
+                <Card
                   key={post.id}
-                  sx={{ 
+                  sx={{
                     cursor: 'pointer',
                     '&:hover': {
-                      boxShadow: 3
-                    }
+                      boxShadow: 3,
+                    },
                   }}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('button, .MuiIconButton-root, a')) {
@@ -800,19 +791,19 @@ export default function EducationLevelPage() {
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                         badgeContent={
                           post.author.isVerified ? (
-                            <VerifiedUser 
-                              sx={{ 
-                                width: 16, 
-                                height: 16, 
+                            <VerifiedUser
+                              sx={{
+                                width: 16,
+                                height: 16,
                                 color: 'success.main',
                                 bgcolor: 'background.paper',
-                                borderRadius: '50%'
-                              }} 
+                                borderRadius: '50%',
+                              }}
                             />
                           ) : null
                         }
                       >
-                        <Avatar 
+                        <Avatar
                           src={post.author.avatar_url || undefined}
                           sx={{ bgcolor: 'primary.main' }}
                         >
@@ -823,10 +814,16 @@ export default function EducationLevelPage() {
                     action={
                       <Stack direction="row" spacing={1} alignItems="center">
                         {post.school_level && (
-                          <Chip 
-                            label={levelInfo[post.school_level as keyof typeof levelInfo]?.name || '미분류'}
+                          <Chip
+                            label={
+                              levelInfo[post.school_level as keyof typeof levelInfo]?.name ||
+                              '미분류'
+                            }
                             size="small"
-                            color={levelInfo[post.school_level as keyof typeof levelInfo]?.color || 'default'}
+                            color={
+                              levelInfo[post.school_level as keyof typeof levelInfo]?.color ||
+                              'default'
+                            }
                           />
                         )}
                         <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
@@ -841,37 +838,35 @@ export default function EducationLevelPage() {
                     }
                     subheader={new Date(post.created_at).toLocaleString('ko-KR')}
                   />
-                  
+
                   <CardContent>
                     <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', mb: 2 }}>
                       {post.content}
                     </Typography>
-                    
+
                     {/* 첨부 파일 목록 */}
                     {post.file_metadata && post.file_metadata.length > 0 && (
                       <List dense>
                         {post.file_metadata.map((file: any, index: number) => {
                           const isPDF = file.name.toLowerCase().endsWith('.pdf')
                           return (
-                            <ListItem 
+                            <ListItem
                               key={index}
-                              sx={{ 
+                              sx={{
                                 '&:hover': {
-                                  bgcolor: 'action.hover'
-                                }
+                                  bgcolor: 'action.hover',
+                                },
                               }}
                             >
-                              <ListItemIcon>
-                                {getFileIcon(file.name)}
-                              </ListItemIcon>
-                              <ListItemText 
+                              <ListItemIcon>{getFileIcon(file.name)}</ListItemIcon>
+                              <ListItemText
                                 primary={file.name}
                                 secondary={formatFileSize(file.size)}
                               />
                               <ListItemSecondaryAction>
                                 <Stack direction="row" spacing={1}>
                                   {isPDF && (
-                                    <IconButton 
+                                    <IconButton
                                       edge="end"
                                       component="a"
                                       href={file.url}
@@ -881,7 +876,7 @@ export default function EducationLevelPage() {
                                       <PictureAsPdf />
                                     </IconButton>
                                   )}
-                                  <IconButton 
+                                  <IconButton
                                     edge="end"
                                     component="a"
                                     href={file.url}
@@ -906,11 +901,11 @@ export default function EducationLevelPage() {
                         component="img"
                         image={post.image_urls[0]}
                         alt="Post image"
-                        sx={{ 
+                        sx={{
                           width: '100%',
-                          maxHeight: 400, 
+                          maxHeight: 400,
                           objectFit: 'cover',
-                          borderRadius: '12px'
+                          borderRadius: '12px',
                         }}
                       />
                       {post.image_urls.length > 1 && (
@@ -923,7 +918,7 @@ export default function EducationLevelPage() {
                             right: 32,
                             bgcolor: 'rgba(0, 0, 0, 0.6)',
                             color: 'white',
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
                           }}
                         />
                       )}
@@ -931,7 +926,7 @@ export default function EducationLevelPage() {
                   )}
 
                   <CardActions disableSpacing>
-                    <IconButton 
+                    <IconButton
                       onClick={() => handleLike(post.id)}
                       color={post.isLiked ? 'error' : 'default'}
                     >
@@ -940,21 +935,21 @@ export default function EducationLevelPage() {
                     <Typography variant="body2" color="text.secondary">
                       {post.likes}
                     </Typography>
-                    
+
                     <IconButton sx={{ ml: 1 }}>
                       <ChatBubbleOutline />
                     </IconButton>
                     <Typography variant="body2" color="text.secondary">
                       {post.comments}
                     </Typography>
-                    
+
                     <IconButton sx={{ ml: 1 }}>
                       <Share />
                     </IconButton>
-                    
+
                     <Box sx={{ flexGrow: 1 }} />
-                    
-                    <IconButton 
+
+                    <IconButton
                       onClick={() => handleBookmark(post.id)}
                       color={post.isBookmarked ? 'primary' : 'default'}
                     >
@@ -980,13 +975,13 @@ export default function EducationLevelPage() {
             sx={{
               width: 320,
               flexShrink: 0,
-              display: { xs: 'none', lg: 'block' }
+              display: { xs: 'none', lg: 'block' },
             }}
           >
             <Box
               sx={{
                 position: 'sticky',
-                top: 80
+                top: 80,
               }}
             >
               <SideChat user={user} />
@@ -996,8 +991,8 @@ export default function EducationLevelPage() {
       </Box>
 
       {/* 모바일 사이드바 */}
-      <FeedSidebar 
-        user={user} 
+      <FeedSidebar
+        user={user}
         profile={profile}
         mobileOpen={mobileOpen}
         onMobileToggle={() => setMobileOpen(false)}
@@ -1032,11 +1027,7 @@ export default function EducationLevelPage() {
       </Fab>
 
       {/* 메뉴 */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>신고하기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>숨기기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>공유하기</MenuItem>

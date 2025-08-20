@@ -1,11 +1,11 @@
 'use client'
 
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Button, 
-  Card, 
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Card,
   CardContent,
   Stack,
   useTheme,
@@ -26,10 +26,10 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
 } from '@mui/material'
 import Link from 'next/link'
-import { 
+import {
   ArrowForward,
   ArrowOutward,
   Menu as MenuIcon,
@@ -48,7 +48,7 @@ import {
   Notifications,
   Message,
   ExpandLess,
-  ExpandMore
+  ExpandMore,
 } from '@mui/icons-material'
 import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
@@ -74,9 +74,11 @@ export default function Home() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       setUser(user)
-      
+
       if (user) {
         const { data: profileData } = await supabase
           .from('profiles')
@@ -88,9 +90,11 @@ export default function Home() {
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
-      
+
       if (session?.user) {
         const { data: profileData } = await supabase
           .from('profiles')
@@ -142,22 +146,22 @@ export default function Home() {
             items: [
               { label: '연구회 소개', href: '#' },
               { label: '조직도', href: '#' },
-              { label: '연혁', href: '#' }
-            ]
+              { label: '연혁', href: '#' },
+            ],
           },
           {
             items: [
               { label: '정기 모임', href: '#' },
-              { label: '연수 프로그램', href: '#' }
-            ]
-          }
+              { label: '연수 프로그램', href: '#' },
+            ],
+          },
         ],
         featured: {
           label: '공지사항',
           title: '2025년 상반기 연수 일정',
-          href: '#'
-        }
-      }
+          href: '#',
+        },
+      },
     },
     {
       label: '자료공유',
@@ -168,44 +172,46 @@ export default function Home() {
             items: [
               { label: 'AI 도구 활용', href: '#' },
               { label: '수업 지도안', href: '#' },
-              { label: '평가 자료', href: '#' }
-            ]
+              { label: '평가 자료', href: '#' },
+            ],
           },
           {
             items: [
               { label: '논문 및 보고서', href: '#' },
-              { label: '세미나 자료', href: '#' }
-            ]
-          }
+              { label: '세미나 자료', href: '#' },
+            ],
+          },
         ],
         featured: {
           label: '인기 자료',
           title: 'AI 활용 수업 사례집',
-          href: '#'
-        }
-      }
+          href: '#',
+        },
+      },
     },
     {
       label: '비전',
       key: 'vision',
-      dropdown: null
+      dropdown: null,
     },
     {
       label: '뉴스',
       key: 'news',
-      dropdown: null
-    }
+      dropdown: null,
+    },
   ]
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      bgcolor: '#FAFCFE', // Material Theme: background
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-    }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: '#FAFCFE', // Material Theme: background
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+      }}
+    >
       {/* Navbar */}
-      <AppBar 
-        position="sticky" 
+      <AppBar
+        position="sticky"
         elevation={0}
         sx={{
           bgcolor: '#F7F9FF', // Material Theme: surface
@@ -217,11 +223,11 @@ export default function Home() {
         <Container maxWidth="xl">
           <Toolbar sx={{ height: 64, px: { xs: 0 } }}>
             {/* Logo */}
-            <Typography 
-              variant="h6" 
+            <Typography
+              variant="h6"
               component={Link}
               href="/"
-              sx={{ 
+              sx={{
                 fontWeight: 600,
                 fontSize: '1.25rem',
                 color: '#2E86AB', // Material Theme: primary
@@ -236,19 +242,21 @@ export default function Home() {
             <Box sx={{ flex: 1 }} />
 
             {/* Navigation Links - Desktop */}
-            <Box sx={{ 
-              display: { xs: 'none', md: 'flex' }, 
-              gap: 2,
-              mr: 3
-            }}>
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                gap: 2,
+                mr: 3,
+              }}
+            >
               {navigationItems.map((item) => (
                 <Box
                   key={item.key}
                   onMouseEnter={(e) => item.dropdown && handleMenuOpen(e, item.key)}
                   onMouseLeave={handleMenuClose}
                 >
-                  <MuiLink 
-                    href="#" 
+                  <MuiLink
+                    href="#"
                     underline="none"
                     onClick={(e) => {
                       e.preventDefault()
@@ -256,7 +264,7 @@ export default function Home() {
                         handleMenuClick(e, item.key)
                       }
                     }}
-                    sx={{ 
+                    sx={{
                       color: '#191C20', // Material Theme: onBackground
                       fontSize: '0.875rem',
                       fontWeight: 500,
@@ -267,23 +275,23 @@ export default function Home() {
                       py: 1,
                       borderRadius: 1,
                       transition: 'all 0.2s',
-                      '&:hover': { 
+                      '&:hover': {
                         bgcolor: alpha('#2E86AB', 0.08), // Material Theme: primary with alpha
-                      }
+                      },
                     }}
                   >
                     {item.label}
                     {item.dropdown && (
-                      <KeyboardArrowDown 
-                        sx={{ 
+                      <KeyboardArrowDown
+                        sx={{
                           fontSize: 16,
                           transition: 'transform 0.2s',
-                          transform: openMenu === item.key ? 'rotate(180deg)' : 'rotate(0deg)'
-                        }} 
+                          transform: openMenu === item.key ? 'rotate(180deg)' : 'rotate(0deg)',
+                        }}
                       />
                     )}
                   </MuiLink>
-                  
+
                   {/* Dropdown Menu */}
                   {item.dropdown && (
                     <Popper
@@ -302,13 +310,13 @@ export default function Home() {
                       sx={{ zIndex: 1300 }}
                     >
                       {({ TransitionProps }) => (
-                        <Grow 
-                          {...TransitionProps} 
+                        <Grow
+                          {...TransitionProps}
                           timeout={{
                             enter: 350,
-                            exit: 0  // 사라질 때는 즉시
+                            exit: 0, // 사라질 때는 즉시
                           }}
-                          style={{ 
+                          style={{
                             transformOrigin: 'top center',
                           }}
                         >
@@ -345,7 +353,10 @@ export default function Home() {
                               <Grid size={{ xs: 12, md: 5 }}>
                                 <Box sx={{ p: 3 }}>
                                   {item.dropdown.sections.map((section, idx) => (
-                                    <Box key={idx} sx={{ mb: idx < item.dropdown.sections.length - 1 ? 2 : 0 }}>
+                                    <Box
+                                      key={idx}
+                                      sx={{ mb: idx < item.dropdown.sections.length - 1 ? 2 : 0 }}
+                                    >
                                       <Stack spacing={1}>
                                         {section.items.map((subItem, subIdx) => (
                                           <MuiLink
@@ -360,12 +371,14 @@ export default function Home() {
                                               alignItems: 'center',
                                               gap: 0.5,
                                               '&:hover': {
-                                                color: theme.palette.primary.main
-                                              }
+                                                color: theme.palette.primary.main,
+                                              },
                                             }}
                                           >
                                             {subItem.label}
-                                            {(subItem as any).external && <ArrowOutward sx={{ fontSize: 14 }} />}
+                                            {(subItem as any).external && (
+                                              <ArrowOutward sx={{ fontSize: 14 }} />
+                                            )}
                                           </MuiLink>
                                         ))}
                                       </Stack>
@@ -375,8 +388,8 @@ export default function Home() {
                               </Grid>
                               {item.dropdown.featured && (
                                 <Grid size={{ xs: 12, md: 7 }}>
-                                  <Box 
-                                    sx={{ 
+                                  <Box
+                                    sx={{
                                       bgcolor: '#FFFFFF', // 흰색 배경
                                       height: '100%',
                                       p: 3,
@@ -389,36 +402,36 @@ export default function Home() {
                                       justifyContent: 'center',
                                       gap: 2,
                                       '&:hover': {
-                                        bgcolor: '#F5F5F5'
-                                      }
+                                        bgcolor: '#F5F5F5',
+                                      },
                                     }}
                                   >
-                                    <CalendarMonth 
-                                      sx={{ 
+                                    <CalendarMonth
+                                      sx={{
                                         fontSize: 40,
-                                        color: '#2E86AB' // Material Theme: primary
-                                      }} 
+                                        color: '#2E86AB', // Material Theme: primary
+                                      }}
                                     />
                                     <Box sx={{ textAlign: 'center' }}>
-                                      <Typography 
-                                        variant="overline" 
-                                        sx={{ 
+                                      <Typography
+                                        variant="overline"
+                                        sx={{
                                           fontSize: '0.7rem',
                                           fontWeight: 600,
                                           color: '#666',
                                           letterSpacing: '0.08em',
-                                          display: 'block'
+                                          display: 'block',
                                         }}
                                       >
                                         {item.dropdown.featured.label}
                                       </Typography>
-                                      <Typography 
-                                        variant="h6" 
-                                        sx={{ 
+                                      <Typography
+                                        variant="h6"
+                                        sx={{
                                           mt: 0.5,
                                           fontSize: '0.9rem',
                                           fontWeight: 600,
-                                          lineHeight: 1.3
+                                          lineHeight: 1.3,
                                         }}
                                       >
                                         {item.dropdown.featured.title}
@@ -438,17 +451,19 @@ export default function Home() {
             </Box>
 
             {/* Right side icons and login */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 2 
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
               {/* Mobile menu - 햄버거 메뉴 */}
               <IconButton
                 onClick={(e) => setMobileMenuAnchor(e.currentTarget)}
-                sx={{ 
+                sx={{
                   display: { xs: 'flex', md: 'none' },
-                  color: '#191C20' // Material Theme: onBackground
+                  color: '#191C20', // Material Theme: onBackground
                 }}
               >
                 <MenuIcon />
@@ -460,14 +475,14 @@ export default function Home() {
                   <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
                     <NotificationIcon />
                     <IconButton
-                      sx={{ 
-                        color: '#191C20' // Material Theme: onBackground
+                      sx={{
+                        color: '#191C20', // Material Theme: onBackground
                       }}
                     >
                       <Chat />
                     </IconButton>
                   </Box>
-                  
+
                   {/* Logout Button */}
                   <Button
                     onClick={async () => {
@@ -507,7 +522,7 @@ export default function Home() {
                       '&:hover': {
                         bgcolor: '#204876', // Material Theme: onPrimaryContainer
                         boxShadow: 'none',
-                      }
+                      },
                     }}
                   >
                     로그인
@@ -528,7 +543,7 @@ export default function Home() {
                       '&:hover': {
                         borderColor: '#204876',
                         bgcolor: alpha('#2E86AB', 0.04),
-                      }
+                      },
                     }}
                   >
                     회원가입
@@ -558,267 +573,303 @@ export default function Home() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             maxHeight: '70vh',
             overflow: 'auto',
-            mt: 0.5
-          }
+            mt: 0.5,
+          },
         }}
         sx={{
           display: { xs: 'block', md: 'none' },
         }}
       >
-          <List sx={{ py: 0 }}>
-            {/* 연구회 */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
-              >
-                <ListItemIcon>
-                  <Groups sx={{ color: '#2E86AB' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="연구회" 
-                  primaryTypographyProps={{
-                    fontSize: '1rem',
-                    fontWeight: 500
-                  }}
-                />
-                {mobileAboutOpen ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-            </ListItem>
-            <Collapse in={mobileAboutOpen} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding sx={{ py: 0 }}>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="연구회 소개" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="조직도" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="연혁" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="정기 모임" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="연수 프로그램" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            </Collapse>
-            
-            <Divider />
-
-            {/* 자료공유 */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => setMobileShareOpen(!mobileShareOpen)}
-              >
-                <ListItemIcon>
-                  <FolderShared sx={{ color: '#2E86AB' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="자료공유" 
-                  primaryTypographyProps={{
-                    fontSize: '1rem',
-                    fontWeight: 500
-                  }}
-                />
-                {mobileShareOpen ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-            </ListItem>
-            <Collapse in={mobileShareOpen} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding sx={{ py: 0 }}>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="AI 도구 활용" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="수업 지도안" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="평가 자료" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="논문 및 보고서" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem sx={{ pl: 4, py: 0 }}>
-                  <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
-                    <ListItemText primary="세미나 자료" primaryTypographyProps={{ fontSize: '0.9rem' }} />
-                  </ListItemButton>
-                </ListItem>
-              </List>
-            </Collapse>
-            
-            <Divider />
-
-            {/* 비전 */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setMobileMenuAnchor(null)
-                  // Navigate to 비전
+        <List sx={{ py: 0 }}>
+          {/* 연구회 */}
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => setMobileAboutOpen(!mobileAboutOpen)}>
+              <ListItemIcon>
+                <Groups sx={{ color: '#2E86AB' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="연구회"
+                primaryTypographyProps={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
                 }}
-              >
-                <ListItemIcon>
-                  <RemoveRedEye sx={{ color: '#2E86AB' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="비전" 
-                  primaryTypographyProps={{
-                    fontSize: '1rem',
-                    fontWeight: 500
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-            
-            <Divider />
+              />
+              {mobileAboutOpen ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+          </ListItem>
+          <Collapse in={mobileAboutOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ py: 0 }}>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="연구회 소개"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText primary="조직도" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText primary="연혁" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="정기 모임"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="연수 프로그램"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Collapse>
 
-            {/* 뉴스 */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setMobileMenuAnchor(null)
-                  // Navigate to 뉴스
+          <Divider />
+
+          {/* 자료공유 */}
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => setMobileShareOpen(!mobileShareOpen)}>
+              <ListItemIcon>
+                <FolderShared sx={{ color: '#2E86AB' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="자료공유"
+                primaryTypographyProps={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
                 }}
-              >
-                <ListItemIcon>
-                  <Newspaper sx={{ color: '#2E86AB' }} />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="뉴스" 
-                  primaryTypographyProps={{
-                    fontSize: '1rem',
-                    fontWeight: 500
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
+              />
+              {mobileShareOpen ? <ExpandLess /> : <ExpandMore />}
+            </ListItemButton>
+          </ListItem>
+          <Collapse in={mobileShareOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding sx={{ py: 0 }}>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="AI 도구 활용"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="수업 지도안"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="평가 자료"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="논문 및 보고서"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem sx={{ pl: 4, py: 0 }}>
+                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary="세미나 자료"
+                    primaryTypographyProps={{ fontSize: '0.9rem' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Collapse>
 
-            {user && (
-              <>
-                <Divider sx={{ my: 1 }} />
-                
-                {/* 알림 */}
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={Link}
-                    href="/notifications"
-                    onClick={() => setMobileMenuAnchor(null)}
-                  >
-                    <ListItemIcon>
-                      <Notifications sx={{ color: '#2E86AB' }} />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="알림" 
-                      primaryTypographyProps={{
-                        fontSize: '1rem',
-                        fontWeight: 500
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
+          <Divider />
 
-                {/* 메시지 */}
-                <ListItem disablePadding>
-                  <ListItemButton
-                    component={Link}
-                    href="/messages"
-                    onClick={() => setMobileMenuAnchor(null)}
-                  >
-                    <ListItemIcon>
-                      <Message sx={{ color: '#2E86AB' }} />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="메시지" 
-                      primaryTypographyProps={{
-                        fontSize: '1rem',
-                        fontWeight: 500
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              </>
-            )}
-          </List>
+          {/* 비전 */}
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                setMobileMenuAnchor(null)
+                // Navigate to 비전
+              }}
+            >
+              <ListItemIcon>
+                <RemoveRedEye sx={{ color: '#2E86AB' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="비전"
+                primaryTypographyProps={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          <Divider />
+
+          {/* 뉴스 */}
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                setMobileMenuAnchor(null)
+                // Navigate to 뉴스
+              }}
+            >
+              <ListItemIcon>
+                <Newspaper sx={{ color: '#2E86AB' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="뉴스"
+                primaryTypographyProps={{
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+
+          {user && (
+            <>
+              <Divider sx={{ my: 1 }} />
+
+              {/* 알림 */}
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={Link}
+                  href="/notifications"
+                  onClick={() => setMobileMenuAnchor(null)}
+                >
+                  <ListItemIcon>
+                    <Notifications sx={{ color: '#2E86AB' }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="알림"
+                    primaryTypographyProps={{
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+
+              {/* 메시지 */}
+              <ListItem disablePadding>
+                <ListItemButton
+                  component={Link}
+                  href="/messages"
+                  onClick={() => setMobileMenuAnchor(null)}
+                >
+                  <ListItemIcon>
+                    <Message sx={{ color: '#2E86AB' }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="메시지"
+                    primaryTypographyProps={{
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            </>
+          )}
+        </List>
       </MuiMenu>
 
       {/* Hero Section - Grid Layout */}
       <Container maxWidth="xl" sx={{ pt: 8, pb: 8 }}>
         {/* Grid Container */}
-        <Box sx={{ 
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr', // 모바일: 1열
-            sm: 'repeat(2, 1fr)', // 태블릿: 2열
-            md: 'repeat(3, 1fr)', // 중간: 3열
-            lg: 'repeat(3, 1fr)', // 데스크톱: 3열
-          },
-          gridTemplateRows: {
-            xs: 'auto', // 모바일: 자동
-            sm: 'auto auto', // 태블릿: 2행
-            md: 'auto auto', // 중간: 2행
-            lg: 'auto auto', // 데스크톱: 2행
-          },
-          gap: 3,
-        }}>
-          {/* Typography 영역 (2칸 차지) */}
-          <Box sx={{ 
-            gridColumn: {
-              xs: '1', // 모바일: 1칸
-              sm: 'span 2', // 태블릿: 2칸 차지
-              md: 'span 2', // 중간: 2칸 차지
-              lg: 'span 2', // 데스크톱: 2칸 차지
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr', // 모바일: 1열
+              sm: 'repeat(2, 1fr)', // 태블릿: 2열
+              md: 'repeat(3, 1fr)', // 중간: 3열
+              lg: 'repeat(3, 1fr)', // 데스크톱: 3열
             },
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}>
-            <Typography variant="h1" sx={{
-              fontSize: 'clamp(2.8rem, 6vw, 5rem)',
-              fontWeight: 700,
-              lineHeight: 1.2,
-              letterSpacing: '-0.03em',
-              color: '#191C20' // Material Theme: onBackground
-            }}>
-              <Box component="span" sx={{ 
-                textDecoration: 'underline',
-                textDecorationThickness: '2px',
-                textUnderlineOffset: '8px'
-              }}>
+            gridTemplateRows: {
+              xs: 'auto', // 모바일: 자동
+              sm: 'auto auto', // 태블릿: 2행
+              md: 'auto auto', // 중간: 2행
+              lg: 'auto auto', // 데스크톱: 2행
+            },
+            gap: 3,
+          }}
+        >
+          {/* Typography 영역 (2칸 차지) */}
+          <Box
+            sx={{
+              gridColumn: {
+                xs: '1', // 모바일: 1칸
+                sm: 'span 2', // 태블릿: 2칸 차지
+                md: 'span 2', // 중간: 2칸 차지
+                lg: 'span 2', // 데스크톱: 2칸 차지
+              },
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: 'clamp(2.8rem, 6vw, 5rem)',
+                fontWeight: 700,
+                lineHeight: 1.2,
+                letterSpacing: '-0.03em',
+                color: '#191C20', // Material Theme: onBackground
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  textDecoration: 'underline',
+                  textDecorationThickness: '2px',
+                  textUnderlineOffset: '8px',
+                }}
+              >
                 교육
               </Box>
               을 바꾸는{' '}
-              <Box component="span" sx={{ 
-                textDecoration: 'underline',
-                textDecorationThickness: '2px',
-                textUnderlineOffset: '8px'
-              }}>
+              <Box
+                component="span"
+                sx={{
+                  textDecoration: 'underline',
+                  textDecorationThickness: '2px',
+                  textUnderlineOffset: '8px',
+                }}
+              >
                 AI
               </Box>
               를
               <br />
               함께 설계하는{' '}
-              <Box component="span" sx={{ 
-                textDecoration: 'underline',
-                textDecorationThickness: '2px',
-                textUnderlineOffset: '8px'
-              }}>
+              <Box
+                component="span"
+                sx={{
+                  textDecoration: 'underline',
+                  textDecorationThickness: '2px',
+                  textUnderlineOffset: '8px',
+                }}
+              >
                 사람
               </Box>
               들
@@ -826,72 +877,85 @@ export default function Home() {
           </Box>
 
           {/* 이미지 영역 (md 이상에서 표시, 2행 차지) */}
-          <Box sx={{ 
-            gridColumn: {
-              md: '3', // 중간: 3번째 열
-              lg: '3', // 데스크톱: 3번째 열
-            },
-            gridRow: {
-              md: 'span 2', // 중간: 2행 차지
-              lg: 'span 2', // 데스크톱: 2행 차지
-            },
-            display: {
-              xs: 'none', // 모바일: 숨김
-              sm: 'none', // 태블릿: 숨김
-              md: 'flex', // 중간: 표시
-              lg: 'flex', // 데스크톱: 표시
-            },
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: '#FAFCFE', // Material Theme: background
-            borderRadius: 3,
-            overflow: 'hidden',
-            minHeight: 400,
-            position: 'relative'
-          }}>
+          <Box
+            sx={{
+              gridColumn: {
+                md: '3', // 중간: 3번째 열
+                lg: '3', // 데스크톱: 3번째 열
+              },
+              gridRow: {
+                md: 'span 2', // 중간: 2행 차지
+                lg: 'span 2', // 데스크톱: 2행 차지
+              },
+              display: {
+                xs: 'none', // 모바일: 숨김
+                sm: 'none', // 태블릿: 숨김
+                md: 'flex', // 중간: 표시
+                lg: 'flex', // 데스크톱: 표시
+              },
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: '#FAFCFE', // Material Theme: background
+              borderRadius: 3,
+              overflow: 'hidden',
+              minHeight: 400,
+              position: 'relative',
+            }}
+          >
             <Image
               src="/img_F8F9FF.png"
               alt="AI Education"
               fill
               style={{
-                objectFit: 'contain'
+                objectFit: 'contain',
               }}
             />
           </Box>
 
           {/* Card 1 */}
-          <Card sx={{ 
-            bgcolor: '#E3F2FD', // 그리드 안 카드 색상
-            borderRadius: 3,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            p: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 200
-          }}>
+          <Card
+            sx={{
+              bgcolor: '#E3F2FD', // 그리드 안 카드 색상
+              borderRadius: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              p: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 200,
+            }}
+          >
             <CardContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="overline" sx={{ 
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                color: '#41484D', // Material Theme: onSurfaceVariant
-                mb: 1
-              }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  color: '#41484D', // Material Theme: onSurfaceVariant
+                  mb: 1,
+                }}
+              >
                 금성고등학교 곽수창
               </Typography>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 600,
-                fontSize: '1.5rem',
-                mb: 1
-              }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '1.5rem',
+                  mb: 1,
+                }}
+              >
                 학교 문화와 AI의 만남
               </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#41484D', // Material Theme: onSurfaceVariant
-                mb: 3,
-                lineHeight: 1.6,
-                flex: 1
-              }}>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: '#41484D', // Material Theme: onSurfaceVariant
+                  mb: 3,
+                  lineHeight: 1.6,
+                  flex: 1,
+                }}
+              >
                 적극적인 AI 도구 활용을 통한 학교 업무 과정의 혁신을 이끌어내다.
               </Typography>
               <Button
@@ -906,8 +970,8 @@ export default function Home() {
                   fontWeight: 500,
                   '&:hover': {
                     borderColor: '#7A2959', // Material Theme: onSecondaryContainer
-                    bgcolor: alpha('#A23B72', 0.08) // Material Theme: secondary with alpha
-                  }
+                    bgcolor: alpha('#A23B72', 0.08), // Material Theme: secondary with alpha
+                  },
                 }}
               >
                 게시글 읽기
@@ -916,38 +980,49 @@ export default function Home() {
           </Card>
 
           {/* Card 2 */}
-          <Card sx={{ 
-            bgcolor: '#E3F2FD', // 그리드 안 카드 색상
-            borderRadius: 3,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            p: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 200
-          }}>
+          <Card
+            sx={{
+              bgcolor: '#E3F2FD', // 그리드 안 카드 색상
+              borderRadius: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              p: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 200,
+            }}
+          >
             <CardContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="overline" sx={{ 
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                color: '#41484D', // Material Theme: onSurfaceVariant
-                mb: 1
-              }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  color: '#41484D', // Material Theme: onSurfaceVariant
+                  mb: 1,
+                }}
+              >
                 완도고등학교 공지훈
               </Typography>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 600,
-                fontSize: '1.5rem',
-                mb: 1
-              }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '1.5rem',
+                  mb: 1,
+                }}
+              >
                 교육의 본질은 학생의 성장을 돕는 일
               </Typography>
-              <Typography variant="body1" sx={{ 
-                color: '#41484D', // Material Theme: onSurfaceVariant
-                mb: 3,
-                lineHeight: 1.6,
-                flex: 1
-              }}>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: '#41484D', // Material Theme: onSurfaceVariant
+                  mb: 3,
+                  lineHeight: 1.6,
+                  flex: 1,
+                }}
+              >
                 모든 교육적 행위와 기술의 활용은 학생의 성장을 지원해야 합니다.
               </Typography>
               <Button
@@ -962,8 +1037,8 @@ export default function Home() {
                   fontWeight: 500,
                   '&:hover': {
                     borderColor: '#7A2959', // Material Theme: onSecondaryContainer
-                    bgcolor: alpha('#A23B72', 0.08) // Material Theme: secondary with alpha
-                  }
+                    bgcolor: alpha('#A23B72', 0.08), // Material Theme: secondary with alpha
+                  },
                 }}
               >
                 게시글 읽기
@@ -974,62 +1049,78 @@ export default function Home() {
       </Container>
 
       {/* Announcement Section */}
-      <Box sx={{ 
-        bgcolor: '#FAFCFE', // Material Theme: background
-        pt: 4,
-        pb: 4
-      }}>
+      <Box
+        sx={{
+          bgcolor: '#FAFCFE', // Material Theme: background
+          pt: 4,
+          pb: 4,
+        }}
+      >
         <Container maxWidth="xl">
-          <Card sx={{
-            bgcolor: '#E3F2FD', // 그리드 안 카드 색상
-            borderRadius: 3,
-            p: 5,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-          }}>
-            <Box sx={{ 
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: '2fr 1fr', // 태블릿: 2:1 비율
-                md: '3fr 2fr' // 데스크톱: 3:2 비율
-              },
-              gridTemplateRows: {
-                xs: 'auto',
-                sm: 'auto', // 태블릿: 1행
-                md: 'auto' // 데스크톱: 1행
-              },
-              gap: 4,
-              alignItems: 'stretch' // center -> stretch로 변경
-            }}>
-              <Box sx={{ 
-                gridColumn: {
-                  xs: '1',
-                  sm: '1', // 태블릿: 첫 번째 칸
-                  md: '1' // 데스크톱: 첫 번째 칸 (3fr)
+          <Card
+            sx={{
+              bgcolor: '#E3F2FD', // 그리드 안 카드 색상
+              borderRadius: 3,
+              p: 5,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: '2fr 1fr', // 태블릿: 2:1 비율
+                  md: '3fr 2fr', // 데스크톱: 3:2 비율
                 },
-                gridRow: {
-                  xs: '1',
-                  sm: '1', // 태블릿: 1행
-                  md: '1' // 데스크톱: 1행
+                gridTemplateRows: {
+                  xs: 'auto',
+                  sm: 'auto', // 태블릿: 1행
+                  md: 'auto', // 데스크톱: 1행
                 },
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center' // 세로 중앙 정렬
-              }}>
-                <Typography variant="h3" sx={{
-                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                  fontWeight: 700,
-                  mb: 2,
-                  lineHeight: 1.2
-                }}>
+                gap: 4,
+                alignItems: 'stretch', // center -> stretch로 변경
+              }}
+            >
+              <Box
+                sx={{
+                  gridColumn: {
+                    xs: '1',
+                    sm: '1', // 태블릿: 첫 번째 칸
+                    md: '1', // 데스크톱: 첫 번째 칸 (3fr)
+                  },
+                  gridRow: {
+                    xs: '1',
+                    sm: '1', // 태블릿: 1행
+                    md: '1', // 데스크톱: 1행
+                  },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center', // 세로 중앙 정렬
+                }}
+              >
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                    fontWeight: 700,
+                    mb: 2,
+                    lineHeight: 1.2,
+                  }}
+                >
                   2025년 전남에듀테크교육연구회 연수
                 </Typography>
-                <Typography variant="body1" sx={{
-                  color: '#41484D', // Material Theme: onSurfaceVariant
-                  lineHeight: 1.6,
-                  mb: 3
-                }}>
-                  전남에서 가장 혁신적이고 선도적으로 교육을 만들어나가는 연수 과정에서 당신의 역량과 비전을 같이 실천해보세요. 연수 참여와 연수에 대한 의견 개진은 언제나 열려 있습니다.
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: '#41484D', // Material Theme: onSurfaceVariant
+                    lineHeight: 1.6,
+                    mb: 3,
+                  }}
+                >
+                  전남에서 가장 혁신적이고 선도적으로 교육을 만들어나가는 연수 과정에서 당신의
+                  역량과 비전을 같이 실천해보세요. 연수 참여와 연수에 대한 의견 개진은 언제나 열려
+                  있습니다.
                 </Typography>
                 <Button
                   variant="outlined"
@@ -1044,107 +1135,131 @@ export default function Home() {
                     fontWeight: 500,
                     '&:hover': {
                       borderColor: '#434078', // Material Theme: onTertiaryContainer
-                      bgcolor: alpha('#5A5891', 0.08) // Material Theme: tertiary with alpha
-                    }
+                      bgcolor: alpha('#5A5891', 0.08), // Material Theme: tertiary with alpha
+                    },
                   }}
                 >
                   공지글 확인하기
                 </Button>
               </Box>
-              
-              <Box sx={{ 
-                gridColumn: {
-                  xs: '1',
-                  sm: '2', // 태블릿: 두 번째 칸
-                  md: '2' // 데스크톱: 두 번째 칸 (2fr)
-                },
-                gridRow: {
-                  xs: '2',
-                  sm: '1', // 태블릿: 1행
-                  md: '1' // 데스크톱: 1행
-                },
-                height: { md: '100%' } // 데스크톱에서 높이 100%
-              }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 2, 
-                  flexDirection: { 
-                    xs: 'column', 
-                    sm: 'column', // 태블릿: 세로 배치
-                    md: 'row' // 데스크톱: 가로 배치
+
+              <Box
+                sx={{
+                  gridColumn: {
+                    xs: '1',
+                    sm: '2', // 태블릿: 두 번째 칸
+                    md: '2', // 데스크톱: 두 번째 칸 (2fr)
                   },
-                  height: '100%'
-                }}>
-                  <Card sx={{
-                    flex: 1,
-                    minWidth: { xs: 140, sm: 0, md: 'auto' },
-                    minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
-                    bgcolor: '#F5C2DD', // Material Theme: secondaryContainer
-                    borderRadius: 2,
-                    p: 3,
-                    boxShadow: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }
-                  }}>
-                    <Typography variant="overline" sx={{
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      color: '#7A2959' // Material Theme: onSecondaryContainer
-                    }}>
+                  gridRow: {
+                    xs: '2',
+                    sm: '1', // 태블릿: 1행
+                    md: '1', // 데스크톱: 1행
+                  },
+                  height: { md: '100%' }, // 데스크톱에서 높이 100%
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    flexDirection: {
+                      xs: 'column',
+                      sm: 'column', // 태블릿: 세로 배치
+                      md: 'row', // 데스크톱: 가로 배치
+                    },
+                    height: '100%',
+                  }}
+                >
+                  <Card
+                    sx={{
+                      flex: 1,
+                      minWidth: { xs: 140, sm: 0, md: 'auto' },
+                      minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
+                      bgcolor: '#F5C2DD', // Material Theme: secondaryContainer
+                      borderRadius: 2,
+                      p: 3,
+                      boxShadow: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        color: '#7A2959', // Material Theme: onSecondaryContainer
+                      }}
+                    >
                       Model details
                     </Typography>
-                    <Typography variant="h6" sx={{
-                      fontWeight: 600,
-                      mt: 1,
-                      fontSize: { xs: '1rem', sm: '1.25rem' }
-                    }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        mt: 1,
+                        fontSize: { xs: '1rem', sm: '1.25rem' },
+                      }}
+                    >
                       2025년 상반기 연수 : MCP
                     </Typography>
-                    <ArrowOutward sx={{ 
-                      fontSize: 20,
-                      mt: 2,
-                      color: '#7A2959' // Material Theme: onSecondaryContainer
-                    }} />
+                    <ArrowOutward
+                      sx={{
+                        fontSize: 20,
+                        mt: 2,
+                        color: '#7A2959', // Material Theme: onSecondaryContainer
+                      }}
+                    />
                   </Card>
-                  
-                  <Card sx={{
-                    flex: 1,
-                    minWidth: { xs: 140, sm: 0, md: 'auto' },
-                    minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
-                    bgcolor: '#F5C2DD', // Material Theme: secondaryContainer
-                    borderRadius: 2,
-                    p: 3,
-                    boxShadow: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }
-                  }}>
-                    <Typography variant="overline" sx={{
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      color: '#7A2959' // Material Theme: onSecondaryContainer
-                    }}>
+
+                  <Card
+                    sx={{
+                      flex: 1,
+                      minWidth: { xs: 140, sm: 0, md: 'auto' },
+                      minHeight: { md: 0 }, // 데스크톱에서 높이 자동 조절
+                      bgcolor: '#F5C2DD', // Material Theme: secondaryContainer
+                      borderRadius: 2,
+                      p: 3,
+                      boxShadow: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        color: '#7A2959', // Material Theme: onSecondaryContainer
+                      }}
+                    >
                       Model details
                     </Typography>
-                    <Typography variant="h6" sx={{
-                      fontWeight: 600,
-                      mt: 1,
-                      fontSize: { xs: '1rem', sm: '1.25rem' }
-                    }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
+                        mt: 1,
+                        fontSize: { xs: '1rem', sm: '1.25rem' },
+                      }}
+                    >
                       2025년 하반기 연수 : CLI 활용 자동채점
                     </Typography>
-                    <ArrowOutward sx={{ 
-                      fontSize: 20,
-                      mt: 2,
-                      color: '#7A2959' // Material Theme: onSecondaryContainer
-                    }} />
+                    <ArrowOutward
+                      sx={{
+                        fontSize: 20,
+                        mt: 2,
+                        color: '#7A2959', // Material Theme: onSecondaryContainer
+                      }}
+                    />
                   </Card>
                 </Box>
               </Box>
@@ -1156,16 +1271,19 @@ export default function Home() {
       {/* Bottom CTA */}
       <Container maxWidth="md" sx={{ pt: 8, pb: 8 }}>
         <Stack spacing={3} alignItems="center" textAlign="center">
-          <Typography variant="h2" sx={{
-            fontSize: { xs: '2rem', md: '2.5rem' },
-            fontWeight: 600,
-            letterSpacing: '-0.02em'
-          }}>
+          <Typography
+            variant="h2"
+            sx={{
+              fontSize: { xs: '2rem', md: '2.5rem' },
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
             교육의 미래를 함께
             <br />
             만들어갈 준비가 되셨나요?
           </Typography>
-          
+
           <Stack direction="row" spacing={2}>
             <Button
               component={Link}
@@ -1180,8 +1298,8 @@ export default function Home() {
                 textTransform: 'none',
                 fontWeight: 500,
                 '&:hover': {
-                  bgcolor: '#204876' // Material Theme: onPrimaryContainer
-                }
+                  bgcolor: '#204876', // Material Theme: onPrimaryContainer
+                },
               }}
             >
               회원가입
@@ -1198,8 +1316,8 @@ export default function Home() {
                 fontWeight: 500,
                 '&:hover': {
                   borderColor: '#434078', // Material Theme: onTertiaryContainer
-                  bgcolor: alpha('#5A5891', 0.08) // Material Theme: tertiary with alpha
-                }
+                  bgcolor: alpha('#5A5891', 0.08), // Material Theme: tertiary with alpha
+                },
               }}
             >
               문의하기
@@ -1209,78 +1327,80 @@ export default function Home() {
       </Container>
 
       {/* Footer */}
-      <Box sx={{ 
-        bgcolor: '#1a1a1a',
-        color: '#fff',
-        pt: 8,
-        pb: 4
-      }}>
+      <Box
+        sx={{
+          bgcolor: '#1a1a1a',
+          color: '#fff',
+          pt: 8,
+          pb: 4,
+        }}
+      >
         <Container maxWidth="xl">
           <Grid container spacing={6} justifyContent="center">
             {/* Footer columns */}
             <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
+              <Typography
+                variant="subtitle2"
+                sx={{
                   fontWeight: 600,
                   mb: 2,
-                  fontSize: '0.875rem'
+                  fontSize: '0.875rem',
                 }}
               >
                 연구회
               </Typography>
               <Stack spacing={1.5}>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   연구회 소개
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   조직도
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   연혁
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   정기 모임
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   연수 프로그램
@@ -1289,90 +1409,90 @@ export default function Home() {
             </Grid>
 
             <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
+              <Typography
+                variant="subtitle2"
+                sx={{
                   fontWeight: 600,
                   mb: 2,
-                  fontSize: '0.875rem'
+                  fontSize: '0.875rem',
                 }}
               >
                 자료 & 사례
               </Typography>
               <Stack spacing={1.5}>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   AI 도구 활용
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   수업 지도안
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   평가 자료
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   논문 및 보고서
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   수업 사례
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   연구 사례
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   우수 실천 사례
@@ -1381,46 +1501,46 @@ export default function Home() {
             </Grid>
 
             <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
+              <Typography
+                variant="subtitle2"
+                sx={{
                   fontWeight: 600,
                   mb: 2,
-                  fontSize: '0.875rem'
+                  fontSize: '0.875rem',
                 }}
               >
                 비전
               </Typography>
               <Stack spacing={1.5}>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   미래 교육
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   AI 교육 정책
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   교육 혁신
@@ -1429,57 +1549,57 @@ export default function Home() {
             </Grid>
 
             <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
+              <Typography
+                variant="subtitle2"
+                sx={{
                   fontWeight: 600,
                   mb: 2,
-                  fontSize: '0.875rem'
+                  fontSize: '0.875rem',
                 }}
               >
                 뉴스
               </Typography>
               <Stack spacing={1.5}>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   공지사항
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   연구회 소식
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   행사 안내
                 </MuiLink>
-                <MuiLink 
-                  href="#" 
+                <MuiLink
+                  href="#"
                   underline="none"
-                  sx={{ 
+                  sx={{
                     color: '#888',
                     fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' }
+                    '&:hover': { color: '#fff' },
                   }}
                 >
                   교육 뉴스
@@ -1490,19 +1610,21 @@ export default function Home() {
 
           {/* Bottom bar */}
           <Divider sx={{ borderColor: '#333', my: 4 }} />
-          
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 2
-          }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
+
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
                 color: '#888',
-                fontSize: '0.75rem'
+                fontSize: '0.75rem',
               }}
             >
               © 2025 AIedulog
@@ -1510,29 +1632,29 @@ export default function Home() {
 
             {/* Social links */}
             <Stack direction="row" spacing={2}>
-              <IconButton 
-                size="small" 
-                sx={{ 
+              <IconButton
+                size="small"
+                sx={{
                   color: '#888',
-                  '&:hover': { color: '#fff' }
+                  '&:hover': { color: '#fff' },
                 }}
               >
                 <YouTube fontSize="small" />
               </IconButton>
-              <IconButton 
-                size="small" 
-                sx={{ 
+              <IconButton
+                size="small"
+                sx={{
                   color: '#888',
-                  '&:hover': { color: '#fff' }
+                  '&:hover': { color: '#fff' },
                 }}
               >
                 <LinkedIn fontSize="small" />
               </IconButton>
-              <IconButton 
-                size="small" 
-                sx={{ 
+              <IconButton
+                size="small"
+                sx={{
                   color: '#888',
-                  '&:hover': { color: '#fff' }
+                  '&:hover': { color: '#fff' },
                 }}
               >
                 <Twitter fontSize="small" />
@@ -1560,8 +1682,8 @@ export default function Home() {
             sx={{
               bgcolor: theme.palette.primary.main,
               '&:hover': {
-                bgcolor: theme.palette.primary.dark
-              }
+                bgcolor: theme.palette.primary.dark,
+              },
             }}
           >
             <MenuIcon />
@@ -1570,8 +1692,8 @@ export default function Home() {
       )}
 
       {/* FeedSidebar (모바일 Drawer) */}
-      <FeedSidebar 
-        user={user} 
+      <FeedSidebar
+        user={user}
         profile={profile}
         mobileOpen={mobileDrawerOpen}
         onMobileToggle={() => setMobileDrawerOpen(false)}

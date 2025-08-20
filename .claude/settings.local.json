@@ -28,7 +28,9 @@
       "Bash(/Users/stillclie_mac/Documents/ug/aideulog/fix-grid.sh:*)",
       "Bash(npm run build:*)",
       "Bash(npx eslint:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npx prettier:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": [],

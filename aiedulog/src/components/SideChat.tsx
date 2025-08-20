@@ -23,7 +23,7 @@ import {
   Chip,
   Button,
   Collapse,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material'
 import {
   Chat,
@@ -36,7 +36,7 @@ import {
   Group,
   Circle,
   ArrowBack,
-  Add
+  Add,
 } from '@mui/icons-material'
 
 interface Message {
@@ -78,7 +78,7 @@ export default function SideChat({ user }: { user: User | null }) {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
   const router = useRouter()
@@ -111,7 +111,8 @@ export default function SideChat({ user }: { user: User | null }) {
 
     const { data: rooms } = await supabase
       .from('chat_participants')
-      .select(`
+      .select(
+        `
         room_id,
         last_read_at,
         chat_rooms!inner (
@@ -121,7 +122,8 @@ export default function SideChat({ user }: { user: User | null }) {
           last_message,
           last_message_at
         )
-      `)
+      `
+      )
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('chat_rooms(last_message_at)', { ascending: false })
@@ -132,7 +134,8 @@ export default function SideChat({ user }: { user: User | null }) {
         rooms.map(async (room: any) => {
           const { data: participants } = await supabase
             .from('chat_participants')
-            .select(`
+            .select(
+              `
               user_id,
               profiles!inner (
                 id,
@@ -140,7 +143,8 @@ export default function SideChat({ user }: { user: User | null }) {
                 nickname,
                 avatar_url
               )
-            `)
+            `
+            )
             .eq('room_id', room.chat_rooms.id)
             .eq('is_active', true)
 
@@ -154,7 +158,7 @@ export default function SideChat({ user }: { user: User | null }) {
           return {
             ...room.chat_rooms,
             participants: participants || [],
-            unread_count: unreadCount || 0
+            unread_count: unreadCount || 0,
           }
         })
       )
@@ -169,7 +173,8 @@ export default function SideChat({ user }: { user: User | null }) {
 
     const { data: messagesData } = await supabase
       .from('chat_messages')
-      .select(`
+      .select(
+        `
         *,
         profiles!chat_messages_sender_id_fkey (
           id,
@@ -177,16 +182,17 @@ export default function SideChat({ user }: { user: User | null }) {
           nickname,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('room_id', selectedRoom.id)
       .eq('is_deleted', false)
       .order('created_at', { ascending: true })
       .limit(50)
 
     if (messagesData) {
-      const formattedMessages = messagesData.map(msg => ({
+      const formattedMessages = messagesData.map((msg) => ({
         ...msg,
-        sender: msg.profiles
+        sender: msg.profiles,
       }))
       setMessages(formattedMessages)
     }
@@ -202,7 +208,7 @@ export default function SideChat({ user }: { user: User | null }) {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'chat_messages'
+          table: 'chat_messages',
         },
         async (payload) => {
           if (selectedRoom && payload.new.room_id === selectedRoom.id) {
@@ -214,16 +220,16 @@ export default function SideChat({ user }: { user: User | null }) {
 
             const newMsg = {
               ...payload.new,
-              sender: senderData
+              sender: senderData,
             } as Message
 
-            setMessages(prev => [...prev, newMsg])
-            
+            setMessages((prev) => [...prev, newMsg])
+
             if (payload.new.sender_id !== user?.id) {
               markMessagesAsRead()
             }
           }
-          
+
           fetchChatRooms()
         }
       )
@@ -251,29 +257,27 @@ export default function SideChat({ user }: { user: User | null }) {
     const messageContent = newMessage
     setNewMessage('')
 
-    await supabase
-      .from('chat_messages')
-      .insert({
-        room_id: selectedRoom.id,
-        sender_id: user.id,
-        content: messageContent,
-        type: 'text'
-      })
+    await supabase.from('chat_messages').insert({
+      room_id: selectedRoom.id,
+      sender_id: user.id,
+      content: messageContent,
+      type: 'text',
+    })
 
     setSending(false)
   }
 
   const getChatDisplayInfo = (room: ChatRoom) => {
     if (room.type === 'direct') {
-      const otherUser = room.participants.find(p => p.user_id !== user?.id)
+      const otherUser = room.participants.find((p) => p.user_id !== user?.id)
       return {
         name: otherUser?.profile.nickname || otherUser?.profile.email?.split('@')[0] || '사용자',
-        avatar: otherUser?.profile.avatar_url
+        avatar: otherUser?.profile.avatar_url,
       }
     } else {
       return {
         name: room.name || '그룹 채팅',
-        avatar: null
+        avatar: null,
       }
     }
   }
@@ -283,16 +287,16 @@ export default function SideChat({ user }: { user: User | null }) {
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const hours = Math.floor(diff / (1000 * 60 * 60))
-    
+
     if (hours < 1) {
       const minutes = Math.floor(diff / (1000 * 60))
       return minutes < 1 ? '방금' : `${minutes}분 전`
     } else if (hours < 24) {
       return `${hours}시간 전`
     } else {
-      return date.toLocaleDateString('ko-KR', { 
-        month: 'numeric', 
-        day: 'numeric' 
+      return date.toLocaleDateString('ko-KR', {
+        month: 'numeric',
+        day: 'numeric',
       })
     }
   }
@@ -309,7 +313,7 @@ export default function SideChat({ user }: { user: User | null }) {
         borderRadius: 2,
         border: 1,
         borderColor: 'divider',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
       {/* 헤더 */}
@@ -319,7 +323,7 @@ export default function SideChat({ user }: { user: User | null }) {
           bgcolor: 'primary.main',
           color: 'white',
           cursor: 'pointer',
-          userSelect: 'none'
+          userSelect: 'none',
         }}
         onClick={() => setExpanded(!expanded)}
       >
@@ -369,7 +373,7 @@ export default function SideChat({ user }: { user: User | null }) {
                 flexGrow: 1,
                 overflow: 'auto',
                 p: 2,
-                bgcolor: 'grey.50'
+                bgcolor: 'grey.50',
               }}
             >
               {messages.map((message) => {
@@ -380,7 +384,7 @@ export default function SideChat({ user }: { user: User | null }) {
                     sx={{
                       display: 'flex',
                       justifyContent: isMyMessage ? 'flex-end' : 'flex-start',
-                      mb: 1
+                      mb: 1,
                     }}
                   >
                     <Paper
@@ -392,7 +396,7 @@ export default function SideChat({ user }: { user: User | null }) {
                         color: isMyMessage ? 'white' : 'text.primary',
                         borderRadius: 2,
                         border: isMyMessage ? 'none' : '1px solid',
-                        borderColor: 'divider'
+                        borderColor: 'divider',
                       }}
                     >
                       {!isMyMessage && (
@@ -403,13 +407,13 @@ export default function SideChat({ user }: { user: User | null }) {
                       <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                         {message.content}
                       </Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           opacity: 0.7,
                           display: 'block',
                           textAlign: isMyMessage ? 'right' : 'left',
-                          mt: 0.5
+                          mt: 0.5,
                         }}
                       >
                         {formatTime(message.created_at)}
@@ -439,8 +443,8 @@ export default function SideChat({ user }: { user: User | null }) {
                   disabled={sending}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: 2
-                    }
+                      borderRadius: 2,
+                    },
                   }}
                 />
                 <IconButton
@@ -487,23 +491,13 @@ export default function SideChat({ user }: { user: User | null }) {
                         disablePadding
                         secondaryAction={
                           room.unread_count > 0 && (
-                            <Badge
-                              badgeContent={room.unread_count}
-                              color="error"
-                              sx={{ mr: 1 }}
-                            />
+                            <Badge badgeContent={room.unread_count} color="error" sx={{ mr: 1 }} />
                           )
                         }
                       >
-                        <ListItemButton
-                          onClick={() => setSelectedRoom(room)}
-                          sx={{ py: 1 }}
-                        >
+                        <ListItemButton onClick={() => setSelectedRoom(room)} sx={{ py: 1 }}>
                           <ListItemAvatar>
-                            <Avatar
-                              src={info.avatar || undefined}
-                              sx={{ width: 36, height: 36 }}
-                            >
+                            <Avatar src={info.avatar || undefined} sx={{ width: 36, height: 36 }}>
                               {room.type === 'direct' ? <Person /> : <Group />}
                             </Avatar>
                           </ListItemAvatar>
@@ -521,7 +515,7 @@ export default function SideChat({ user }: { user: User | null }) {
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                   whiteSpace: 'nowrap',
-                                  display: 'block'
+                                  display: 'block',
                                 }}
                               >
                                 {room.last_message || '대화를 시작해보세요'}

@@ -22,7 +22,7 @@ import {
   Badge,
   useTheme,
   alpha,
-  Snackbar
+  Snackbar,
 } from '@mui/material'
 import {
   PhotoCamera,
@@ -33,7 +33,7 @@ import {
   CheckCircle,
   CloudUpload,
   Security,
-  ChevronRight
+  ChevronRight,
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 
@@ -52,7 +52,7 @@ export default function ProfileSettingsPage() {
   const [savingNickname, setSavingNickname] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -60,29 +60,31 @@ export default function ProfileSettingsPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
       setEmail(user.email || '')
-      
+
       // 프로필 정보 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       if (profileData) {
         setProfile(profileData)
         setAvatarUrl(profileData.avatar_url)
         setNickname(profileData.nickname || profileData.email?.split('@')[0] || '')
       }
-      
+
       setLoading(false)
     }
     getUser()
@@ -96,13 +98,13 @@ export default function ProfileSettingsPage() {
         setError('파일 크기는 5MB 이하여야 합니다.')
         return
       }
-      
+
       // 파일 타입 체크
       if (!file.type.startsWith('image/')) {
         setError('이미지 파일만 업로드 가능합니다.')
         return
       }
-      
+
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -114,50 +116,47 @@ export default function ProfileSettingsPage() {
 
   const handleUploadAvatar = async () => {
     if (!selectedFile || !user) return
-    
+
     setUploading(true)
     setError(null)
-    
+
     try {
       // 기존 아바타 삭제
       if (avatarUrl) {
         const oldPath = avatarUrl.split('/').pop()
         if (oldPath) {
-          await supabase.storage
-            .from('avatars')
-            .remove([`${user.id}/${oldPath}`])
+          await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`])
         }
       }
-      
+
       // 새 아바타 업로드
       const fileExt = selectedFile.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${fileExt}`
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, selectedFile)
-      
+
       if (uploadError) throw uploadError
-      
+
       // Public URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(uploadData.path)
-      
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(uploadData.path)
+
       // 프로필 업데이트
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', user.id)
-      
+
       if (updateError) throw updateError
-      
+
       setAvatarUrl(publicUrl)
       setProfile({ ...profile, avatar_url: publicUrl })
       setSelectedFile(null)
       setPreviewUrl(null)
       setSuccess(true)
-      
     } catch (error: any) {
       console.error('Avatar upload error:', error)
       setError('아바타 업로드에 실패했습니다.')
@@ -168,31 +167,28 @@ export default function ProfileSettingsPage() {
 
   const handleRemoveAvatar = async () => {
     if (!avatarUrl || !user) return
-    
+
     setUploading(true)
     setError(null)
-    
+
     try {
       // Storage에서 삭제
       const path = avatarUrl.split('/').pop()
       if (path) {
-        await supabase.storage
-          .from('avatars')
-          .remove([`${user.id}/${path}`])
+        await supabase.storage.from('avatars').remove([`${user.id}/${path}`])
       }
-      
+
       // 프로필 업데이트
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
         .eq('id', user.id)
-      
+
       if (updateError) throw updateError
-      
+
       setAvatarUrl(null)
       setProfile({ ...profile, avatar_url: null })
       setSuccess(true)
-      
     } catch (error: any) {
       console.error('Avatar remove error:', error)
       setError('아바타 삭제에 실패했습니다.')
@@ -211,23 +207,22 @@ export default function ProfileSettingsPage() {
 
   const handleSaveNickname = async () => {
     if (!nickname.trim() || !user) return
-    
+
     setSavingNickname(true)
     setError(null)
-    
+
     try {
       // 닉네임 업데이트
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ nickname: nickname.trim() })
         .eq('id', user.id)
-      
+
       if (updateError) throw updateError
-      
+
       setProfile({ ...profile, nickname: nickname.trim() })
       setIsEditingNickname(false)
       setSuccess(true)
-      
     } catch (error: any) {
       console.error('Nickname update error:', error)
       setError('닉네임 변경에 실패했습니다.')
@@ -238,7 +233,15 @@ export default function ProfileSettingsPage() {
 
   if (loading) {
     return (
-      <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          bgcolor: 'grey.50',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <CircularProgress />
       </Box>
     )
@@ -249,7 +252,7 @@ export default function ProfileSettingsPage() {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>
       <AppHeader user={user} profile={profile} />
-      
+
       <Container maxWidth="md" sx={{ py: 3 }}>
         {/* 헤더 */}
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
@@ -268,7 +271,7 @@ export default function ProfileSettingsPage() {
               프로필 사진
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
               {/* 현재 아바타 또는 미리보기 */}
               <Badge
@@ -279,7 +282,7 @@ export default function ProfileSettingsPage() {
                     sx={{
                       bgcolor: 'primary.main',
                       color: 'white',
-                      '&:hover': { bgcolor: 'primary.dark' }
+                      '&:hover': { bgcolor: 'primary.dark' },
                     }}
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -293,13 +296,13 @@ export default function ProfileSettingsPage() {
                     width: 120,
                     height: 120,
                     bgcolor: 'primary.main',
-                    fontSize: 48
+                    fontSize: 48,
                   }}
                 >
                   {!previewUrl && !avatarUrl && profile?.email?.[0]?.toUpperCase()}
                 </Avatar>
               </Badge>
-              
+
               {/* 업로드 컨트롤 */}
               <Box sx={{ flex: 1 }}>
                 <input
@@ -309,7 +312,7 @@ export default function ProfileSettingsPage() {
                   accept="image/*"
                   onChange={handleFileSelect}
                 />
-                
+
                 {previewUrl ? (
                   // 미리보기 상태
                   <Stack spacing={2}>
@@ -325,11 +328,7 @@ export default function ProfileSettingsPage() {
                       >
                         업로드
                       </Button>
-                      <Button
-                        variant="outlined"
-                        onClick={handleCancelPreview}
-                        disabled={uploading}
-                      >
+                      <Button variant="outlined" onClick={handleCancelPreview} disabled={uploading}>
                         취소
                       </Button>
                     </Stack>
@@ -374,7 +373,7 @@ export default function ProfileSettingsPage() {
               보안 설정
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             <Box
               sx={{
                 p: 2,
@@ -385,8 +384,8 @@ export default function ProfileSettingsPage() {
                 transition: 'all 0.2s',
                 '&:hover': {
                   bgcolor: alpha(theme.palette.primary.main, 0.05),
-                  borderColor: 'primary.main'
-                }
+                  borderColor: 'primary.main',
+                },
               }}
               onClick={() => router.push('/settings/security')}
             >
@@ -413,7 +412,7 @@ export default function ProfileSettingsPage() {
               기본 정보
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             <Stack spacing={3}>
               <Box>
                 <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -454,11 +453,11 @@ export default function ProfileSettingsPage() {
                       variant="outlined"
                       onClick={() => setIsEditingNickname(true)}
                       startIcon={<Edit />}
-                      sx={{ 
-                        height: 56, 
+                      sx={{
+                        height: 56,
                         minWidth: 120,
                         whiteSpace: 'nowrap',
-                        fontSize: '1rem'  // TextField와 동일한 크기
+                        fontSize: '1rem', // TextField와 동일한 크기
                       }}
                     >
                       수정
@@ -466,7 +465,7 @@ export default function ProfileSettingsPage() {
                   )}
                 </Stack>
               </Box>
-              
+
               <TextField
                 label="이메일"
                 value={email}
@@ -474,20 +473,23 @@ export default function ProfileSettingsPage() {
                 fullWidth
                 helperText="이메일은 변경할 수 없습니다"
               />
-              
+
               <TextField
                 label="권한"
                 value={
-                  profile?.role === 'admin' ? '관리자' :
-                  profile?.role === 'moderator' ? '운영진' :
-                  profile?.role === 'verified' ? '인증 교사' :
-                  '일반 회원'
+                  profile?.role === 'admin'
+                    ? '관리자'
+                    : profile?.role === 'moderator'
+                      ? '운영진'
+                      : profile?.role === 'verified'
+                        ? '인증 교사'
+                        : '일반 회원'
                 }
                 disabled
                 fullWidth
                 helperText="권한은 관리자가 변경할 수 있습니다"
               />
-              
+
               <TextField
                 label="가입일"
                 value={new Date(user.created_at).toLocaleDateString('ko-KR')}

@@ -15,7 +15,7 @@ import {
   IconButton,
   CircularProgress,
   Alert,
-  InputAdornment
+  InputAdornment,
 } from '@mui/material'
 import { Close, MyLocation, Search } from '@mui/icons-material'
 
@@ -28,22 +28,22 @@ interface MapPickerProps {
 
 const mapContainerStyle = {
   width: '100%',
-  height: '400px'
+  height: '400px',
 }
 
 // 서울 시청 기본 위치
 const defaultCenter = {
   lat: 37.5665,
-  lng: 126.9780
+  lng: 126.978,
 }
 
-const libraries: ("places")[] = ["places"]
+const libraries: 'places'[] = ['places']
 
 export default function MapPicker({
   open,
   onClose,
   onSelectLocation,
-  initialAddress = ''
+  initialAddress = '',
 }: MapPickerProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [center, setCenter] = useState(defaultCenter)
@@ -52,7 +52,7 @@ export default function MapPicker({
   const [searchInput, setSearchInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
   const searchBoxRef = useRef<HTMLInputElement>(null)
 
@@ -71,11 +71,11 @@ export default function MapPicker({
         (position) => {
           const newCenter = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude
+            lng: position.coords.longitude,
           }
           setCenter(newCenter)
           setMarker(new google.maps.LatLng(newCenter.lat, newCenter.lng))
-          
+
           // 역지오코딩으로 주소 가져오기
           const geocoder = new google.maps.Geocoder()
           geocoder.geocode({ location: newCenter }, (results, status) => {
@@ -84,7 +84,7 @@ export default function MapPicker({
             }
             setLoading(false)
           })
-          
+
           if (map) {
             map.panTo(newCenter)
             map.setZoom(17)
@@ -106,7 +106,7 @@ export default function MapPicker({
   const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (e.latLng) {
       setMarker(e.latLng)
-      
+
       // 역지오코딩으로 주소 가져오기
       const geocoder = new google.maps.Geocoder()
       geocoder.geocode({ location: e.latLng }, (results, status) => {
@@ -121,16 +121,16 @@ export default function MapPicker({
   const onPlaceSelected = useCallback(() => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace()
-      
+
       if (place.geometry && place.geometry.location) {
         const newCenter = {
           lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng()
+          lng: place.geometry.location.lng(),
         }
         setCenter(newCenter)
         setMarker(place.geometry.location)
         setAddress(place.formatted_address || '')
-        
+
         if (map) {
           map.panTo(newCenter)
           map.setZoom(17)
@@ -142,19 +142,19 @@ export default function MapPicker({
   // 검색 실행
   const handleSearch = useCallback(() => {
     if (!searchInput.trim()) return
-    
+
     const geocoder = new google.maps.Geocoder()
     geocoder.geocode({ address: searchInput }, (results, status) => {
       if (status === 'OK' && results && results[0]) {
         const location = results[0].geometry.location
         const newCenter = {
           lat: location.lat(),
-          lng: location.lng()
+          lng: location.lng(),
         }
         setCenter(newCenter)
         setMarker(location)
         setAddress(results[0].formatted_address)
-        
+
         if (map) {
           map.panTo(newCenter)
           map.setZoom(17)
@@ -203,8 +203,8 @@ export default function MapPicker({
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>취소</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={() => {
               if (address) {
                 onSelectLocation(address)
@@ -237,7 +237,7 @@ export default function MapPicker({
               {error}
             </Alert>
           )}
-          
+
           {/* 검색 바 */}
           <Stack direction="row" spacing={1}>
             <TextField
@@ -258,7 +258,7 @@ export default function MapPicker({
                       <Search />
                     </IconButton>
                   </InputAdornment>
-                )
+                ),
               }}
             />
             <Button
@@ -273,10 +273,7 @@ export default function MapPicker({
 
           {/* 구글 맵 */}
           <Box sx={{ borderRadius: 1, overflow: 'hidden', border: 1, borderColor: 'divider' }}>
-            <LoadScript
-              googleMapsApiKey={apiKey}
-              libraries={libraries}
-            >
+            <LoadScript googleMapsApiKey={apiKey} libraries={libraries}>
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}
                 center={center}
@@ -286,12 +283,10 @@ export default function MapPicker({
                 options={{
                   streetViewControl: false,
                   fullscreenControl: false,
-                  mapTypeControl: false
+                  mapTypeControl: false,
                 }}
               >
-                {marker && (
-                  <Marker position={marker} />
-                )}
+                {marker && <Marker position={marker} />}
               </GoogleMap>
             </LoadScript>
           </Box>
@@ -310,11 +305,7 @@ export default function MapPicker({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>취소</Button>
-        <Button 
-          variant="contained" 
-          onClick={handleConfirm}
-          disabled={!address.trim()}
-        >
+        <Button variant="contained" onClick={handleConfirm} disabled={!address.trim()}>
           위치 선택
         </Button>
       </DialogActions>

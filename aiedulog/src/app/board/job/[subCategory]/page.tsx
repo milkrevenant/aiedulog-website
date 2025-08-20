@@ -34,7 +34,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material'
 import {
   Favorite,
@@ -60,7 +60,7 @@ import {
   Description,
   FolderZip,
   Close,
-  CloudUpload
+  CloudUpload,
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
@@ -71,7 +71,7 @@ import EmptyPostMessage from '@/components/EmptyPostMessage'
 const subCategoryInfo = {
   all: { name: '전체', icon: <Work />, color: 'info' as const },
   hiring: { name: '구인', icon: <Business />, color: 'success' as const },
-  seeking: { name: '구직', icon: <PersonSearch />, color: 'warning' as const }
+  seeking: { name: '구직', icon: <PersonSearch />, color: 'warning' as const },
 }
 
 export default function JobBoardPage() {
@@ -80,7 +80,7 @@ export default function JobBoardPage() {
   const router = useRouter()
   const supabase = createClient()
   const theme = useTheme()
-  
+
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -95,17 +95,19 @@ export default function JobBoardPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  
+
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const currentInfo = subCategoryInfo[subCategory as keyof typeof subCategoryInfo] || subCategoryInfo.all
+  const currentInfo =
+    subCategoryInfo[subCategory as keyof typeof subCategoryInfo] || subCategoryInfo.all
 
   // 게시글 목록 가져오기
   const fetchPosts = useCallback(async () => {
     let query = supabase
       .from('posts')
-      .select(`
+      .select(
+        `
         *,
         profiles!posts_author_id_fkey (
           id,
@@ -122,7 +124,8 @@ export default function JobBoardPage() {
         bookmarks (
           user_id
         )
-      `)
+      `
+      )
       .eq('category', 'job')
       .eq('is_published', true)
       .order('is_pinned', { ascending: false })
@@ -137,18 +140,19 @@ export default function JobBoardPage() {
     const { data, error } = await query
 
     if (data) {
-      const postsWithStats = data.map(post => ({
+      const postsWithStats = data.map((post) => ({
         ...post,
         author: {
           name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
           email: post.profiles?.email,
           role: post.profiles?.role || 'member',
-          isVerified: post.profiles?.role === 'verified'
+          isVerified: post.profiles?.role === 'verified',
         },
         likes: post.post_likes?.length || 0,
         comments: post.comments?.length || 0,
         isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-        isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
+        isBookmarked:
+          post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
       }))
       setPosts(postsWithStats)
     }
@@ -156,11 +160,13 @@ export default function JobBoardPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       // 로그인하지 않아도 게시글 조회는 가능
       setUser(user)
-      
+
       if (user) {
         // 프로필 정보 가져오기
         const { data: profileData } = await supabase
@@ -168,10 +174,10 @@ export default function JobBoardPage() {
           .select('*')
           .eq('id', user.id)
           .single()
-        
+
         setProfile(profileData)
       }
-      
+
       setLoading(false)
     }
     getUser()
@@ -183,79 +189,62 @@ export default function JobBoardPage() {
   }, [fetchPosts])
 
   const handleLike = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isLiked) {
-      await supabase
-        .from('post_likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('post_likes')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
     }
 
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { 
-            ...p, 
-            isLiked: !p.isLiked,
-            likes: p.isLiked ? p.likes - 1 : p.likes + 1
-          }
-        : p
-    ))
+    setPosts(
+      posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              isLiked: !p.isLiked,
+              likes: p.isLiked ? p.likes - 1 : p.likes + 1,
+            }
+          : p
+      )
+    )
   }
 
   const handleBookmark = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isBookmarked) {
-      await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('bookmarks').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('bookmarks')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id })
     }
 
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, isBookmarked: !p.isBookmarked }
-        : p
-    ))
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p)))
   }
 
   const handleDeletePost = async (postId: string) => {
     if (!user) return
-    
-    const post = posts.find(p => p.id === postId)
+
+    const post = posts.find((p) => p.id === postId)
     if (!post) return
-    
+
     // 작성자 본인이거나 관리자만 삭제 가능
     if (post.author_id !== user.id && profile?.role !== 'admin' && profile?.role !== 'moderator') {
       alert('삭제 권한이 없습니다.')
       return
     }
-    
+
     if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return
-    
+
     try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', postId)
-      
+      const { error } = await supabase.from('posts').delete().eq('id', postId)
+
       if (error) throw error
-      
+
       // 삭제 성공 시 목록에서 제거
-      setPosts(posts.filter(p => p.id !== postId))
+      setPosts(posts.filter((p) => p.id !== postId))
       alert('게시글이 삭제되었습니다.')
     } catch (error) {
       console.error('Error deleting post:', error)
@@ -269,27 +258,27 @@ export default function JobBoardPage() {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setSelectedImages(prev => [...prev, ...files])
+    setSelectedImages((prev) => [...prev, ...files])
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       if (file.size > 50 * 1024 * 1024) {
         alert(`${file.name}은 50MB를 초과합니다.`)
         return false
       }
       return true
     })
-    setSelectedFiles(prev => [...prev, ...validFiles])
+    setSelectedFiles((prev) => [...prev, ...validFiles])
   }
 
   const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -305,12 +294,12 @@ export default function JobBoardPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    
+
     const files = Array.from(e.dataTransfer.files)
     const imageFiles: File[] = []
     const docFiles: File[] = []
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
       if (file.type.startsWith('image/')) {
         imageFiles.push(file)
       } else {
@@ -321,12 +310,12 @@ export default function JobBoardPage() {
         }
       }
     })
-    
+
     if (imageFiles.length > 0) {
-      setSelectedImages(prev => [...prev, ...imageFiles])
+      setSelectedImages((prev) => [...prev, ...imageFiles])
     }
     if (docFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...docFiles])
+      setSelectedFiles((prev) => [...prev, ...docFiles])
     }
   }
 
@@ -355,65 +344,65 @@ export default function JobBoardPage() {
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
   const handlePost = async () => {
     if (!newPostTitle.trim() || !newPost.trim() || !user) return
-    
+
     setPostLoading(true)
     setUploadingFiles(true)
-    
+
     try {
-      let imageUrls: string[] = []
-      let fileUrls: string[] = []
-      let fileMetadata: any[] = []
-      
+      const imageUrls: string[] = []
+      const fileUrls: string[] = []
+      const fileMetadata: any[] = []
+
       // 이미지 업로드
       if (selectedImages.length > 0) {
         for (const image of selectedImages) {
           const fileExt = image.name.split('.').pop()
           const fileName = `${user.id}/${Date.now()}_${Math.random()}.${fileExt}`
-          
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('post-images')
             .upload(fileName, image)
-          
+
           if (uploadError) throw uploadError
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('post-images')
-            .getPublicUrl(uploadData.path)
-          
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('post-images').getPublicUrl(uploadData.path)
+
           imageUrls.push(publicUrl)
         }
       }
-      
+
       // 파일 업로드
       if (selectedFiles.length > 0) {
         for (const file of selectedFiles) {
           const fileName = `${user.id}/${Date.now()}_${file.name}`
-          
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('education-files')
             .upload(fileName, file)
-          
+
           if (uploadError) throw uploadError
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('education-files')
-            .getPublicUrl(uploadData.path)
-          
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('education-files').getPublicUrl(uploadData.path)
+
           fileUrls.push(publicUrl)
           fileMetadata.push({
             name: file.name,
             size: file.size,
             type: file.type,
-            url: publicUrl
+            url: publicUrl,
           })
         }
       }
-      
+
       // 게시글 생성
       const { data, error } = await supabase
         .from('posts')
@@ -425,13 +414,13 @@ export default function JobBoardPage() {
           sub_category: postType,
           image_urls: imageUrls,
           file_urls: fileUrls,
-          file_metadata: fileMetadata
+          file_metadata: fileMetadata,
         })
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       if (data) {
         const newPostData = {
           ...data,
@@ -439,14 +428,14 @@ export default function JobBoardPage() {
             name: profile?.nickname || profile?.email?.split('@')[0] || '사용자',
             email: profile?.email,
             role: profile?.role || 'member',
-            isVerified: profile?.role === 'verified'
+            isVerified: profile?.role === 'verified',
           },
           likes: 0,
           comments: 0,
           isLiked: false,
-          isBookmarked: false
+          isBookmarked: false,
         }
-        
+
         setPosts([newPostData, ...posts])
         setNewPostTitle('')
         setNewPost('')
@@ -498,25 +487,27 @@ export default function JobBoardPage() {
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>
       <AppHeader user={user} profile={profile} />
 
-      <Box sx={{ 
-        display: 'flex',
-        justifyContent: 'center',
-        py: 3, 
-        px: 3
-      }}>
-        <Stack 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          py: 3,
+          px: 3,
+        }}
+      >
+        <Stack
           direction="row"
           spacing={{ xs: 0, md: 3 }}
           alignItems="flex-start"
           sx={{
             width: '100%',
-            maxWidth: { 
+            maxWidth: {
               xs: '100%',
               sm: 600,
               md: 900,
-              lg: 1320
+              lg: 1320,
             },
-            mx: 'auto'
+            mx: 'auto',
           }}
         >
           {/* 왼쪽 사이드바 */}
@@ -524,7 +515,7 @@ export default function JobBoardPage() {
             sx={{
               display: { xs: 'none', md: 'block' },
               width: 260,
-              flexShrink: 0
+              flexShrink: 0,
             }}
           >
             <Paper
@@ -537,28 +528,26 @@ export default function JobBoardPage() {
                 borderRadius: 2,
                 border: 1,
                 borderColor: 'divider',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
             >
-              <FeedSidebar 
-                user={user} 
-                profile={profile}
-                isStatic={true}
-              />
+              <FeedSidebar user={user} profile={profile} isStatic={true} />
             </Paper>
           </Box>
 
           {/* 메인 게시판 영역 */}
-          <Box sx={{ 
-            width: '100%',
-            maxWidth: { 
-              xs: '100%',
-              sm: 600,
-              lg: 720
-            },
-            flex: '0 0 auto',
-            overflow: 'hidden'
-          }}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: {
+                xs: '100%',
+                sm: 600,
+                lg: 720,
+              },
+              flex: '0 0 auto',
+              overflow: 'hidden',
+            }}
+          >
             {/* 게시판 헤더 */}
             <Paper
               elevation={0}
@@ -567,7 +556,7 @@ export default function JobBoardPage() {
                 mb: 3,
                 borderRadius: 2,
                 bgcolor: alpha(theme.palette.info.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
               }}
             >
               <Stack spacing={2}>
@@ -577,7 +566,7 @@ export default function JobBoardPage() {
                       width: 56,
                       height: 56,
                       bgcolor: alpha(theme.palette[currentInfo.color].main, 0.2),
-                      color: currentInfo.color + '.main'
+                      color: currentInfo.color + '.main',
                     }}
                   >
                     {currentInfo.icon}
@@ -591,7 +580,7 @@ export default function JobBoardPage() {
                     </Typography>
                   </Box>
                 </Stack>
-                
+
                 {/* 서브카테고리 선택 */}
                 <ToggleButtonGroup
                   value={subCategory}
@@ -631,11 +620,11 @@ export default function JobBoardPage() {
                 subCategory={subCategory === 'all' ? undefined : subCategory}
                 onPostCreated={fetchPosts}
                 placeholder={
-                  subCategory === 'hiring' 
+                  subCategory === 'hiring'
                     ? '채용 정보를 자세히 작성해주세요.\n예) 학교/학원명, 과목, 근무조건, 급여, 지역 등'
                     : subCategory === 'seeking'
-                    ? '경력사항과 희망 근무조건을 작성해주세요.\n예) 경력, 자격증, 희망 과목, 희망 지역 등'
-                    : '구인/구직 정보를 작성해주세요.'
+                      ? '경력사항과 희망 근무조건을 작성해주세요.\n예) 경력, 자격증, 희망 과목, 희망 지역 등'
+                      : '구인/구직 정보를 작성해주세요.'
                 }
               />
             </Box>
@@ -646,13 +635,13 @@ export default function JobBoardPage() {
                 <EmptyPostMessage />
               ) : (
                 posts.map((post) => (
-                  <Card 
+                  <Card
                     key={post.id}
-                    sx={{ 
+                    sx={{
                       cursor: 'pointer',
                       '&:hover': {
-                        boxShadow: 3
-                      }
+                        boxShadow: 3,
+                      },
                     }}
                     onClick={(e) => {
                       if ((e.target as HTMLElement).closest('button, .MuiIconButton-root')) {
@@ -668,21 +657,19 @@ export default function JobBoardPage() {
                           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                           badgeContent={
                             post.author.isVerified ? (
-                              <VerifiedUser 
-                                sx={{ 
-                                  width: 16, 
-                                  height: 16, 
+                              <VerifiedUser
+                                sx={{
+                                  width: 16,
+                                  height: 16,
                                   color: 'success.main',
                                   bgcolor: 'background.paper',
-                                  borderRadius: '50%'
-                                }} 
+                                  borderRadius: '50%',
+                                }}
                               />
                             ) : null
                           }
                         >
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            {post.author.name[0]}
-                          </Avatar>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>{post.author.name[0]}</Avatar>
                         </Badge>
                       }
                       action={
@@ -694,57 +681,39 @@ export default function JobBoardPage() {
                         <Stack>
                           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                             {post.sub_category === 'hiring' ? (
-                              <Chip 
-                                icon={<Business />}
-                                label="구인" 
-                                size="small" 
-                                color="success"
-                              />
+                              <Chip icon={<Business />} label="구인" size="small" color="success" />
                             ) : post.sub_category === 'seeking' ? (
-                              <Chip 
+                              <Chip
                                 icon={<PersonSearch />}
-                                label="구직" 
-                                size="small" 
+                                label="구직"
+                                size="small"
                                 color="warning"
                               />
                             ) : null}
-                            {post.is_pinned && (
-                              <Chip 
-                                label="고정" 
-                                size="small" 
-                                color="error"
-                              />
-                            )}
+                            {post.is_pinned && <Chip label="고정" size="small" color="error" />}
                           </Stack>
                           <Typography variant="h6" fontWeight="bold">
                             {post.title}
                           </Typography>
                           <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography variant="subtitle2">
-                              {post.author.name}
-                            </Typography>
+                            <Typography variant="subtitle2">{post.author.name}</Typography>
                             {post.author.role === 'verified' && (
-                              <Chip 
-                                label="인증 교사" 
-                                size="small" 
-                                color="success" 
+                              <Chip
+                                label="인증 교사"
+                                size="small"
+                                color="success"
                                 sx={{ height: 20 }}
                               />
                             )}
                             {post.author.role === 'admin' && (
-                              <Chip 
-                                label="관리자" 
-                                size="small" 
-                                color="error" 
-                                sx={{ height: 20 }}
-                              />
+                              <Chip label="관리자" size="small" color="error" sx={{ height: 20 }} />
                             )}
                           </Stack>
                         </Stack>
                       }
                       subheader={new Date(post.created_at).toLocaleString('ko-KR')}
                     />
-                    
+
                     <CardContent>
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-line', mt: 1 }}>
                         {post.content}
@@ -757,11 +726,11 @@ export default function JobBoardPage() {
                           component="img"
                           image={post.image_urls[0]}
                           alt="Post image"
-                          sx={{ 
+                          sx={{
                             width: '100%',
-                            maxHeight: 400, 
+                            maxHeight: 400,
                             objectFit: 'cover',
-                            borderRadius: '12px'
+                            borderRadius: '12px',
                           }}
                         />
                         {post.image_urls.length > 1 && (
@@ -774,7 +743,7 @@ export default function JobBoardPage() {
                               right: 32,
                               bgcolor: 'rgba(0, 0, 0, 0.6)',
                               color: 'white',
-                              fontWeight: 'bold'
+                              fontWeight: 'bold',
                             }}
                           />
                         )}
@@ -782,7 +751,7 @@ export default function JobBoardPage() {
                     )}
 
                     <CardActions disableSpacing>
-                      <IconButton 
+                      <IconButton
                         onClick={() => handleLike(post.id)}
                         color={post.isLiked ? 'error' : 'default'}
                       >
@@ -791,21 +760,21 @@ export default function JobBoardPage() {
                       <Typography variant="body2" color="text.secondary">
                         {post.likes}
                       </Typography>
-                      
+
                       <IconButton sx={{ ml: 1 }}>
                         <ChatBubbleOutline />
                       </IconButton>
                       <Typography variant="body2" color="text.secondary">
                         {post.comments}
                       </Typography>
-                      
+
                       <IconButton sx={{ ml: 1 }}>
                         <Share />
                       </IconButton>
-                      
+
                       <Box sx={{ flexGrow: 1 }} />
-                      
-                      <IconButton 
+
+                      <IconButton
                         onClick={() => handleBookmark(post.id)}
                         color={post.isBookmarked ? 'primary' : 'default'}
                       >
@@ -832,13 +801,13 @@ export default function JobBoardPage() {
             sx={{
               width: 320,
               flexShrink: 0,
-              display: { xs: 'none', lg: 'block' }
+              display: { xs: 'none', lg: 'block' },
             }}
           >
             <Box
               sx={{
                 position: 'sticky',
-                top: 80
+                top: 80,
               }}
             >
               <SideChat user={user} />
@@ -848,8 +817,8 @@ export default function JobBoardPage() {
       </Box>
 
       {/* 모바일 사이드바 */}
-      <FeedSidebar 
-        user={user} 
+      <FeedSidebar
+        user={user}
         profile={profile}
         mobileOpen={mobileOpen}
         onMobileToggle={() => setMobileOpen(false)}
@@ -884,11 +853,7 @@ export default function JobBoardPage() {
       </Fab>
 
       {/* 메뉴 */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>신고하기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>숨기기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>공유하기</MenuItem>

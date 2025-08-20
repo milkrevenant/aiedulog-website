@@ -21,7 +21,7 @@ import {
   Menu,
   MenuItem,
   Chip,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material'
 import {
   ArrowBack,
@@ -33,7 +33,7 @@ import {
   Check,
   DoneAll,
   Person,
-  Group
+  Group,
 } from '@mui/icons-material'
 
 interface Message {
@@ -72,7 +72,7 @@ interface ChatRoom {
 export default function ChatRoomPage() {
   const params = useParams()
   const roomId = params.roomId as string
-  
+
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -82,29 +82,31 @@ export default function ChatRoomPage() {
   const [sending, setSending] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [isTyping, setIsTyping] = useState(false)
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
-      
+
       // 프로필 정보 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -144,7 +146,8 @@ export default function ChatRoomPage() {
     // 참가자 정보 가져오기
     const { data: participants } = await supabase
       .from('chat_participants')
-      .select(`
+      .select(
+        `
         user_id,
         profiles!inner (
           id,
@@ -153,20 +156,22 @@ export default function ChatRoomPage() {
           avatar_url,
           role
         )
-      `)
+      `
+      )
       .eq('room_id', roomId)
       .eq('is_active', true)
 
     setRoom({
       ...roomData,
-      participants: participants || []
+      participants: participants || [],
     })
   }
 
   const fetchMessages = async () => {
     const { data: messagesData } = await supabase
       .from('chat_messages')
-      .select(`
+      .select(
+        `
         *,
         profiles!chat_messages_sender_id_fkey (
           id,
@@ -174,15 +179,16 @@ export default function ChatRoomPage() {
           nickname,
           avatar_url
         )
-      `)
+      `
+      )
       .eq('room_id', roomId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: true })
 
     if (messagesData) {
-      const formattedMessages = messagesData.map(msg => ({
+      const formattedMessages = messagesData.map((msg) => ({
         ...msg,
-        sender: msg.profiles
+        sender: msg.profiles,
       }))
       setMessages(formattedMessages)
     }
@@ -199,7 +205,7 @@ export default function ChatRoomPage() {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          filter: `room_id=eq.${roomId}`
+          filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
           // 새 메시지가 도착하면 발신자 정보와 함께 추가
@@ -211,11 +217,11 @@ export default function ChatRoomPage() {
 
           const newMsg = {
             ...payload.new,
-            sender: senderData
+            sender: senderData,
           } as Message
 
-          setMessages(prev => [...prev, newMsg])
-          
+          setMessages((prev) => [...prev, newMsg])
+
           // 내가 보낸 메시지가 아니면 읽음 처리
           if (payload.new.sender_id !== user?.id) {
             markMessagesAsRead()
@@ -253,7 +259,7 @@ export default function ChatRoomPage() {
         room_id: roomId,
         sender_id: user.id,
         content: messageContent,
-        type: 'text'
+        type: 'text',
       })
       .select()
       .single()
@@ -278,56 +284,58 @@ export default function ChatRoomPage() {
 
     if (room.type === 'direct') {
       // DM인 경우 상대방 정보 표시
-      const otherUser = room.participants.find(p => p.user_id !== user?.id)
+      const otherUser = room.participants.find((p) => p.user_id !== user?.id)
       return {
         name: otherUser?.profile.nickname || otherUser?.profile.email?.split('@')[0] || '사용자',
         avatar: otherUser?.profile.avatar_url,
-        subtitle: otherUser?.profile.email
+        subtitle: otherUser?.profile.email,
       }
     } else {
       // 그룹 채팅
       return {
         name: room.name || '그룹 채팅',
         avatar: null,
-        subtitle: `${room.participants.length}명 참여중`
+        subtitle: `${room.participants.length}명 참여중`,
       }
     }
   }
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('ko-KR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
     })
   }
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleDateString('ko-KR', { 
+    return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
   const shouldShowDate = (currentMsg: Message, prevMsg: Message | null) => {
     if (!prevMsg) return true
-    
+
     const currentDate = new Date(currentMsg.created_at).toDateString()
     const prevDate = new Date(prevMsg.created_at).toDateString()
-    
+
     return currentDate !== prevDate
   }
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh' 
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
         <CircularProgress />
       </Box>
     )
@@ -348,27 +356,19 @@ export default function ChatRoomPage() {
           >
             <ArrowBack />
           </IconButton>
-          
-          <Avatar 
-            src={chatInfo.avatar || undefined}
-            sx={{ mr: 2 }}
-          >
+
+          <Avatar src={chatInfo.avatar || undefined} sx={{ mr: 2 }}>
             {room?.type === 'direct' ? <Person /> : <Group />}
           </Avatar>
-          
+
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6">
-              {chatInfo.name}
-            </Typography>
+            <Typography variant="h6">{chatInfo.name}</Typography>
             <Typography variant="caption" sx={{ opacity: 0.8 }}>
               {chatInfo.subtitle}
             </Typography>
           </Box>
-          
-          <IconButton
-            color="inherit"
-            onClick={(e) => setAnchorEl(e.currentTarget)}
-          >
+
+          <IconButton color="inherit" onClick={(e) => setAnchorEl(e.currentTarget)}>
             <MoreVert />
           </IconButton>
         </Toolbar>
@@ -380,7 +380,7 @@ export default function ChatRoomPage() {
           flexGrow: 1,
           overflow: 'auto',
           bgcolor: 'grey.50',
-          p: 2
+          p: 2,
         }}
       >
         <Container maxWidth="md">
@@ -388,7 +388,7 @@ export default function ChatRoomPage() {
             const isMyMessage = message.sender_id === user?.id
             const prevMessage = index > 0 ? messages[index - 1] : null
             const showDate = shouldShowDate(message, prevMessage)
-            
+
             return (
               <Box key={message.id}>
                 {showDate && (
@@ -400,45 +400,42 @@ export default function ChatRoomPage() {
                     />
                   </Box>
                 )}
-                
+
                 <Box
                   sx={{
                     display: 'flex',
                     justifyContent: isMyMessage ? 'flex-end' : 'flex-start',
-                    mb: 1
+                    mb: 1,
                   }}
                 >
                   {!isMyMessage && (
                     <Avatar
                       src={message.sender?.avatar_url || undefined}
-                      sx={{ 
-                        width: 32, 
-                        height: 32, 
+                      sx={{
+                        width: 32,
+                        height: 32,
                         mr: 1,
-                        mt: 0.5
+                        mt: 0.5,
                       }}
                     >
                       {message.sender?.email?.[0]?.toUpperCase()}
                     </Avatar>
                   )}
-                  
+
                   <Box
                     sx={{
                       maxWidth: '70%',
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: isMyMessage ? 'flex-end' : 'flex-start'
+                      alignItems: isMyMessage ? 'flex-end' : 'flex-start',
                     }}
                   >
                     {!isMyMessage && (
-                      <Typography
-                        variant="caption"
-                        sx={{ px: 1, mb: 0.5 }}
-                      >
+                      <Typography variant="caption" sx={{ px: 1, mb: 0.5 }}>
                         {message.sender?.nickname || message.sender?.email?.split('@')[0]}
                       </Typography>
                     )}
-                    
+
                     <Paper
                       elevation={1}
                       sx={{
@@ -447,28 +444,29 @@ export default function ChatRoomPage() {
                         color: isMyMessage ? 'white' : 'text.primary',
                         borderRadius: 2,
                         borderTopLeftRadius: isMyMessage ? 16 : 4,
-                        borderTopRightRadius: isMyMessage ? 4 : 16
+                        borderTopRightRadius: isMyMessage ? 4 : 16,
                       }}
                     >
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                         {message.content}
                       </Typography>
-                      
+
                       <Stack
                         direction="row"
                         spacing={0.5}
                         alignItems="center"
                         sx={{
                           mt: 0.5,
-                          opacity: 0.7
+                          opacity: 0.7,
                         }}
                       >
-                        <Typography variant="caption">
-                          {formatTime(message.created_at)}
-                        </Typography>
-                        {isMyMessage && (
-                          message.is_read ? <DoneAll fontSize="small" /> : <Check fontSize="small" />
-                        )}
+                        <Typography variant="caption">{formatTime(message.created_at)}</Typography>
+                        {isMyMessage &&
+                          (message.is_read ? (
+                            <DoneAll fontSize="small" />
+                          ) : (
+                            <Check fontSize="small" />
+                          ))}
                       </Stack>
                     </Paper>
                   </Box>
@@ -486,7 +484,7 @@ export default function ChatRoomPage() {
         sx={{
           p: 2,
           borderTop: 1,
-          borderColor: 'divider'
+          borderColor: 'divider',
         }}
       >
         <Container maxWidth="md">
@@ -494,7 +492,7 @@ export default function ChatRoomPage() {
             <IconButton>
               <AttachFile />
             </IconButton>
-            
+
             <TextField
               fullWidth
               multiline
@@ -506,15 +504,15 @@ export default function ChatRoomPage() {
               disabled={sending}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 3
-                }
+                  borderRadius: 3,
+                },
               }}
             />
-            
+
             <IconButton>
               <EmojiEmotions />
             </IconButton>
-            
+
             <IconButton
               color="primary"
               onClick={sendMessage}
@@ -527,21 +525,15 @@ export default function ChatRoomPage() {
       </Paper>
 
       {/* 메뉴 */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
-        <MenuItem onClick={() => setAnchorEl(null)}>
-          채팅방 정보
-        </MenuItem>
-        <MenuItem onClick={() => setAnchorEl(null)}>
-          알림 끄기
-        </MenuItem>
-        <MenuItem onClick={() => {
-          setAnchorEl(null)
-          router.push('/chat')
-        }}>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+        <MenuItem onClick={() => setAnchorEl(null)}>채팅방 정보</MenuItem>
+        <MenuItem onClick={() => setAnchorEl(null)}>알림 끄기</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null)
+            router.push('/chat')
+          }}
+        >
           채팅방 나가기
         </MenuItem>
       </Menu>

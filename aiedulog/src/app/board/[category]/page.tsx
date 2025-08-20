@@ -33,7 +33,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  ListItemSecondaryAction
+  ListItemSecondaryAction,
 } from '@mui/material'
 import {
   Favorite,
@@ -60,7 +60,7 @@ import {
   FolderZip,
   Download,
   Close,
-  CloudUpload
+  CloudUpload,
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
@@ -72,26 +72,26 @@ const categoryInfo = {
     name: '자유게시판',
     icon: <Forum />,
     color: 'primary' as const,
-    description: '자유롭게 소통하는 공간'
+    description: '자유롭게 소통하는 공간',
   },
   education: {
     name: '교육 자료실',
     icon: <School />,
     color: 'success' as const,
-    description: '교육 자료 공유'
+    description: '교육 자료 공유',
   },
   tech: {
     name: '에듀테크 트렌드',
     icon: <TrendingUp />,
     color: 'warning' as const,
-    description: '최신 교육 기술 동향'
+    description: '최신 교육 기술 동향',
   },
   job: {
     name: '구인구직',
     icon: <LocalOffer />,
     color: 'info' as const,
-    description: '교육 관련 채용 정보'
-  }
+    description: '교육 관련 채용 정보',
+  },
 }
 
 export default function BoardPage() {
@@ -100,7 +100,7 @@ export default function BoardPage() {
   const router = useRouter()
   const supabase = createClient()
   const theme = useTheme()
-  
+
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -114,10 +114,10 @@ export default function BoardPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  
+
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   // education 카테고리는 새로운 라우팅으로 리다이렉트
   useEffect(() => {
     if (category === 'education') {
@@ -131,7 +131,8 @@ export default function BoardPage() {
   const fetchPosts = useCallback(async () => {
     const { data, error } = await supabase
       .from('posts')
-      .select(`
+      .select(
+        `
         *,
         profiles!posts_author_id_fkey (
           id,
@@ -147,7 +148,8 @@ export default function BoardPage() {
         bookmarks (
           user_id
         )
-      `)
+      `
+      )
       .eq('category', category)
       .eq('is_published', true)
       .order('is_pinned', { ascending: false })
@@ -155,18 +157,19 @@ export default function BoardPage() {
       .limit(50)
 
     if (data) {
-      const postsWithStats = data.map(post => ({
+      const postsWithStats = data.map((post) => ({
         ...post,
         author: {
           name: post.profiles?.email?.split('@')[0] || '사용자',
           email: post.profiles?.email,
           role: post.profiles?.role || 'member',
-          isVerified: post.profiles?.role === 'verified'
+          isVerified: post.profiles?.role === 'verified',
         },
         likes: post.post_likes?.length || 0,
         comments: post.comments?.length || 0,
         isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-        isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
+        isBookmarked:
+          post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
       }))
       setPosts(postsWithStats)
     }
@@ -174,22 +177,24 @@ export default function BoardPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
-      
+
       // 프로필 정보 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -203,85 +208,71 @@ export default function BoardPage() {
   }, [user, fetchPosts])
 
   const handleLike = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isLiked) {
       // 좋아요 취소
-      await supabase
-        .from('post_likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
       // 좋아요 추가
-      await supabase
-        .from('post_likes')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
     }
 
     // UI 업데이트
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { 
-            ...p, 
-            isLiked: !p.isLiked,
-            likes: p.isLiked ? p.likes - 1 : p.likes + 1
-          }
-        : p
-    ))
+    setPosts(
+      posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              isLiked: !p.isLiked,
+              likes: p.isLiked ? p.likes - 1 : p.likes + 1,
+            }
+          : p
+      )
+    )
   }
 
   const handleBookmark = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isBookmarked) {
       // 북마크 취소
-      await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('bookmarks').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
       // 북마크 추가
-      await supabase
-        .from('bookmarks')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id })
     }
 
     // UI 업데이트
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, isBookmarked: !p.isBookmarked }
-        : p
-    ))
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p)))
   }
 
   // 파일 관련 함수들
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setSelectedImages(prev => [...prev, ...files])
+    setSelectedImages((prev) => [...prev, ...files])
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       if (file.size > 50 * 1024 * 1024) {
         alert(`${file.name}은 50MB를 초과합니다.`)
         return false
       }
       return true
     })
-    setSelectedFiles(prev => [...prev, ...validFiles])
+    setSelectedFiles((prev) => [...prev, ...validFiles])
   }
 
   const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -297,12 +288,12 @@ export default function BoardPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    
+
     const files = Array.from(e.dataTransfer.files)
     const imageFiles: File[] = []
     const docFiles: File[] = []
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
       if (file.type.startsWith('image/')) {
         imageFiles.push(file)
       } else {
@@ -313,12 +304,12 @@ export default function BoardPage() {
         }
       }
     })
-    
+
     if (imageFiles.length > 0) {
-      setSelectedImages(prev => [...prev, ...imageFiles])
+      setSelectedImages((prev) => [...prev, ...imageFiles])
     }
     if (docFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...docFiles])
+      setSelectedFiles((prev) => [...prev, ...docFiles])
     }
   }
 
@@ -349,66 +340,66 @@ export default function BoardPage() {
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
   const handlePost = async () => {
     if (!newPostTitle.trim() || !newPost.trim() || !user) return
-    
+
     setPostLoading(true)
     setUploadingFiles(true)
-    
+
     try {
-      let imageUrls: string[] = []
-      let fileUrls: string[] = []
-      let fileMetadata: any[] = []
-      
+      const imageUrls: string[] = []
+      const fileUrls: string[] = []
+      const fileMetadata: any[] = []
+
       // 이미지 업로드
       if (selectedImages.length > 0) {
         for (const image of selectedImages) {
           const fileExt = image.name.split('.').pop()
           const fileName = `${user.id}/${Date.now()}_${Math.random()}.${fileExt}`
-          
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('post-images')
             .upload(fileName, image)
-          
+
           if (uploadError) throw uploadError
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('post-images')
-            .getPublicUrl(uploadData.path)
-          
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('post-images').getPublicUrl(uploadData.path)
+
           imageUrls.push(publicUrl)
         }
       }
-      
+
       // 파일 업로드
       if (selectedFiles.length > 0) {
         for (const file of selectedFiles) {
           const fileExt = file.name.split('.').pop()
           const fileName = `${user.id}/${Date.now()}_${file.name}`
-          
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('education-files')
             .upload(fileName, file)
-          
+
           if (uploadError) throw uploadError
-          
-          const { data: { publicUrl } } = supabase.storage
-            .from('education-files')
-            .getPublicUrl(uploadData.path)
-          
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('education-files').getPublicUrl(uploadData.path)
+
           fileUrls.push(publicUrl)
           fileMetadata.push({
             name: file.name,
             size: file.size,
             type: file.type,
-            url: publicUrl
+            url: publicUrl,
           })
         }
       }
-      
+
       // 게시글 생성
       const { data, error } = await supabase
         .from('posts')
@@ -419,13 +410,13 @@ export default function BoardPage() {
           category: category,
           image_urls: imageUrls,
           file_urls: fileUrls,
-          file_metadata: fileMetadata
+          file_metadata: fileMetadata,
         })
         .select()
         .single()
-      
+
       if (error) throw error
-      
+
       if (data) {
         // 새 게시글을 목록 맨 앞에 추가
         const newPostData = {
@@ -434,14 +425,14 @@ export default function BoardPage() {
             name: profile?.nickname || profile?.email?.split('@')[0] || '사용자',
             email: profile?.email,
             role: profile?.role || 'member',
-            isVerified: profile?.role === 'verified'
+            isVerified: profile?.role === 'verified',
           },
           likes: 0,
           comments: 0,
           isLiked: false,
-          isBookmarked: false
+          isBookmarked: false,
         }
-        
+
         setPosts([newPostData, ...posts])
         setNewPostTitle('')
         setNewPost('')
@@ -490,25 +481,27 @@ export default function BoardPage() {
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
 
-      <Box sx={{ 
-        display: 'flex',
-        justifyContent: 'center',
-        py: 3, 
-        px: 3
-      }}>
-        <Stack 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          py: 3,
+          px: 3,
+        }}
+      >
+        <Stack
           direction="row"
           spacing={{ xs: 0, md: 3 }}
           alignItems="flex-start"
           sx={{
             width: '100%',
-            maxWidth: { 
-              xs: '100%',    // 모바일: 전체 너비
-              sm: 600,       // 600px부터: 피드 600px 고정
-              md: 900,       // 태블릿: 사이드바(260) + 간격(24) + 피드(600) = 884
-              lg: 1320       // 데스크탑: 사이드바(260) + 간격(24) + 피드(720) + 간격(24) + 채팅(320) = 1348
+            maxWidth: {
+              xs: '100%', // 모바일: 전체 너비
+              sm: 600, // 600px부터: 피드 600px 고정
+              md: 900, // 태블릿: 사이드바(260) + 간격(24) + 피드(600) = 884
+              lg: 1320, // 데스크탑: 사이드바(260) + 간격(24) + 피드(720) + 간격(24) + 채팅(320) = 1348
             },
-            mx: 'auto'
+            mx: 'auto',
           }}
         >
           {/* 왼쪽 사이드바 - 데스크탑/태블릿만 표시 */}
@@ -516,7 +509,7 @@ export default function BoardPage() {
             sx={{
               display: { xs: 'none', md: 'block' },
               width: 260,
-              flexShrink: 0
+              flexShrink: 0,
             }}
           >
             <Paper
@@ -529,399 +522,383 @@ export default function BoardPage() {
                 borderRadius: 2,
                 border: 1,
                 borderColor: 'divider',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
             >
-              <FeedSidebar 
-                user={user} 
-                profile={profile}
-                isStatic={true}
-              />
+              <FeedSidebar user={user} profile={profile} isStatic={true} />
             </Paper>
           </Box>
 
           {/* 메인 게시판 영역 */}
-          <Box sx={{ 
-            width: '100%',
-            maxWidth: { 
-              xs: '100%',      // 모바일: 100% 너비
-              sm: 600,         // 600px 이상: 고정 600px
-              lg: 720          // lg 이후: 최대 720px까지 확장
-            },
-            flex: '0 0 auto',  // 고정 너비 유지
-            overflow: 'hidden'  // overflow 방지
-          }}>
-        {/* 게시판 헤더 */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            mb: 3,
-            borderRadius: 2,
-            bgcolor: alpha(theme.palette[boardInfo.color].main, 0.05),
-            border: `1px solid ${alpha(theme.palette[boardInfo.color].main, 0.2)}`
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Avatar
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: {
+                xs: '100%', // 모바일: 100% 너비
+                sm: 600, // 600px 이상: 고정 600px
+                lg: 720, // lg 이후: 최대 720px까지 확장
+              },
+              flex: '0 0 auto', // 고정 너비 유지
+              overflow: 'hidden', // overflow 방지
+            }}
+          >
+            {/* 게시판 헤더 */}
+            <Paper
+              elevation={0}
               sx={{
-                width: 56,
-                height: 56,
-                bgcolor: alpha(theme.palette[boardInfo.color].main, 0.2),
-                color: boardInfo.color + '.main'
+                p: 3,
+                mb: 3,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette[boardInfo.color].main, 0.05),
+                border: `1px solid ${alpha(theme.palette[boardInfo.color].main, 0.2)}`,
               }}
             >
-              {boardInfo.icon}
-            </Avatar>
-            <Box>
-              <Typography variant="h4" fontWeight="bold">
-                {boardInfo.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {boardInfo.description}
-              </Typography>
-            </Box>
-          </Stack>
-        </Paper>
-
-        {/* 글 작성 영역 */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Stack spacing={2}>
-              <TextField
-                fullWidth
-                placeholder="제목을 입력하세요..."
-                variant="outlined"
-                value={newPostTitle}
-                onChange={(e) => setNewPostTitle(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  }
-                }}
-              />
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                placeholder={`${boardInfo.name}에 글을 작성해보세요...`}
-                variant="outlined"
-                value={newPost}
-                onChange={(e) => setNewPost(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  }
-                }}
-              />
-              
-              {/* 드래그 앤 드롭 영역 */}
-              <Box
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                sx={{
-                  border: '2px dashed',
-                  borderColor: isDragging ? 'primary.main' : 'divider',
-                  borderRadius: 2,
-                  p: 3,
-                  textAlign: 'center',
-                  bgcolor: isDragging ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer'
-                }}
-                onClick={() => {
-                  fileInputRef.current?.click()
-                }}
-              >
-                <CloudUpload 
-                  sx={{ 
-                    fontSize: 48, 
-                    color: isDragging ? 'primary.main' : 'text.secondary',
-                    mb: 1
-                  }} 
-                />
-                <Typography variant="body1" color="text.secondary">
-                  파일을 드래그하여 놓거나 클릭하여 선택하세요
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  이미지, PDF, DOC, PPT, HWP, ZIP 파일 지원 (최대 50MB)
-                </Typography>
-              </Box>
-              
-              {/* 선택된 이미지 미리보기 */}
-              {selectedImages.length > 0 && (
-                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                  {selectedImages.map((image, index) => (
-                    <Box key={index} sx={{ position: 'relative' }}>
-                      <img 
-                        src={URL.createObjectURL(image)} 
-                        alt={`Preview ${index}`}
-                        style={{ 
-                          width: 100, 
-                          height: 100, 
-                          objectFit: 'cover',
-                          borderRadius: 8
-                        }} 
-                      />
-                      <IconButton
-                        size="small"
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          bgcolor: 'background.paper'
-                        }}
-                        onClick={() => handleRemoveImage(index)}
-                      >
-                        <Close fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-              
-              {/* 선택된 파일 목록 */}
-              {selectedFiles.length > 0 && (
-                <List dense>
-                  {selectedFiles.map((file, index) => (
-                    <ListItem key={index}>
-                      <ListItemIcon>
-                        {getFileIcon(file.name)}
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary={file.name}
-                        secondary={formatFileSize(file.size)}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton 
-                          edge="end" 
-                          size="small"
-                          onClick={() => handleRemoveFile(index)}
-                        >
-                          <Close />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-              
-              <Divider />
-              <Stack direction="row" justifyContent="space-between">
-                <Stack direction="row" spacing={1}>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    hidden
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    hidden
-                    multiple
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.hwp,.zip,.rar"
-                    onChange={handleFileSelect}
-                  />
-                  <Button 
-                    startIcon={<PhotoCamera />}
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={uploadingFiles}
-                  >
-                    이미지
-                  </Button>
-                  <Button 
-                    startIcon={<AttachFile />}
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFiles}
-                  >
-                    파일 첨부
-                  </Button>
-                  <IconButton color="primary">
-                    <Mood />
-                  </IconButton>
-                  <IconButton color="primary">
-                    <LocationOn />
-                  </IconButton>
-                </Stack>
-                <Button 
-                  variant="contained" 
-                  endIcon={uploadingFiles ? <CircularProgress size={20} /> : <Send />}
-                  onClick={handlePost}
-                  disabled={!newPostTitle.trim() || !newPost.trim() || postLoading}
-                  color={boardInfo.color}
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    bgcolor: alpha(theme.palette[boardInfo.color].main, 0.2),
+                    color: boardInfo.color + '.main',
+                  }}
                 >
-                  {postLoading ? '업로드 중...' : '게시'}
-                </Button>
-              </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        {/* 피드 */}
-        <Stack spacing={2}>
-          {posts.length === 0 ? (
-            <EmptyPostMessage />
-          ) : (
-            posts.map((post) => (
-              <Card 
-                key={post.id}
-                sx={{ 
-                  cursor: 'pointer',
-                  '&:hover': {
-                    boxShadow: 3
-                  }
-                }}
-                onClick={(e) => {
-                  // 버튼이나 액션 아이템 클릭시 카드 클릭 이벤트 방지
-                  if ((e.target as HTMLElement).closest('button, .MuiIconButton-root')) {
-                    return
-                  }
-                  router.push(`/post/${post.id}`)
-                }}
-              >
-                <CardHeader
-                  avatar={
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      badgeContent={
-                        post.author.isVerified ? (
-                          <VerifiedUser 
-                            sx={{ 
-                              width: 16, 
-                              height: 16, 
-                              color: 'success.main',
-                              bgcolor: 'background.paper',
-                              borderRadius: '50%'
-                            }} 
-                          />
-                        ) : null
-                      }
-                    >
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>
-                        {post.author.name[0]}
-                      </Avatar>
-                    </Badge>
-                  }
-                  action={
-                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                      <MoreVert />
-                    </IconButton>
-                  }
-                  title={
-                    <Stack>
-                      {post.is_pinned && (
-                        <Chip 
-                          label="고정" 
-                          size="small" 
-                          color="error" 
-                          sx={{ mb: 1, width: 'fit-content' }}
-                        />
-                      )}
-                      <Typography variant="h6" fontWeight="bold">
-                        {post.title}
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="subtitle2">
-                          {post.author.name}
-                        </Typography>
-                        {post.author.role === 'verified' && (
-                          <Chip 
-                            label="인증 교사" 
-                            size="small" 
-                            color="success" 
-                            sx={{ height: 20 }}
-                          />
-                        )}
-                        {post.author.role === 'admin' && (
-                          <Chip 
-                            label="관리자" 
-                            size="small" 
-                            color="error" 
-                            sx={{ height: 20 }}
-                          />
-                        )}
-                      </Stack>
-                    </Stack>
-                  }
-                  subheader={new Date(post.created_at).toLocaleString('ko-KR')}
-                />
-                
-                <CardContent>
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-line', mt: 1 }}>
-                    {post.content}
+                  {boardInfo.icon}
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" fontWeight="bold">
+                    {boardInfo.name}
                   </Typography>
-                </CardContent>
+                  <Typography variant="body2" color="text.secondary">
+                    {boardInfo.description}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
 
-                {post.image_urls && post.image_urls.length > 0 && (
-                  <Box sx={{ position: 'relative', p: 2, pt: 0 }}>
-                    <CardMedia
-                      component="img"
-                      image={post.image_urls[0]}
-                      alt="Post image"
-                      sx={{ 
-                        width: '100%',
-                        maxHeight: 400, 
-                        objectFit: 'cover',
-                        borderRadius: '12px'
+            {/* 글 작성 영역 */}
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Stack spacing={2}>
+                  <TextField
+                    fullWidth
+                    placeholder="제목을 입력하세요..."
+                    variant="outlined"
+                    value={newPostTitle}
+                    onChange={(e) => setNewPostTitle(e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    placeholder={`${boardInfo.name}에 글을 작성해보세요...`}
+                    variant="outlined"
+                    value={newPost}
+                    onChange={(e) => setNewPost(e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+
+                  {/* 드래그 앤 드롭 영역 */}
+                  <Box
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    sx={{
+                      border: '2px dashed',
+                      borderColor: isDragging ? 'primary.main' : 'divider',
+                      borderRadius: 2,
+                      p: 3,
+                      textAlign: 'center',
+                      bgcolor: isDragging ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      fileInputRef.current?.click()
+                    }}
+                  >
+                    <CloudUpload
+                      sx={{
+                        fontSize: 48,
+                        color: isDragging ? 'primary.main' : 'text.secondary',
+                        mb: 1,
                       }}
                     />
-                    {post.image_urls.length > 1 && (
-                      <Chip
-                        label={`+${post.image_urls.length - 1}`}
-                        size="small"
-                        sx={{
-                          position: 'absolute',
-                          bottom: 32,
-                          right: 32,
-                          bgcolor: 'rgba(0, 0, 0, 0.6)',
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    )}
+                    <Typography variant="body1" color="text.secondary">
+                      파일을 드래그하여 놓거나 클릭하여 선택하세요
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      이미지, PDF, DOC, PPT, HWP, ZIP 파일 지원 (최대 50MB)
+                    </Typography>
                   </Box>
-                )}
 
-                <CardActions disableSpacing>
-                  <IconButton 
-                    onClick={() => handleLike(post.id)}
-                    color={post.isLiked ? 'error' : 'default'}
+                  {/* 선택된 이미지 미리보기 */}
+                  {selectedImages.length > 0 && (
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                      {selectedImages.map((image, index) => (
+                        <Box key={index} sx={{ position: 'relative' }}>
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`Preview ${index}`}
+                            style={{
+                              width: 100,
+                              height: 100,
+                              objectFit: 'cover',
+                              borderRadius: 8,
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: -8,
+                              right: -8,
+                              bgcolor: 'background.paper',
+                            }}
+                            onClick={() => handleRemoveImage(index)}
+                          >
+                            <Close fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+
+                  {/* 선택된 파일 목록 */}
+                  {selectedFiles.length > 0 && (
+                    <List dense>
+                      {selectedFiles.map((file, index) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>{getFileIcon(file.name)}</ListItemIcon>
+                          <ListItemText primary={file.name} secondary={formatFileSize(file.size)} />
+                          <ListItemSecondaryAction>
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              onClick={() => handleRemoveFile(index)}
+                            >
+                              <Close />
+                            </IconButton>
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+
+                  <Divider />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Stack direction="row" spacing={1}>
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        hidden
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                      />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        hidden
+                        multiple
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.hwp,.zip,.rar"
+                        onChange={handleFileSelect}
+                      />
+                      <Button
+                        startIcon={<PhotoCamera />}
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={uploadingFiles}
+                      >
+                        이미지
+                      </Button>
+                      <Button
+                        startIcon={<AttachFile />}
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingFiles}
+                      >
+                        파일 첨부
+                      </Button>
+                      <IconButton color="primary">
+                        <Mood />
+                      </IconButton>
+                      <IconButton color="primary">
+                        <LocationOn />
+                      </IconButton>
+                    </Stack>
+                    <Button
+                      variant="contained"
+                      endIcon={uploadingFiles ? <CircularProgress size={20} /> : <Send />}
+                      onClick={handlePost}
+                      disabled={!newPostTitle.trim() || !newPost.trim() || postLoading}
+                      color={boardInfo.color}
+                    >
+                      {postLoading ? '업로드 중...' : '게시'}
+                    </Button>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* 피드 */}
+            <Stack spacing={2}>
+              {posts.length === 0 ? (
+                <EmptyPostMessage />
+              ) : (
+                posts.map((post) => (
+                  <Card
+                    key={post.id}
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': {
+                        boxShadow: 3,
+                      },
+                    }}
+                    onClick={(e) => {
+                      // 버튼이나 액션 아이템 클릭시 카드 클릭 이벤트 방지
+                      if ((e.target as HTMLElement).closest('button, .MuiIconButton-root')) {
+                        return
+                      }
+                      router.push(`/post/${post.id}`)
+                    }}
                   >
-                    {post.isLiked ? <Favorite /> : <FavoriteBorder />}
-                  </IconButton>
-                  <Typography variant="body2" color="text.secondary">
-                    {post.likes}
-                  </Typography>
-                  
-                  <IconButton sx={{ ml: 1 }}>
-                    <ChatBubbleOutline />
-                  </IconButton>
-                  <Typography variant="body2" color="text.secondary">
-                    {post.comments}
-                  </Typography>
-                  
-                  <IconButton sx={{ ml: 1 }}>
-                    <Share />
-                  </IconButton>
-                  
-                  <Box sx={{ flexGrow: 1 }} />
-                  
-                  <IconButton 
-                    onClick={() => handleBookmark(post.id)}
-                    color={post.isBookmarked ? 'primary' : 'default'}
-                  >
-                    {post.isBookmarked ? <Bookmark /> : <BookmarkBorder />}
-                  </IconButton>
-                </CardActions>
-              </Card>
-            ))
-          )}
-        </Stack>
+                    <CardHeader
+                      avatar={
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          badgeContent={
+                            post.author.isVerified ? (
+                              <VerifiedUser
+                                sx={{
+                                  width: 16,
+                                  height: 16,
+                                  color: 'success.main',
+                                  bgcolor: 'background.paper',
+                                  borderRadius: '50%',
+                                }}
+                              />
+                            ) : null
+                          }
+                        >
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>{post.author.name[0]}</Avatar>
+                        </Badge>
+                      }
+                      action={
+                        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                          <MoreVert />
+                        </IconButton>
+                      }
+                      title={
+                        <Stack>
+                          {post.is_pinned && (
+                            <Chip
+                              label="고정"
+                              size="small"
+                              color="error"
+                              sx={{ mb: 1, width: 'fit-content' }}
+                            />
+                          )}
+                          <Typography variant="h6" fontWeight="bold">
+                            {post.title}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography variant="subtitle2">{post.author.name}</Typography>
+                            {post.author.role === 'verified' && (
+                              <Chip
+                                label="인증 교사"
+                                size="small"
+                                color="success"
+                                sx={{ height: 20 }}
+                              />
+                            )}
+                            {post.author.role === 'admin' && (
+                              <Chip label="관리자" size="small" color="error" sx={{ height: 20 }} />
+                            )}
+                          </Stack>
+                        </Stack>
+                      }
+                      subheader={new Date(post.created_at).toLocaleString('ko-KR')}
+                    />
+
+                    <CardContent>
+                      <Typography variant="body1" sx={{ whiteSpace: 'pre-line', mt: 1 }}>
+                        {post.content}
+                      </Typography>
+                    </CardContent>
+
+                    {post.image_urls && post.image_urls.length > 0 && (
+                      <Box sx={{ position: 'relative', p: 2, pt: 0 }}>
+                        <CardMedia
+                          component="img"
+                          image={post.image_urls[0]}
+                          alt="Post image"
+                          sx={{
+                            width: '100%',
+                            maxHeight: 400,
+                            objectFit: 'cover',
+                            borderRadius: '12px',
+                          }}
+                        />
+                        {post.image_urls.length > 1 && (
+                          <Chip
+                            label={`+${post.image_urls.length - 1}`}
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              bottom: 32,
+                              right: 32,
+                              bgcolor: 'rgba(0, 0, 0, 0.6)',
+                              color: 'white',
+                              fontWeight: 'bold',
+                            }}
+                          />
+                        )}
+                      </Box>
+                    )}
+
+                    <CardActions disableSpacing>
+                      <IconButton
+                        onClick={() => handleLike(post.id)}
+                        color={post.isLiked ? 'error' : 'default'}
+                      >
+                        {post.isLiked ? <Favorite /> : <FavoriteBorder />}
+                      </IconButton>
+                      <Typography variant="body2" color="text.secondary">
+                        {post.likes}
+                      </Typography>
+
+                      <IconButton sx={{ ml: 1 }}>
+                        <ChatBubbleOutline />
+                      </IconButton>
+                      <Typography variant="body2" color="text.secondary">
+                        {post.comments}
+                      </Typography>
+
+                      <IconButton sx={{ ml: 1 }}>
+                        <Share />
+                      </IconButton>
+
+                      <Box sx={{ flexGrow: 1 }} />
+
+                      <IconButton
+                        onClick={() => handleBookmark(post.id)}
+                        color={post.isBookmarked ? 'primary' : 'default'}
+                      >
+                        {post.isBookmarked ? <Bookmark /> : <BookmarkBorder />}
+                      </IconButton>
+                    </CardActions>
+                  </Card>
+                ))
+              )}
+            </Stack>
 
             {/* 더 보기 버튼 */}
             {posts.length > 0 && (
@@ -938,13 +915,13 @@ export default function BoardPage() {
             sx={{
               width: 320,
               flexShrink: 0,
-              display: { xs: 'none', lg: 'block' }
+              display: { xs: 'none', lg: 'block' },
             }}
           >
             <Box
               sx={{
                 position: 'sticky',
-                top: 80
+                top: 80,
               }}
             >
               <SideChat user={user} />
@@ -954,8 +931,8 @@ export default function BoardPage() {
       </Box>
 
       {/* 모바일 사이드바 (Drawer로 처리됨) */}
-      <FeedSidebar 
-        user={user} 
+      <FeedSidebar
+        user={user}
         profile={profile}
         mobileOpen={mobileOpen}
         onMobileToggle={() => setMobileOpen(false)}
@@ -990,11 +967,7 @@ export default function BoardPage() {
       </Fab>
 
       {/* 메뉴 */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>신고하기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>숨기기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>공유하기</MenuItem>

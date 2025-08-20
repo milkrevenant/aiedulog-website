@@ -25,7 +25,7 @@ import {
   LinearProgress,
   Badge,
   CircularProgress,
-  Tooltip
+  Tooltip,
 } from '@mui/material'
 import {
   Send,
@@ -40,7 +40,7 @@ import {
   PersonSearch,
   Map,
   MyLocation,
-  CloudUploadOutlined
+  CloudUploadOutlined,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
@@ -48,9 +48,9 @@ import { useTheme, alpha } from '@mui/material/styles'
 import dynamic from 'next/dynamic'
 
 // 지도 컴포넌트는 클라이언트 사이드에서만 로드
-const MapPicker = dynamic(() => import('./MapPicker'), { 
+const MapPicker = dynamic(() => import('./MapPicker'), {
   ssr: false,
-  loading: () => <CircularProgress />
+  loading: () => <CircularProgress />,
 })
 
 interface PostEditorProps {
@@ -91,7 +91,7 @@ export default function PostEditor({
   category,
   subCategory,
   onPostCreated,
-  placeholder = "무엇을 공유하고 싶으신가요?"
+  placeholder = '무엇을 공유하고 싶으신가요?',
 }: PostEditorProps) {
   const supabase = createClient()
   const theme = useTheme()
@@ -108,13 +108,13 @@ export default function PostEditor({
 
   // Job 관련 필드
   const [jobFields, setJobFields] = useState<JobFields>({
-    jobType: subCategory as 'hiring' | 'seeking' || 'hiring',
+    jobType: (subCategory as 'hiring' | 'seeking') || 'hiring',
     company: '',
     position: '',
     salary: '',
     location: '',
     experience: '',
-    deadline: null
+    deadline: null,
   })
 
   // Lecture 관련 필드
@@ -128,7 +128,7 @@ export default function PostEditor({
     location: '',
     maxParticipants: 30,
     price: 0,
-    level: 'beginner'
+    level: 'beginner',
   })
 
   // 추가 기능 다이얼로그
@@ -146,13 +146,13 @@ export default function PostEditor({
       return
     }
 
-    setSelectedImages(prev => [...prev, ...files])
-    
+    setSelectedImages((prev) => [...prev, ...files])
+
     // 미리보기 생성
-    files.forEach(file => {
+    files.forEach((file) => {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, reader.result as string])
+        setImagePreviews((prev) => [...prev, reader.result as string])
       }
       reader.readAsDataURL(file)
     })
@@ -160,23 +160,23 @@ export default function PostEditor({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       if (file.size > 50 * 1024 * 1024) {
         alert(`${file.name}은 50MB를 초과합니다.`)
         return false
       }
       return true
     })
-    setSelectedFiles(prev => [...prev, ...validFiles])
+    setSelectedFiles((prev) => [...prev, ...validFiles])
   }
 
   const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index))
-    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   // 드래그앤드랍 핸들러
@@ -195,55 +195,60 @@ export default function PostEditor({
     }
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragging(false)
 
-    const files = Array.from(e.dataTransfer.files)
-    const imageFiles: File[] = []
-    const docFiles: File[] = []
+      const files = Array.from(e.dataTransfer.files)
+      const imageFiles: File[] = []
+      const docFiles: File[] = []
 
-    files.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        imageFiles.push(file)
-      } else {
-        if (file.size > 50 * 1024 * 1024) {
-          alert(`${file.name}은 50MB를 초과합니다.`)
+      files.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+          imageFiles.push(file)
         } else {
-          docFiles.push(file)
+          if (file.size > 50 * 1024 * 1024) {
+            alert(`${file.name}은 50MB를 초과합니다.`)
+          } else {
+            docFiles.push(file)
+          }
         }
-      }
-    })
-
-    if (imageFiles.length > 0) {
-      const remainingSlots = 5 - selectedImages.length
-      const filesToAdd = imageFiles.slice(0, remainingSlots)
-      
-      if (imageFiles.length > remainingSlots) {
-        alert(`이미지는 최대 5개까지 업로드 가능합니다. ${filesToAdd.length}개만 추가됩니다.`)
-      }
-      
-      setSelectedImages(prev => [...prev, ...filesToAdd])
-      
-      // 미리보기 생성
-      filesToAdd.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setImagePreviews(prev => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(file)
       })
-    }
 
-    if (docFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...docFiles])
-    }
-  }, [selectedImages.length])
+      if (imageFiles.length > 0) {
+        const remainingSlots = 5 - selectedImages.length
+        const filesToAdd = imageFiles.slice(0, remainingSlots)
+
+        if (imageFiles.length > remainingSlots) {
+          alert(`이미지는 최대 5개까지 업로드 가능합니다. ${filesToAdd.length}개만 추가됩니다.`)
+        }
+
+        setSelectedImages((prev) => [...prev, ...filesToAdd])
+
+        // 미리보기 생성
+        filesToAdd.forEach((file) => {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            setImagePreviews((prev) => [...prev, reader.result as string])
+          }
+          reader.readAsDataURL(file)
+        })
+      }
+
+      if (docFiles.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...docFiles])
+      }
+    },
+    [selectedImages.length]
+  )
 
   const handleLocationInsert = () => {
     if (locationText.trim()) {
-      setContent(prev => prev + (prev ? '\n\n📍 위치: ' + locationText : '📍 위치: ' + locationText))
+      setContent(
+        (prev) => prev + (prev ? '\n\n📍 위치: ' + locationText : '📍 위치: ' + locationText)
+      )
       setLocationText('')
       setShowLocationDialog(false)
     }
@@ -251,52 +256,48 @@ export default function PostEditor({
 
   const uploadImages = async () => {
     const uploadedUrls: string[] = []
-    
+
     for (const image of selectedImages) {
       const fileExt = image.name.split('.').pop()
       const fileName = `${user?.id}/${Date.now()}-${Math.random()}.${fileExt}`
-      
-      const { data, error } = await supabase.storage
-        .from('post-images')
-        .upload(fileName, image)
-      
+
+      const { data, error } = await supabase.storage.from('post-images').upload(fileName, image)
+
       if (error) throw error
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('post-images')
-        .getPublicUrl(fileName)
-      
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('post-images').getPublicUrl(fileName)
+
       uploadedUrls.push(publicUrl)
     }
-    
+
     return uploadedUrls
   }
 
   const uploadFiles = async () => {
     const uploadedFiles: any[] = []
-    
+
     for (const file of selectedFiles) {
       const fileExt = file.name.split('.').pop()
       const fileName = `${user?.id}/${Date.now()}-${Math.random()}.${fileExt}`
-      
-      const { data, error } = await supabase.storage
-        .from('post-files')
-        .upload(fileName, file)
-      
+
+      const { data, error } = await supabase.storage.from('post-files').upload(fileName, file)
+
       if (error) throw error
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('post-files')
-        .getPublicUrl(fileName)
-      
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('post-files').getPublicUrl(fileName)
+
       uploadedFiles.push({
         name: file.name,
         url: publicUrl,
         size: file.size,
-        type: file.type
+        type: file.type,
       })
     }
-    
+
     return uploadedFiles
   }
 
@@ -308,42 +309,40 @@ export default function PostEditor({
     try {
       // 이미지 업로드
       const imageUrls = selectedImages.length > 0 ? await uploadImages() : []
-      
+
       // 파일 업로드
       const fileData = selectedFiles.length > 0 ? await uploadFiles() : []
 
       // 메타데이터 구성
       let metadata: any = {}
-      
+
       if (category === 'job') {
         metadata = {
           ...jobFields,
-          deadline: jobFields.deadline?.toISOString()
+          deadline: jobFields.deadline?.toISOString(),
         }
       } else if (category === 'lecture') {
         metadata = {
           ...lectureFields,
           startDate: lectureFields.startDate?.toISOString(),
-          endDate: lectureFields.endDate?.toISOString()
+          endDate: lectureFields.endDate?.toISOString(),
         }
       }
 
       // 게시글 작성
-      const { data, error } = await supabase
-        .from('posts')
-        .insert({
-          title,
-          content,
-          author_id: user.id,
-          category,
-          sub_category: subCategory || (category === 'job' ? jobFields.jobType : null),
-          is_published: true,
-          images: imageUrls,
-          files: fileData,
-          metadata,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+      const { data, error } = await supabase.from('posts').insert({
+        title,
+        content,
+        author_id: user.id,
+        category,
+        sub_category: subCategory || (category === 'job' ? jobFields.jobType : null),
+        is_published: true,
+        images: imageUrls,
+        files: fileData,
+        metadata,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
 
       if (error) throw error
 
@@ -360,7 +359,7 @@ export default function PostEditor({
         salary: '',
         location: '',
         experience: '',
-        deadline: null
+        deadline: null,
       })
       setLectureFields({
         lectureTitle: '',
@@ -372,12 +371,11 @@ export default function PostEditor({
         location: '',
         maxParticipants: 30,
         price: 0,
-        level: 'beginner'
+        level: 'beginner',
       })
 
       // 부모 컴포넌트에 알림
       onPostCreated()
-      
     } catch (error) {
       console.error('Error creating post:', error)
       alert('게시글 작성 중 오류가 발생했습니다.')
@@ -388,16 +386,14 @@ export default function PostEditor({
 
   if (!user) {
     return (
-      <Card 
+      <Card
         elevation={1}
-        sx={{ 
-          boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+        sx={{
+          boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
         }}
       >
         <CardContent>
-          <Alert severity="info">
-            로그인 후 게시글을 작성할 수 있습니다.
-          </Alert>
+          <Alert severity="info">로그인 후 게시글을 작성할 수 있습니다.</Alert>
         </CardContent>
       </Card>
     )
@@ -405,29 +401,27 @@ export default function PostEditor({
 
   return (
     <>
-      <Card 
+      <Card
         elevation={1}
-        sx={{ 
+        sx={{
           boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
           '&:hover': {
-            boxShadow: '0 4px 8px rgba(0,0,0,0.12)'
-          }
+            boxShadow: '0 4px 8px rgba(0,0,0,0.12)',
+          },
         }}
       >
         <CardContent>
           <Stack spacing={2}>
             {/* 프로필 및 카테고리 정보 */}
             <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar>
-                {profile?.nickname?.[0] || user.email?.[0]}
-              </Avatar>
+              <Avatar>{profile?.nickname?.[0] || user.email?.[0]}</Avatar>
               <Box flex={1}>
                 <Typography variant="subtitle2">
                   {profile?.nickname || user.email?.split('@')[0]}
                 </Typography>
                 <Stack direction="row" spacing={1}>
                   {category === 'job' && (
-                    <Chip 
+                    <Chip
                       icon={jobFields.jobType === 'hiring' ? <Business /> : <PersonSearch />}
                       label={jobFields.jobType === 'hiring' ? '구인' : '구직'}
                       size="small"
@@ -435,14 +429,9 @@ export default function PostEditor({
                     />
                   )}
                   {category === 'lecture' && (
-                    <Chip 
-                      icon={<School />}
-                      label="강의"
-                      size="small"
-                      color="primary"
-                    />
+                    <Chip icon={<School />} label="강의" size="small" color="primary" />
                   )}
-                  <Chip 
+                  <Chip
                     label={category === 'feed' ? '피드' : category}
                     size="small"
                     variant="outlined"
@@ -472,7 +461,7 @@ export default function PostEditor({
                 borderColor: isDragging ? 'primary.main' : 'divider',
                 borderRadius: 1,
                 bgcolor: isDragging ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
               }}
             >
               <TextField
@@ -485,11 +474,11 @@ export default function PostEditor({
                 variant="outlined"
                 sx={{
                   '& .MuiOutlinedInput-notchedOutline': {
-                    border: 'none'
-                  }
+                    border: 'none',
+                  },
                 }}
               />
-              
+
               {/* 드래그앤드랍 오버레이 */}
               {isDragging && (
                 <Box
@@ -506,7 +495,7 @@ export default function PostEditor({
                     bgcolor: alpha(theme.palette.background.paper, 0.9),
                     borderRadius: 1,
                     pointerEvents: 'none',
-                    zIndex: 10
+                    zIndex: 10,
                   }}
                 >
                   <CloudUploadOutlined sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
@@ -526,7 +515,12 @@ export default function PostEditor({
                 <FormControl size="small" sx={{ minWidth: 100 }}>
                   <Select
                     value={jobFields.jobType}
-                    onChange={(e) => setJobFields({...jobFields, jobType: e.target.value as 'hiring' | 'seeking'})}
+                    onChange={(e) =>
+                      setJobFields({
+                        ...jobFields,
+                        jobType: e.target.value as 'hiring' | 'seeking',
+                      })
+                    }
                   >
                     <MenuItem value="hiring">구인</MenuItem>
                     <MenuItem value="seeking">구직</MenuItem>
@@ -560,8 +554,8 @@ export default function PostEditor({
               <Stack direction="row" spacing={1} sx={{ overflowX: 'auto' }}>
                 {imagePreviews.map((preview, index) => (
                   <Box key={index} position="relative">
-                    <img 
-                      src={preview} 
+                    <img
+                      src={preview}
                       alt={`Preview ${index}`}
                       style={{ height: 100, borderRadius: 8 }}
                     />
@@ -595,13 +589,15 @@ export default function PostEditor({
             )}
 
             {/* 드래그앤드랍 안내 */}
-            <Box sx={{ 
-              p: 1.5, 
-              bgcolor: alpha(theme.palette.info.main, 0.05),
-              borderRadius: 1,
-              border: 1,
-              borderColor: alpha(theme.palette.info.main, 0.2)
-            }}>
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: alpha(theme.palette.info.main, 0.05),
+                borderRadius: 1,
+                border: 1,
+                borderColor: alpha(theme.palette.info.main, 0.2),
+              }}
+            >
               <Stack direction="row" alignItems="center" spacing={1}>
                 <CloudUploadOutlined fontSize="small" color="info" />
                 <Typography variant="caption" color="text.secondary">
@@ -621,45 +617,39 @@ export default function PostEditor({
                   hidden
                   onChange={handleImageSelect}
                 />
-                <IconButton 
+                <IconButton
                   onClick={() => imageInputRef.current?.click()}
-                  sx={{ 
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1) 
-                    }
+                  sx={{
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    },
                   }}
                 >
                   <Badge badgeContent={selectedImages.length} color="primary">
                     <PhotoCamera />
                   </Badge>
                 </IconButton>
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  hidden
-                  onChange={handleFileSelect}
-                />
-                <IconButton 
+
+                <input ref={fileInputRef} type="file" multiple hidden onChange={handleFileSelect} />
+                <IconButton
                   onClick={() => fileInputRef.current?.click()}
-                  sx={{ 
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1) 
-                    }
+                  sx={{
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    },
                   }}
                 >
                   <Badge badgeContent={selectedFiles.length} color="primary">
                     <AttachFile />
                   </Badge>
                 </IconButton>
-                
-                <IconButton 
+
+                <IconButton
                   onClick={() => setShowLocationDialog(true)}
-                  sx={{ 
-                    '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1) 
-                    }
+                  sx={{
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    },
                   }}
                 >
                   <LocationOn />
@@ -691,7 +681,7 @@ export default function PostEditor({
                 label={jobFields.jobType === 'hiring' ? '회사명' : '희망 회사'}
                 fullWidth
                 value={jobFields.company}
-                onChange={(e) => setJobFields({...jobFields, company: e.target.value})}
+                onChange={(e) => setJobFields({ ...jobFields, company: e.target.value })}
               />
             </Grid>
             <Grid size={12}>
@@ -699,7 +689,7 @@ export default function PostEditor({
                 label={jobFields.jobType === 'hiring' ? '채용 포지션' : '희망 포지션'}
                 fullWidth
                 value={jobFields.position}
-                onChange={(e) => setJobFields({...jobFields, position: e.target.value})}
+                onChange={(e) => setJobFields({ ...jobFields, position: e.target.value })}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -707,9 +697,9 @@ export default function PostEditor({
                 label="급여"
                 fullWidth
                 value={jobFields.salary}
-                onChange={(e) => setJobFields({...jobFields, salary: e.target.value})}
+                onChange={(e) => setJobFields({ ...jobFields, salary: e.target.value })}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">₩</InputAdornment>
+                  startAdornment: <InputAdornment position="start">₩</InputAdornment>,
                 }}
               />
             </Grid>
@@ -718,7 +708,7 @@ export default function PostEditor({
                 label="경력"
                 fullWidth
                 value={jobFields.experience}
-                onChange={(e) => setJobFields({...jobFields, experience: e.target.value})}
+                onChange={(e) => setJobFields({ ...jobFields, experience: e.target.value })}
                 placeholder="예: 3년 이상"
               />
             </Grid>
@@ -727,7 +717,7 @@ export default function PostEditor({
                 label="근무지"
                 fullWidth
                 value={jobFields.location}
-                onChange={(e) => setJobFields({...jobFields, location: e.target.value})}
+                onChange={(e) => setJobFields({ ...jobFields, location: e.target.value })}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -735,7 +725,7 @@ export default function PostEditor({
                         <Map />
                       </IconButton>
                     </InputAdornment>
-                  )
+                  ),
                 }}
               />
             </Grid>
@@ -747,7 +737,12 @@ export default function PostEditor({
       </Dialog>
 
       {/* 위치 삽입 다이얼로그 */}
-      <Dialog open={showLocationDialog} onClose={() => setShowLocationDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={showLocationDialog}
+        onClose={() => setShowLocationDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
           <Stack direction="row" alignItems="center" spacing={1}>
             <MyLocation color="primary" />
@@ -771,7 +766,7 @@ export default function PostEditor({
                 endAdornment: (
                   <InputAdornment position="end">
                     <Tooltip title="지도에서 선택">
-                      <IconButton 
+                      <IconButton
                         size="small"
                         onClick={() => {
                           setShowMapPicker(true)
@@ -781,7 +776,7 @@ export default function PostEditor({
                       </IconButton>
                     </Tooltip>
                   </InputAdornment>
-                )
+                ),
               }}
             />
             <Typography variant="caption" color="text.secondary">
@@ -789,14 +784,16 @@ export default function PostEditor({
             </Typography>
           </Stack>
           <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => {
-              setShowLocationDialog(false)
-              setLocationText('')
-            }}>
+            <Button
+              onClick={() => {
+                setShowLocationDialog(false)
+                setLocationText('')
+              }}
+            >
               취소
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleLocationInsert}
               disabled={!locationText.trim()}
             >
@@ -807,7 +804,12 @@ export default function PostEditor({
       </Dialog>
 
       {/* Lecture 상세 정보 다이얼로그 */}
-      <Dialog open={showLectureDialog} onClose={() => setShowLectureDialog(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={showLectureDialog}
+        onClose={() => setShowLectureDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>강의 정보</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -816,7 +818,9 @@ export default function PostEditor({
                 label="강의명"
                 fullWidth
                 value={lectureFields.lectureTitle}
-                onChange={(e) => setLectureFields({...lectureFields, lectureTitle: e.target.value})}
+                onChange={(e) =>
+                  setLectureFields({ ...lectureFields, lectureTitle: e.target.value })
+                }
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -824,7 +828,7 @@ export default function PostEditor({
                 label="강사명"
                 fullWidth
                 value={lectureFields.instructor}
-                onChange={(e) => setLectureFields({...lectureFields, instructor: e.target.value})}
+                onChange={(e) => setLectureFields({ ...lectureFields, instructor: e.target.value })}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -832,7 +836,12 @@ export default function PostEditor({
                 <InputLabel>난이도</InputLabel>
                 <Select
                   value={lectureFields.level}
-                  onChange={(e) => setLectureFields({...lectureFields, level: e.target.value as 'beginner' | 'intermediate' | 'advanced'})}
+                  onChange={(e) =>
+                    setLectureFields({
+                      ...lectureFields,
+                      level: e.target.value as 'beginner' | 'intermediate' | 'advanced',
+                    })
+                  }
                   label="난이도"
                 >
                   <MenuItem value="beginner">초급</MenuItem>
@@ -847,9 +856,11 @@ export default function PostEditor({
                 fullWidth
                 type="number"
                 value={lectureFields.price}
-                onChange={(e) => setLectureFields({...lectureFields, price: Number(e.target.value)})}
+                onChange={(e) =>
+                  setLectureFields({ ...lectureFields, price: Number(e.target.value) })
+                }
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">₩</InputAdornment>
+                  startAdornment: <InputAdornment position="start">₩</InputAdornment>,
                 }}
               />
             </Grid>
@@ -859,7 +870,9 @@ export default function PostEditor({
                 fullWidth
                 type="number"
                 value={lectureFields.maxParticipants}
-                onChange={(e) => setLectureFields({...lectureFields, maxParticipants: Number(e.target.value)})}
+                onChange={(e) =>
+                  setLectureFields({ ...lectureFields, maxParticipants: Number(e.target.value) })
+                }
               />
             </Grid>
             <Grid size={12}>
@@ -867,7 +880,7 @@ export default function PostEditor({
                 label="장소"
                 fullWidth
                 value={lectureFields.location}
-                onChange={(e) => setLectureFields({...lectureFields, location: e.target.value})}
+                onChange={(e) => setLectureFields({ ...lectureFields, location: e.target.value })}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -875,7 +888,7 @@ export default function PostEditor({
                         <Map />
                       </IconButton>
                     </InputAdornment>
-                  )
+                  ),
                 }}
               />
             </Grid>

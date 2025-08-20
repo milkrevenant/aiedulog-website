@@ -60,9 +60,11 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>(
+    'idle'
+  )
   const [emailCheckTimer, setEmailCheckTimer] = useState<NodeJS.Timeout | null>(null)
-  
+
   const [formData, setFormData] = useState<SignUpData>({
     email: '',
     password: '',
@@ -110,7 +112,6 @@ export default function SignUpPage() {
         setError('비밀번호가 일치하지 않습니다.')
         return
       }
-
     } else if (activeStep === 1) {
       // 추가 정보 검증
       if (!formData.name || !formData.school) {
@@ -149,8 +150,8 @@ export default function SignUpPage() {
           data: {
             name: formData.name,
             school: formData.school,
-          }
-        }
+          },
+        },
       })
 
       if (authError) throw authError
@@ -188,11 +189,11 @@ export default function SignUpPage() {
   }
 
   const handleInterestToggle = (interest: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       interests: prev.interests.includes(interest)
-        ? prev.interests.filter(i => i !== interest)
-        : [...prev.interests, interest]
+        ? prev.interests.filter((i) => i !== interest)
+        : [...prev.interests, interest],
     }))
   }
 
@@ -204,7 +205,7 @@ export default function SignUpPage() {
     }
 
     setEmailStatus('checking')
-    
+
     try {
       // 임시로 signUp 시도하여 중복 체크
       const { data, error } = await supabase.auth.signUp({
@@ -233,17 +234,17 @@ export default function SignUpPage() {
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const email = e.target.value
     setFormData({ ...formData, email })
-    
+
     // 이전 타이머 취소
     if (emailCheckTimer) {
       clearTimeout(emailCheckTimer)
     }
-    
+
     // 500ms 후에 중복 체크 (디바운싱)
     const timer = setTimeout(() => {
       checkEmailAvailability(email)
     }, 500)
-    
+
     setEmailCheckTimer(timer)
   }
 
@@ -313,9 +314,13 @@ export default function SignUpPage() {
                 variant="outlined"
                 error={emailStatus === 'taken'}
                 helperText={
-                  emailStatus === 'checking' ? '이메일 확인 중...' :
-                  emailStatus === 'taken' ? '이미 가입된 이메일입니다.' :
-                  emailStatus === 'available' ? '사용 가능한 이메일입니다.' : ''
+                  emailStatus === 'checking'
+                    ? '이메일 확인 중...'
+                    : emailStatus === 'taken'
+                      ? '이미 가입된 이메일입니다.'
+                      : emailStatus === 'available'
+                        ? '사용 가능한 이메일입니다.'
+                        : ''
                 }
                 InputProps={{
                   startAdornment: (
@@ -355,10 +360,7 @@ export default function SignUpPage() {
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
@@ -547,8 +549,10 @@ export default function SignUpPage() {
               >
                 {loading ? (
                   <CircularProgress size={24} color="inherit" />
+                ) : activeStep === steps.length - 1 ? (
+                  '가입 완료'
                 ) : (
-                  activeStep === steps.length - 1 ? '가입 완료' : '다음'
+                  '다음'
                 )}
               </Button>
             )}
@@ -584,18 +588,15 @@ export default function SignUpPage() {
           )}
 
           {/* Footer Links */}
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            sx={{ mt: 3 }}
-          >
+          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
             <Link href="/terms">
               <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
                 이용약관
               </Typography>
             </Link>
-            <Typography variant="caption" color="text.secondary">•</Typography>
+            <Typography variant="caption" color="text.secondary">
+              •
+            </Typography>
             <Link href="/privacy">
               <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
                 개인정보처리방침

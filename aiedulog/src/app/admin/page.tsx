@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { usePermission } from '@/hooks/usePermission';
-import { Permission } from '@/lib/auth/permissions';
-import AppHeader from '@/components/AppHeader';
-import AuthGuard from '@/components/AuthGuard';
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { usePermission } from '@/hooks/usePermission'
+import { Permission } from '@/lib/auth/permissions'
+import AppHeader from '@/components/AppHeader'
+import AuthGuard from '@/components/AuthGuard'
 import {
   Box,
   Container,
@@ -29,7 +29,7 @@ import {
   Divider,
   LinearProgress,
   Alert,
-} from '@mui/material';
+} from '@mui/material'
 import {
   SupervisorAccount,
   Assessment,
@@ -49,23 +49,23 @@ import {
   Visibility,
   AdminPanelSettings,
   Dashboard as DashboardIcon,
-} from '@mui/icons-material';
+} from '@mui/icons-material'
 
 interface Statistics {
-  totalUsers: number;
-  newUsersToday: number;
-  totalPosts: number;
-  totalComments: number;
-  activeUsers: number;
-  verifiedTeachers: number;
+  totalUsers: number
+  newUsersToday: number
+  totalPosts: number
+  totalComments: number
+  activeUsers: number
+  verifiedTeachers: number
 }
 
 function AdminDashboardContent() {
-  const router = useRouter();
-  const supabase = createClient();
-  const { user, can, isAdmin, isModerator, loading: authLoading } = usePermission();
-  const [profile, setProfile] = useState<any>(null);
-  const [authUser, setAuthUser] = useState<any>(null);
+  const router = useRouter()
+  const supabase = createClient()
+  const { user, can, isAdmin, isModerator, loading: authLoading } = usePermission()
+  const [profile, setProfile] = useState<any>(null)
+  const [authUser, setAuthUser] = useState<any>(null)
   const [stats, setStats] = useState<Statistics>({
     totalUsers: 0,
     newUsersToday: 0,
@@ -73,30 +73,32 @@ function AdminDashboardContent() {
     totalComments: 0,
     activeUsers: 0,
     verifiedTeachers: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  })
+  const [loading, setLoading] = useState(true)
+  const [recentActivities, setRecentActivities] = useState<any[]>([])
 
   // 권한 체크는 AuthGuard에서 처리되므로 제거
 
   // 사용자 프로필 가져오기
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const { data: { user: authUserData } } = await supabase.auth.getUser();
-      setAuthUser(authUserData);
-      
+      const {
+        data: { user: authUserData },
+      } = await supabase.auth.getUser()
+      setAuthUser(authUserData)
+
       if (authUserData) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authUserData.id)
-          .single();
-        setProfile(profileData);
+          .single()
+        setProfile(profileData)
       }
-    };
-    
-    fetchUserProfile();
-  }, [supabase]);
+    }
+
+    fetchUserProfile()
+  }, [supabase])
 
   // 통계 데이터 가져오기
   useEffect(() => {
@@ -105,31 +107,31 @@ function AdminDashboardContent() {
         // 사용자 통계
         const { count: totalUsers } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
 
         const { count: newUsersToday } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
+          .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
         const { count: verifiedTeachers } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'verified');
+          .eq('role', 'verified')
 
         const { count: activeUsers } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .eq('is_active', true);
+          .eq('is_active', true)
 
         // 게시글 통계
         const { count: totalPosts } = await supabase
           .from('posts')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
 
         const { count: totalComments } = await supabase
           .from('comments')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
 
         setStats({
           totalUsers: totalUsers || 0,
@@ -138,27 +140,27 @@ function AdminDashboardContent() {
           totalComments: totalComments || 0,
           activeUsers: activeUsers || 0,
           verifiedTeachers: verifiedTeachers || 0,
-        });
+        })
 
         // 최근 활동
         const { data: recentPosts } = await supabase
           .from('posts')
           .select('id, title, created_at, author')
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(5)
 
-        setRecentActivities(recentPosts || []);
+        setRecentActivities(recentPosts || [])
       } catch (error) {
-        console.error('Error fetching statistics:', error);
+        console.error('Error fetching statistics:', error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     if (user) {
-      fetchStatistics();
+      fetchStatistics()
     }
-  }, [user, supabase]);
+  }, [user, supabase])
 
   // 로딩 중일 때
   if (loading) {
@@ -171,7 +173,7 @@ function AdminDashboardContent() {
           </Box>
         </Container>
       </>
-    );
+    )
   }
 
   const adminMenus = [
@@ -239,7 +241,7 @@ function AdminDashboardContent() {
       color: '#DFE6E9',
       permission: 'manage_settings',
     },
-  ];
+  ]
 
   const statsCards = [
     {
@@ -268,7 +270,7 @@ function AdminDashboardContent() {
       icon: <School />,
       color: 'warning.main',
     },
-  ];
+  ]
 
   return (
     <>
@@ -347,7 +349,7 @@ function AdminDashboardContent() {
         </Typography>
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {adminMenus.map((menu, index) => {
-            const hasPermission = can(menu.permission as Permission);
+            const hasPermission = can(menu.permission as Permission)
             return (
               <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
                 <Paper
@@ -397,7 +399,7 @@ function AdminDashboardContent() {
                   </Stack>
                 </Paper>
               </Grid>
-            );
+            )
           })}
         </Grid>
 
@@ -476,7 +478,7 @@ function AdminDashboardContent() {
         </Grid>
       </Container>
     </>
-  );
+  )
 }
 
 export default function AdminDashboard() {
@@ -484,5 +486,5 @@ export default function AdminDashboard() {
     <AuthGuard requireAuth requireModerator>
       <AdminDashboardContent />
     </AuthGuard>
-  );
+  )
 }

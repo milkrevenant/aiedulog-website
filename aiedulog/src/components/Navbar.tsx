@@ -49,9 +49,11 @@ export default function Navbar() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       setUser(user)
-      
+
       if (user) {
         const { data: profileData } = await supabase
           .from('profiles')
@@ -63,9 +65,11 @@ export default function Navbar() {
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
-      
+
       if (session?.user) {
         const { data: profileData } = await supabase
           .from('profiles')
@@ -125,287 +129,278 @@ export default function Navbar() {
         }}
       >
         <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ minHeight: 64, height: 64 }}>
-          {/* 햄버거 메뉴 버튼 - 모바일/태블릿에서만 표시 */}
-          <IconButton
-            sx={{ 
-              display: { xs: 'flex', md: 'none' },
-              mr: 2 
-            }}
-            onClick={handleMobileMenuOpen}
-            color="inherit"
-          >
-            <MenuIcon />
-          </IconButton>
-
-          {/* Logo */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
-            <Typography
-              variant="h6"
-              component={Link}
-              href="/main"
+          <Toolbar disableGutters sx={{ minHeight: 64, height: 64 }}>
+            {/* 햄버거 메뉴 버튼 - 모바일/태블릿에서만 표시 */}
+            <IconButton
               sx={{
-                fontWeight: 700,
-                color: theme.palette.primary.main,
-                textDecoration: 'none',
+                display: { xs: 'flex', md: 'none' },
+                mr: 2,
               }}
+              onClick={handleMobileMenuOpen}
+              color="inherit"
             >
-              AIedulog
-            </Typography>
-          </Box>
+              <MenuIcon />
+            </IconButton>
 
-          {/* Flex spacer for desktop */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'block' } }} />
-
-          {/* Desktop Menu Items and Icons - Right aligned with consistent spacing */}
-          <Box sx={{ 
-            display: { xs: 'none', md: 'flex' }, 
-            alignItems: 'center', 
-            gap: 2  // 일정한 간격 설정
-          }}>
-            {/* Menu Items */}
-            {menuItems.map((item) => (
-              <Button
-                key={item.href}
+            {/* Logo */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
+              <Typography
+                variant="h6"
                 component={Link}
-                href={item.href}
+                href="/main"
                 sx={{
-                  color: pathname.startsWith(item.href.split('?')[0]) 
-                    ? theme.palette.primary.main 
-                    : theme.palette.text.primary,
-                  fontWeight: pathname.startsWith(item.href.split('?')[0]) ? 600 : 400,
-                  minWidth: 'auto',
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                  },
+                  fontWeight: 700,
+                  color: theme.palette.primary.main,
+                  textDecoration: 'none',
                 }}
               >
-                {item.label}
-              </Button>
-            ))}
+                AIedulog
+              </Typography>
+            </Box>
 
-            {/* Notification and Chat Icons - 로그인 상태일 때만 표시 */}
-            {user && (
-              <>
-                <NotificationIcon />
-                <IconButton
-                  onClick={() => router.push('/chat')}
-                  sx={{ color: theme.palette.text.primary }}
-                >
-                  <Chat />
-                </IconButton>
-              </>
-            )}
+            {/* Flex spacer for desktop */}
+            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'block' } }} />
 
-            {/* User Auth Section */}
-            {user ? (
-              <IconButton
-                size="large"
-                onClick={handleMenu}
-                sx={{ p: 0.5 }}
-              >
-                <Avatar 
-                  src={profile?.avatar_url || undefined}
-                  sx={{ 
-                    width: 36, 
-                    height: 36, 
-                    bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main
-                  }}
-                >
-                  {!profile?.avatar_url && user.email?.[0].toUpperCase()}
-                </Avatar>
-              </IconButton>
-            ) : (
-              <>
+            {/* Desktop Menu Items and Icons - Right aligned with consistent spacing */}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                alignItems: 'center',
+                gap: 2, // 일정한 간격 설정
+              }}
+            >
+              {/* Menu Items */}
+              {menuItems.map((item) => (
                 <Button
+                  key={item.href}
                   component={Link}
-                  href="/auth/login"
-                  variant="text"
-                  sx={{ 
-                    color: theme.palette.text.primary,
-                    fontWeight: 400,
+                  href={item.href}
+                  sx={{
+                    color: pathname.startsWith(item.href.split('?')[0])
+                      ? theme.palette.primary.main
+                      : theme.palette.text.primary,
+                    fontWeight: pathname.startsWith(item.href.split('?')[0]) ? 600 : 400,
                     minWidth: 'auto',
                     '&:hover': {
                       bgcolor: alpha(theme.palette.primary.main, 0.08),
                     },
                   }}
                 >
-                  로그인
+                  {item.label}
                 </Button>
-                <Button
-                  component={Link}
-                  href="/auth/signup"
-                  variant="contained"
-                  sx={{ 
-                    borderRadius: 8,
-                    minWidth: 'auto',
-                    bgcolor: theme.palette.primary.main,
-                    '&:hover': {
-                      bgcolor: theme.palette.primary.dark,
-                    },
-                  }}
-                >
-                  회원가입
-                </Button>
-              </>
-            )}
-          </Box>
+              ))}
 
-          {/* Mobile spacer */}
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, flexGrow: 1 }} />
+              {/* Notification and Chat Icons - 로그인 상태일 때만 표시 */}
+              {user && (
+                <>
+                  <NotificationIcon />
+                  <IconButton
+                    onClick={() => router.push('/chat')}
+                    sx={{ color: theme.palette.text.primary }}
+                  >
+                    <Chat />
+                  </IconButton>
+                </>
+              )}
 
-          {/* Mobile User Menu */}
-          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
-            {user ? (
-              <>
-                <NotificationIcon />
-                <IconButton
-                  onClick={() => router.push('/chat')}
-                  sx={{ color: theme.palette.text.primary }}
-                >
-                  <Chat />
-                </IconButton>
-                <IconButton
-                  size="large"
-                  onClick={handleMenu}
-                  sx={{ p: 0.5 }}
-                >
-                  <Avatar 
+              {/* User Auth Section */}
+              {user ? (
+                <IconButton size="large" onClick={handleMenu} sx={{ p: 0.5 }}>
+                  <Avatar
                     src={profile?.avatar_url || undefined}
-                    sx={{ 
-                      width: 32, 
-                      height: 32, 
-                      bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main,
                     }}
                   >
                     {!profile?.avatar_url && user.email?.[0].toUpperCase()}
                   </Avatar>
                 </IconButton>
-              </>
-            ) : (
-              <>
-                <Button
-                  component={Link}
-                  href="/auth/login"
-                  variant="text"
-                  size="small"
-                  sx={{ 
-                    minWidth: 'auto',
-                    color: theme.palette.text.primary,
-                  }}
-                >
-                  로그인
-                </Button>
-                <Button
-                  component={Link}
-                  href="/auth/signup"
-                  variant="contained"
-                  size="small"
-                  sx={{ 
-                    borderRadius: 8,
-                    minWidth: 'auto'
-                  }}
-                >
-                  회원가입
-                </Button>
-              </>
-            )}
-          </Box>
+              ) : (
+                <>
+                  <Button
+                    component={Link}
+                    href="/auth/login"
+                    variant="text"
+                    sx={{
+                      color: theme.palette.text.primary,
+                      fontWeight: 400,
+                      minWidth: 'auto',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      },
+                    }}
+                  >
+                    로그인
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/auth/signup"
+                    variant="contained"
+                    sx={{
+                      borderRadius: 8,
+                      minWidth: 'auto',
+                      bgcolor: theme.palette.primary.main,
+                      '&:hover': {
+                        bgcolor: theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    회원가입
+                  </Button>
+                </>
+              )}
+            </Box>
 
+            {/* Mobile spacer */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, flexGrow: 1 }} />
 
-          {/* User Dropdown Menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            sx={{ 
-              mt: 1,
-              '& .MuiPaper-root': {
-                minWidth: 200,
-              }
-            }}
-          >
-            <MenuItem 
-              onClick={() => {
-                handleClose()
-                router.push('/dashboard')
+            {/* Mobile User Menu */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
+              {user ? (
+                <>
+                  <NotificationIcon />
+                  <IconButton
+                    onClick={() => router.push('/chat')}
+                    sx={{ color: theme.palette.text.primary }}
+                  >
+                    <Chat />
+                  </IconButton>
+                  <IconButton size="large" onClick={handleMenu} sx={{ p: 0.5 }}>
+                    <Avatar
+                      src={profile?.avatar_url || undefined}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: profile?.avatar_url ? 'transparent' : theme.palette.primary.main,
+                      }}
+                    >
+                      {!profile?.avatar_url && user.email?.[0].toUpperCase()}
+                    </Avatar>
+                  </IconButton>
+                </>
+              ) : (
+                <>
+                  <Button
+                    component={Link}
+                    href="/auth/login"
+                    variant="text"
+                    size="small"
+                    sx={{
+                      minWidth: 'auto',
+                      color: theme.palette.text.primary,
+                    }}
+                  >
+                    로그인
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/auth/signup"
+                    variant="contained"
+                    size="small"
+                    sx={{
+                      borderRadius: 8,
+                      minWidth: 'auto',
+                    }}
+                  >
+                    회원가입
+                  </Button>
+                </>
+              )}
+            </Box>
+
+            {/* User Dropdown Menu */}
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              sx={{
+                mt: 1,
+                '& .MuiPaper-root': {
+                  minWidth: 200,
+                },
               }}
             >
-              <ListItemIcon>
-                <Dashboard fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>마이페이지</ListItemText>
-            </MenuItem>
-            
-            {(profile?.role === 'admin' || profile?.role === 'moderator') && (
-              <MenuItem 
+              <MenuItem
                 onClick={() => {
                   handleClose()
-                  router.push('/admin')
+                  router.push('/dashboard')
                 }}
               >
                 <ListItemIcon>
-                  <AdminPanelSettings fontSize="small" />
+                  <Dashboard fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>사이트 관리</ListItemText>
+                <ListItemText>마이페이지</ListItemText>
               </MenuItem>
-            )}
-            
-            <Divider />
-            
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>로그아웃</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </Container>
-    </AppBar>
 
-    {/* Mobile Menu - Menu 컴포넌트로 바로 아래 드롭다운 */}
-    <Menu
-      anchorEl={mobileMenuAnchor}
-      open={Boolean(mobileMenuAnchor)}
-      onClose={handleMobileMenuClose}
-      transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-      anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-      sx={{ 
-        display: { xs: 'block', md: 'none' },
-        mt: 0.5,
-        '& .MuiPaper-root': {
-          width: '100vw',
-          maxWidth: '100%',
-          borderRadius: 0,
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        }
-      }}
-    >
-      {menuItems.map((item) => (
-        <MenuItem
-          key={item.href}
-          onClick={() => {
-            router.push(item.href)
-            handleMobileMenuClose()
-          }}
-          sx={{
-            py: 2,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            '&:last-child': {
-              borderBottom: 'none'
-            }
-          }}
-        >
-          <Typography variant="body1">
-            {item.label}
-          </Typography>
-        </MenuItem>
-      ))}
-    </Menu>
-  </>
+              {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+                <MenuItem
+                  onClick={() => {
+                    handleClose()
+                    router.push('/admin')
+                  }}
+                >
+                  <ListItemIcon>
+                    <AdminPanelSettings fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>사이트 관리</ListItemText>
+                </MenuItem>
+              )}
+
+              <Divider />
+
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>로그아웃</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      {/* Mobile Menu - Menu 컴포넌트로 바로 아래 드롭다운 */}
+      <Menu
+        anchorEl={mobileMenuAnchor}
+        open={Boolean(mobileMenuAnchor)}
+        onClose={handleMobileMenuClose}
+        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          mt: 0.5,
+          '& .MuiPaper-root': {
+            width: '100vw',
+            maxWidth: '100%',
+            borderRadius: 0,
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          },
+        }}
+      >
+        {menuItems.map((item) => (
+          <MenuItem
+            key={item.href}
+            onClick={() => {
+              router.push(item.href)
+              handleMobileMenuClose()
+            }}
+            sx={{
+              py: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              '&:last-child': {
+                borderBottom: 'none',
+              },
+            }}
+          >
+            <Typography variant="body1">{item.label}</Typography>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   )
 }

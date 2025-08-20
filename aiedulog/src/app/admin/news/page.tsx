@@ -98,14 +98,16 @@ export default function NewsManagementPage() {
     try {
       const { data, error } = await supabase
         .from('news_posts')
-        .select(`
+        .select(
+          `
           *,
           author:profiles!author_id (
             name,
             nickname,
             email
           )
-        `)
+        `
+        )
         .order('published_at', { ascending: false })
 
       if (error) throw error
@@ -141,10 +143,7 @@ export default function NewsManagementPage() {
     if (!selectedPost) return
 
     try {
-      const { error } = await supabase
-        .from('news_posts')
-        .delete()
-        .eq('id', selectedPost.id)
+      const { error } = await supabase.from('news_posts').delete().eq('id', selectedPost.id)
 
       if (error) throw error
       await fetchNewsPosts()
@@ -157,28 +156,30 @@ export default function NewsManagementPage() {
 
   const handleSave = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (selectedPost) {
         // 수정
         const { error } = await supabase
           .from('news_posts')
           .update({
             ...editingPost,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', selectedPost.id)
 
         if (error) throw error
       } else {
         // 추가
-        const { error } = await supabase
-          .from('news_posts')
-          .insert([{
+        const { error } = await supabase.from('news_posts').insert([
+          {
             ...editingPost,
             author_id: user?.id,
-            published_at: new Date().toISOString()
-          }])
+            published_at: new Date().toISOString(),
+          },
+        ])
 
         if (error) throw error
       }
@@ -222,39 +223,52 @@ export default function NewsManagementPage() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'news': return <ArticleIcon />
-      case 'event': return <EventIcon />
-      case 'achievement': return <AchievementIcon />
-      default: return <ArticleIcon />
+      case 'news':
+        return <ArticleIcon />
+      case 'event':
+        return <EventIcon />
+      case 'achievement':
+        return <AchievementIcon />
+      default:
+        return <ArticleIcon />
     }
   }
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'news': return '뉴스'
-      case 'event': return '이벤트'
-      case 'achievement': return '성과'
-      default: return category
+      case 'news':
+        return '뉴스'
+      case 'event':
+        return '이벤트'
+      case 'achievement':
+        return '성과'
+      default:
+        return category
     }
   }
 
   const getCategoryColor = (category: string): any => {
     switch (category) {
-      case 'news': return 'primary'
-      case 'event': return 'secondary'
-      case 'achievement': return 'success'
-      default: return 'default'
+      case 'news':
+        return 'primary'
+      case 'event':
+        return 'secondary'
+      case 'achievement':
+        return 'success'
+      default:
+        return 'default'
     }
   }
 
   // 탭별 필터링
-  const filteredPosts = currentTab === 0 
-    ? newsPosts 
-    : currentTab === 1 
-    ? newsPosts.filter(p => p.category === 'news')
-    : currentTab === 2
-    ? newsPosts.filter(p => p.category === 'event')
-    : newsPosts.filter(p => p.category === 'achievement')
+  const filteredPosts =
+    currentTab === 0
+      ? newsPosts
+      : currentTab === 1
+        ? newsPosts.filter((p) => p.category === 'news')
+        : currentTab === 2
+          ? newsPosts.filter((p) => p.category === 'event')
+          : newsPosts.filter((p) => p.category === 'achievement')
 
   return (
     <AuthGuard requireAdmin>
@@ -269,11 +283,7 @@ export default function NewsManagementPage() {
               연구회 뉴스, 이벤트, 성과를 관리합니다
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAdd}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
             뉴스 작성
           </Button>
         </Box>
@@ -282,9 +292,9 @@ export default function NewsManagementPage() {
         <Paper sx={{ mb: 3 }}>
           <Tabs value={currentTab} onChange={(e, v) => setCurrentTab(v)}>
             <Tab label={`전체 (${newsPosts.length})`} />
-            <Tab label={`뉴스 (${newsPosts.filter(p => p.category === 'news').length})`} />
-            <Tab label={`이벤트 (${newsPosts.filter(p => p.category === 'event').length})`} />
-            <Tab label={`성과 (${newsPosts.filter(p => p.category === 'achievement').length})`} />
+            <Tab label={`뉴스 (${newsPosts.filter((p) => p.category === 'news').length})`} />
+            <Tab label={`이벤트 (${newsPosts.filter((p) => p.category === 'event').length})`} />
+            <Tab label={`성과 (${newsPosts.filter((p) => p.category === 'achievement').length})`} />
           </Tabs>
         </Paper>
 
@@ -315,9 +325,16 @@ export default function NewsManagementPage() {
                     <ImageIcon sx={{ fontSize: 60, color: 'grey.400' }} />
                   </Box>
                 )}
-                
+
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'start',
+                      mb: 1,
+                    }}
+                  >
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Chip
                         icon={getCategoryIcon(post.category)}
@@ -326,12 +343,7 @@ export default function NewsManagementPage() {
                         size="small"
                       />
                       {post.is_featured && (
-                        <Chip
-                          icon={<StarIcon />}
-                          label="특집"
-                          color="warning"
-                          size="small"
-                        />
+                        <Chip icon={<StarIcon />} label="특집" color="warning" size="small" />
                       )}
                     </Box>
                     <IconButton
@@ -353,7 +365,14 @@ export default function NewsManagementPage() {
                     </Typography>
                   )}
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 'auto' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      mt: 'auto',
+                    }}
+                  >
                     <Typography variant="caption" color="text.secondary">
                       {post.author?.nickname || post.author?.name || post.author?.email}
                     </Typography>
@@ -362,7 +381,12 @@ export default function NewsManagementPage() {
                     </Typography>
                   </Box>
 
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mt: 1 }}
+                  >
                     {new Date(post.published_at).toLocaleDateString('ko-KR')}
                   </Typography>
                 </CardContent>
@@ -375,11 +399,7 @@ export default function NewsManagementPage() {
                   >
                     {post.is_featured ? <StarIcon /> : <StarBorderIcon />}
                   </IconButton>
-                  <Button
-                    size="small"
-                    startIcon={<EditIcon />}
-                    onClick={() => handleEdit(post)}
-                  >
+                  <Button size="small" startIcon={<EditIcon />} onClick={() => handleEdit(post)}>
                     수정
                   </Button>
                   <Button
@@ -401,7 +421,9 @@ export default function NewsManagementPage() {
           {filteredPosts.length === 0 && !loading && (
             <Grid size={12}>
               <Alert severity="info">
-                {currentTab === 0 ? '등록된 뉴스가 없습니다' : `등록된 ${getCategoryLabel(['', 'news', 'event', 'achievement'][currentTab])}가 없습니다`}
+                {currentTab === 0
+                  ? '등록된 뉴스가 없습니다'
+                  : `등록된 ${getCategoryLabel(['', 'news', 'event', 'achievement'][currentTab])}가 없습니다`}
               </Alert>
             </Grid>
           )}
@@ -409,9 +431,7 @@ export default function NewsManagementPage() {
 
         {/* 뉴스 추가/수정 다이얼로그 */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            {selectedPost ? '뉴스 수정' : '뉴스 작성'}
-          </DialogTitle>
+          <DialogTitle>{selectedPost ? '뉴스 수정' : '뉴스 작성'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
@@ -446,7 +466,9 @@ export default function NewsManagementPage() {
                 label="썸네일 이미지 URL"
                 fullWidth
                 value={editingPost.thumbnail_image || ''}
-                onChange={(e) => setEditingPost({ ...editingPost, thumbnail_image: e.target.value })}
+                onChange={(e) =>
+                  setEditingPost({ ...editingPost, thumbnail_image: e.target.value })
+                }
                 helperText="카드에 표시될 이미지"
               />
 
@@ -454,7 +476,9 @@ export default function NewsManagementPage() {
                 <InputLabel>카테고리</InputLabel>
                 <Select
                   value={editingPost.category || 'news'}
-                  onChange={(e) => setEditingPost({ ...editingPost, category: e.target.value as any })}
+                  onChange={(e) =>
+                    setEditingPost({ ...editingPost, category: e.target.value as any })
+                  }
                   label="카테고리"
                 >
                   <MenuItem value="news">뉴스</MenuItem>
@@ -467,7 +491,9 @@ export default function NewsManagementPage() {
                 control={
                   <Switch
                     checked={editingPost.is_featured || false}
-                    onChange={(e) => setEditingPost({ ...editingPost, is_featured: e.target.checked })}
+                    onChange={(e) =>
+                      setEditingPost({ ...editingPost, is_featured: e.target.checked })
+                    }
                   />
                 }
                 label="특집 기사로 설정"
@@ -477,7 +503,9 @@ export default function NewsManagementPage() {
                 control={
                   <Switch
                     checked={editingPost.is_published !== false}
-                    onChange={(e) => setEditingPost({ ...editingPost, is_published: e.target.checked })}
+                    onChange={(e) =>
+                      setEditingPost({ ...editingPost, is_published: e.target.checked })
+                    }
                   />
                 }
                 label="바로 발행"
@@ -496,9 +524,7 @@ export default function NewsManagementPage() {
         <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
           <DialogTitle>뉴스 삭제</DialogTitle>
           <DialogContent>
-            <Typography>
-              "{selectedPost?.title}" 뉴스를 삭제하시겠습니까?
-            </Typography>
+            <Typography>"{selectedPost?.title}" 뉴스를 삭제하시겠습니까?</Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>

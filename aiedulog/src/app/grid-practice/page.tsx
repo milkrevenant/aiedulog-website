@@ -18,7 +18,7 @@ import {
   Card,
   CardContent,
   Chip,
-  TextField
+  TextField,
 } from '@mui/material'
 
 export default function GridPractice() {
@@ -72,22 +72,22 @@ export default function GridPractice() {
     <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb', py: 4 }}>
       <Container maxWidth="xl">
         {/* Header */}
-        <Typography 
-          variant="h3" 
-          sx={{ 
+        <Typography
+          variant="h3"
+          sx={{
             fontWeight: 700,
             mb: 2,
-            textAlign: 'center'
+            textAlign: 'center',
           }}
         >
           Interactive CSS Grid Builder
         </Typography>
-        <Typography 
-          variant="body1" 
-          sx={{ 
+        <Typography
+          variant="body1"
+          sx={{
             textAlign: 'center',
             color: 'text.secondary',
-            mb: 4
+            mb: 4,
           }}
         >
           CSS Grid로 반응형 레이아웃을 실시간으로 만들어보세요
@@ -103,9 +103,7 @@ export default function GridPractice() {
 
               {/* 아이템 개수 */}
               <Box sx={{ mb: 3 }}>
-                <FormLabel>
-                  📦 아이템 개수: {numItems}
-                </FormLabel>
+                <FormLabel>📦 아이템 개수: {numItems}</FormLabel>
                 <Slider
                   value={numItems}
                   onChange={(e, val) => setNumItems(val as number)}
@@ -129,7 +127,7 @@ export default function GridPractice() {
                   📱 Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''}
                 </FormLabel>
                 <ButtonGroup size="small" fullWidth>
-                  {[1, 2, 3, 4].map(col => (
+                  {[1, 2, 3, 4].map((col) => (
                     <Button
                       key={col}
                       variant={mobileColumns === col ? 'contained' : 'outlined'}
@@ -144,10 +142,11 @@ export default function GridPractice() {
               {/* Small Tablet Columns */}
               <Box sx={{ mb: 2 }}>
                 <FormLabel>
-                  📱 Small Tablet (sm: 600-899px): {smallTabletColumns} column{smallTabletColumns > 1 ? 's' : ''}
+                  📱 Small Tablet (sm: 600-899px): {smallTabletColumns} column
+                  {smallTabletColumns > 1 ? 's' : ''}
                 </FormLabel>
                 <ButtonGroup size="small" fullWidth>
-                  {[1, 2, 3, 4].map(col => (
+                  {[1, 2, 3, 4].map((col) => (
                     <Button
                       key={col}
                       variant={smallTabletColumns === col ? 'contained' : 'outlined'}
@@ -162,10 +161,11 @@ export default function GridPractice() {
               {/* Large Tablet Columns */}
               <Box sx={{ mb: 2 }}>
                 <FormLabel>
-                  📱 Large Tablet (md: 900-1199px): {largeTabletColumns} column{largeTabletColumns > 1 ? 's' : ''}
+                  📱 Large Tablet (md: 900-1199px): {largeTabletColumns} column
+                  {largeTabletColumns > 1 ? 's' : ''}
                 </FormLabel>
                 <ButtonGroup size="small" fullWidth>
-                  {[2, 3, 4, 6].map(col => (
+                  {[2, 3, 4, 6].map((col) => (
                     <Button
                       key={col}
                       variant={largeTabletColumns === col ? 'contained' : 'outlined'}
@@ -180,10 +180,11 @@ export default function GridPractice() {
               {/* Desktop Columns */}
               <Box sx={{ mb: 2 }}>
                 <FormLabel>
-                  💻 Desktop (lg: 1200-1535px): {desktopColumns} column{desktopColumns > 1 ? 's' : ''}
+                  💻 Desktop (lg: 1200-1535px): {desktopColumns} column
+                  {desktopColumns > 1 ? 's' : ''}
                 </FormLabel>
                 <ButtonGroup size="small" fullWidth>
-                  {[2, 3, 4, 6].map(col => (
+                  {[2, 3, 4, 6].map((col) => (
                     <Button
                       key={col}
                       variant={desktopColumns === col ? 'contained' : 'outlined'}
@@ -198,10 +199,11 @@ export default function GridPractice() {
               {/* Large Desktop Columns */}
               <Box sx={{ mb: 2 }}>
                 <FormLabel>
-                  🖥️ Large Desktop (xl: 1536px+): {largeDesktopColumns} column{largeDesktopColumns > 1 ? 's' : ''}
+                  🖥️ Large Desktop (xl: 1536px+): {largeDesktopColumns} column
+                  {largeDesktopColumns > 1 ? 's' : ''}
                 </FormLabel>
                 <ButtonGroup size="small" fullWidth>
-                  {[3, 4, 6, 8, 12].map(col => (
+                  {[3, 4, 6, 8, 12].map((col) => (
                     <Button
                       key={col}
                       variant={largeDesktopColumns === col ? 'contained' : 'outlined'}
@@ -222,9 +224,7 @@ export default function GridPractice() {
 
               {/* Gap */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  Gap: {gap * 8}px
-                </FormLabel>
+                <FormLabel>Gap: {gap * 8}px</FormLabel>
                 <Slider
                   value={gap}
                   onChange={(e, val) => setGap(val as number)}
@@ -239,9 +239,7 @@ export default function GridPractice() {
 
               {/* Height */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  Height: {itemHeight}px
-                </FormLabel>
+                <FormLabel>Height: {itemHeight}px</FormLabel>
                 <Slider
                   value={itemHeight}
                   onChange={(e, val) => setItemHeight(val as number)}
@@ -254,9 +252,7 @@ export default function GridPractice() {
 
               {/* Padding */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  Padding: {padding * 8}px
-                </FormLabel>
+                <FormLabel>Padding: {padding * 8}px</FormLabel>
                 <Slider
                   value={padding}
                   onChange={(e, val) => setPadding(val as number)}
@@ -270,9 +266,7 @@ export default function GridPractice() {
 
               {/* Border Width */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  Border: {borderWidth}px
-                </FormLabel>
+                <FormLabel>Border: {borderWidth}px</FormLabel>
                 <Slider
                   value={borderWidth}
                   onChange={(e, val) => setBorderWidth(val as number)}
@@ -298,8 +292,8 @@ export default function GridPractice() {
               <Stack spacing={1}>
                 <FormControlLabel
                   control={
-                    <Switch 
-                      checked={showNumbers} 
+                    <Switch
+                      checked={showNumbers}
                       onChange={(e) => setShowNumbers(e.target.checked)}
                     />
                   }
@@ -307,8 +301,8 @@ export default function GridPractice() {
                 />
                 <FormControlLabel
                   control={
-                    <Switch 
-                      checked={showLabels} 
+                    <Switch
+                      checked={showLabels}
                       onChange={(e) => setShowLabels(e.target.checked)}
                     />
                   }
@@ -327,9 +321,14 @@ export default function GridPractice() {
                   variant="outlined"
                   size="small"
                   onClick={() => {
-                    setMobileColumns(1); setSmallTabletColumns(2); setLargeTabletColumns(2); 
-                    setDesktopColumns(3); setLargeDesktopColumns(3);
-                    setNumItems(6); setGap(2); setItemHeight(150);
+                    setMobileColumns(1)
+                    setSmallTabletColumns(2)
+                    setLargeTabletColumns(2)
+                    setDesktopColumns(3)
+                    setLargeDesktopColumns(3)
+                    setNumItems(6)
+                    setGap(2)
+                    setItemHeight(150)
                   }}
                 >
                   Standard 3x2 Grid
@@ -338,9 +337,14 @@ export default function GridPractice() {
                   variant="outlined"
                   size="small"
                   onClick={() => {
-                    setMobileColumns(2); setSmallTabletColumns(3); setLargeTabletColumns(4); 
-                    setDesktopColumns(4); setLargeDesktopColumns(6);
-                    setNumItems(12); setGap(1); setItemHeight(120);
+                    setMobileColumns(2)
+                    setSmallTabletColumns(3)
+                    setLargeTabletColumns(4)
+                    setDesktopColumns(4)
+                    setLargeDesktopColumns(6)
+                    setNumItems(12)
+                    setGap(1)
+                    setItemHeight(120)
                   }}
                 >
                   Dense 4x3 Grid
@@ -349,9 +353,14 @@ export default function GridPractice() {
                   variant="outlined"
                   size="small"
                   onClick={() => {
-                    setMobileColumns(1); setSmallTabletColumns(1); setLargeTabletColumns(2); 
-                    setDesktopColumns(2); setLargeDesktopColumns(2);
-                    setNumItems(4); setGap(3); setItemHeight(200);
+                    setMobileColumns(1)
+                    setSmallTabletColumns(1)
+                    setLargeTabletColumns(2)
+                    setDesktopColumns(2)
+                    setLargeDesktopColumns(2)
+                    setNumItems(4)
+                    setGap(3)
+                    setItemHeight(200)
                   }}
                 >
                   Large 2x2 Grid
@@ -360,9 +369,14 @@ export default function GridPractice() {
                   variant="outlined"
                   size="small"
                   onClick={() => {
-                    setMobileColumns(1); setSmallTabletColumns(3); setLargeTabletColumns(3); 
-                    setDesktopColumns(6); setLargeDesktopColumns(6);
-                    setNumItems(6); setGap(2); setItemHeight(100);
+                    setMobileColumns(1)
+                    setSmallTabletColumns(3)
+                    setLargeTabletColumns(3)
+                    setDesktopColumns(6)
+                    setLargeDesktopColumns(6)
+                    setNumItems(6)
+                    setGap(2)
+                    setItemHeight(100)
                   }}
                 >
                   Single Row
@@ -376,12 +390,27 @@ export default function GridPractice() {
             {/* Current Settings */}
             <Alert severity="info" sx={{ mb: 3 }}>
               <Typography variant="body2" component="div">
-                <strong>Current Viewport Layout:</strong><br />
-                📱 Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''} × {Math.ceil(numItems / mobileColumns)} row{Math.ceil(numItems / mobileColumns) > 1 ? 's' : ''}<br />
-                📱 Small Tablet (sm: 600-899px): {smallTabletColumns} column{smallTabletColumns > 1 ? 's' : ''} × {Math.ceil(numItems / smallTabletColumns)} row{Math.ceil(numItems / smallTabletColumns) > 1 ? 's' : ''}<br />
-                📱 Large Tablet (md: 900-1199px): {largeTabletColumns} column{largeTabletColumns > 1 ? 's' : ''} × {Math.ceil(numItems / largeTabletColumns)} row{Math.ceil(numItems / largeTabletColumns) > 1 ? 's' : ''}<br />
-                💻 Desktop (lg: 1200-1535px): {desktopColumns} column{desktopColumns > 1 ? 's' : ''} × {Math.ceil(numItems / desktopColumns)} row{Math.ceil(numItems / desktopColumns) > 1 ? 's' : ''}<br />
-                🖥️ Large Desktop (xl: 1536px+): {largeDesktopColumns} column{largeDesktopColumns > 1 ? 's' : ''} × {Math.ceil(numItems / largeDesktopColumns)} row{Math.ceil(numItems / largeDesktopColumns) > 1 ? 's' : ''}
+                <strong>Current Viewport Layout:</strong>
+                <br />
+                📱 Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''} ×{' '}
+                {Math.ceil(numItems / mobileColumns)} row
+                {Math.ceil(numItems / mobileColumns) > 1 ? 's' : ''}
+                <br />
+                📱 Small Tablet (sm: 600-899px): {smallTabletColumns} column
+                {smallTabletColumns > 1 ? 's' : ''} × {Math.ceil(numItems / smallTabletColumns)} row
+                {Math.ceil(numItems / smallTabletColumns) > 1 ? 's' : ''}
+                <br />
+                📱 Large Tablet (md: 900-1199px): {largeTabletColumns} column
+                {largeTabletColumns > 1 ? 's' : ''} × {Math.ceil(numItems / largeTabletColumns)} row
+                {Math.ceil(numItems / largeTabletColumns) > 1 ? 's' : ''}
+                <br />
+                💻 Desktop (lg: 1200-1535px): {desktopColumns} column{desktopColumns > 1 ? 's' : ''}{' '}
+                × {Math.ceil(numItems / desktopColumns)} row
+                {Math.ceil(numItems / desktopColumns) > 1 ? 's' : ''}
+                <br />
+                🖥️ Large Desktop (xl: 1536px+): {largeDesktopColumns} column
+                {largeDesktopColumns > 1 ? 's' : ''} × {Math.ceil(numItems / largeDesktopColumns)}{' '}
+                row{Math.ceil(numItems / largeDesktopColumns) > 1 ? 's' : ''}
               </Typography>
             </Alert>
 
@@ -390,19 +419,19 @@ export default function GridPractice() {
               <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
                 🔴 Live Preview
               </Typography>
-              
-              <Box 
-                sx={{ 
+
+              <Box
+                sx={{
                   display: 'grid',
                   gridTemplateColumns: {
                     xs: `repeat(${mobileColumns}, 1fr)`,
                     sm: `repeat(${smallTabletColumns}, 1fr)`,
                     md: `repeat(${largeTabletColumns}, 1fr)`,
                     lg: `repeat(${desktopColumns}, 1fr)`,
-                    xl: `repeat(${largeDesktopColumns}, 1fr)`
+                    xl: `repeat(${largeDesktopColumns}, 1fr)`,
                   },
                   gap: gap,
-                  width: '100%'
+                  width: '100%',
                 }}
               >
                 {Array.from({ length: numItems }, (_, i) => i + 1).map((item) => (
@@ -420,29 +449,29 @@ export default function GridPractice() {
                       borderColor: 'primary.main',
                       p: padding,
                       position: 'relative',
-                      overflow: 'hidden'
+                      overflow: 'hidden',
                     }}
                   >
                     {showNumbers && (
-                      <Typography 
-                        variant="h3" 
-                        sx={{ 
+                      <Typography
+                        variant="h3"
+                        sx={{
                           fontWeight: 600,
                           color: 'primary.main',
-                          opacity: 0.8
+                          opacity: 0.8,
                         }}
                       >
                         {item}
                       </Typography>
                     )}
                     {showLabels && (
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           position: 'absolute',
                           bottom: 4,
                           color: 'text.secondary',
-                          fontSize: '0.7rem'
+                          fontSize: '0.7rem',
                         }}
                       >
                         Item {item}
@@ -462,26 +491,31 @@ export default function GridPractice() {
             {/* Generated Code */}
             <Card sx={{ bgcolor: '#1e1e1e' }}>
               <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: 2 }}
+                >
                   <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
                     📝 Generated Code
                   </Typography>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     size="small"
                     onClick={() => navigator.clipboard.writeText(generatedCode)}
                   >
                     Copy Code
                   </Button>
                 </Stack>
-                <Box 
-                  component="pre" 
-                  sx={{ 
+                <Box
+                  component="pre"
+                  sx={{
                     color: '#d4d4d4',
                     fontSize: '0.875rem',
                     overflow: 'auto',
                     m: 0,
-                    fontFamily: 'monospace'
+                    fontFamily: 'monospace',
                   }}
                 >
                   {generatedCode}

@@ -23,15 +23,7 @@ import {
   alpha,
   CircularProgress,
 } from '@mui/material'
-import {
-  Visibility,
-  VisibilityOff,
-  Google,
-  Apple,
-  Email,
-  Lock,
-  School,
-} from '@mui/icons-material'
+import { Visibility, VisibilityOff, Google, Apple, Email, Lock, School } from '@mui/icons-material'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -44,7 +36,7 @@ export default function LoginPage() {
   const [showMFA, setShowMFA] = useState(false)
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
   const [tempUserId, setTempUserId] = useState<string | null>(null)
-  
+
   const router = useRouter()
   const supabase = createClient()
   const theme = useTheme()
@@ -60,14 +52,14 @@ export default function LoginPage() {
         email,
         password,
       })
-      
+
       if (error) {
         // MFA가 필요한 경우 체크
         if (error.message.includes('mfa') || error.message.includes('factor')) {
           // MFA 필요 - 사용자 ID 저장하고 MFA 화면으로 전환
           // authData가 error일 때는 user가 없을 수 있음
           setTempUserId(null)
-          
+
           // MFA factors 확인
           const { data: factors } = await supabase.auth.mfa.listFactors()
           if (factors?.totp && factors.totp.length > 0) {
@@ -79,7 +71,7 @@ export default function LoginPage() {
         }
         throw error
       }
-      
+
       // MFA가 설정된 사용자인지 확인
       const { data: factors } = await supabase.auth.mfa.listFactors()
       if (factors?.totp && factors.totp.length > 0 && factors.totp[0].status === 'verified') {
@@ -89,7 +81,7 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      
+
       // MFA가 필요없거나 완료된 경우
       // 사용자 권한 확인
       const { data: profileData } = await supabase
@@ -97,7 +89,7 @@ export default function LoginPage() {
         .select('role')
         .eq('id', authData.user.id)
         .single()
-      
+
       // 모든 사용자는 피드로 리다이렉트
       router.push('/feed')
     } catch (error: any) {
@@ -233,10 +225,7 @@ export default function LoginPage() {
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
@@ -268,10 +257,7 @@ export default function LoginPage() {
               </Stack>
 
               {error && (
-                <Alert 
-                  severity="error"
-                  sx={{ borderRadius: 2 }}
-                >
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
                   {error}
                 </Alert>
               )}
@@ -290,11 +276,7 @@ export default function LoginPage() {
                   fontWeight: 600,
                 }}
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  '로그인'
-                )}
+                {loading ? <CircularProgress size={24} color="inherit" /> : '로그인'}
               </Button>
             </Stack>
           </form>
@@ -367,24 +349,23 @@ export default function LoginPage() {
           </Box>
 
           {/* Footer Links */}
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="center"
-            sx={{ mt: 3 }}
-          >
+          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
             <Link href="/about">
               <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
                 연구회 소개
               </Typography>
             </Link>
-            <Typography variant="caption" color="text.secondary">•</Typography>
+            <Typography variant="caption" color="text.secondary">
+              •
+            </Typography>
             <Link href="/terms">
               <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
                 이용약관
               </Typography>
             </Link>
-            <Typography variant="caption" color="text.secondary">•</Typography>
+            <Typography variant="caption" color="text.secondary">
+              •
+            </Typography>
             <Link href="/privacy">
               <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
                 개인정보처리방침

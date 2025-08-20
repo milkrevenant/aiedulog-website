@@ -1,87 +1,78 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { getUnreadNotificationCount } from '@/lib/notifications';
-import {
-  IconButton,
-  Badge,
-  Menu,
-  MenuItem,
-  Typography,
-  Box,
-  Divider,
-  Button,
-} from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import { Notification } from '@/types/notification';
-import { getNotificationIcon, getNotificationColor, getRelativeTime } from '@/lib/notifications';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import CommentIcon from '@mui/icons-material/Comment';
-import ReplyIcon from '@mui/icons-material/Reply';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-import InfoIcon from '@mui/icons-material/Info';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CelebrationIcon from '@mui/icons-material/Celebration';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { getUnreadNotificationCount } from '@/lib/notifications'
+import { IconButton, Badge, Menu, MenuItem, Typography, Box, Divider, Button } from '@mui/material'
+import NotificationsIcon from '@mui/icons-material/Notifications'
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
+import { Notification } from '@/types/notification'
+import { getNotificationIcon, getNotificationColor, getRelativeTime } from '@/lib/notifications'
+import FavoriteIcon from '@mui/icons-material/Favorite'
+import CommentIcon from '@mui/icons-material/Comment'
+import ReplyIcon from '@mui/icons-material/Reply'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail'
+import InfoIcon from '@mui/icons-material/Info'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CelebrationIcon from '@mui/icons-material/Celebration'
 
 const iconComponents: Record<string, React.ElementType> = {
-  'Favorite': FavoriteIcon,
-  'Comment': CommentIcon,
-  'Reply': ReplyIcon,
-  'PersonAdd': PersonAddIcon,
-  'AlternateEmail': AlternateEmailIcon,
-  'Info': InfoIcon,
-  'AdminPanelSettings': AdminPanelSettingsIcon,
-  'CheckCircle': CheckCircleIcon,
-  'Celebration': CelebrationIcon,
-  'Notifications': NotificationsIcon,
-};
+  Favorite: FavoriteIcon,
+  Comment: CommentIcon,
+  Reply: ReplyIcon,
+  PersonAdd: PersonAddIcon,
+  AlternateEmail: AlternateEmailIcon,
+  Info: InfoIcon,
+  AdminPanelSettings: AdminPanelSettingsIcon,
+  CheckCircle: CheckCircleIcon,
+  Celebration: CelebrationIcon,
+  Notifications: NotificationsIcon,
+}
 
 export default function NotificationIcon() {
-  const router = useRouter();
-  const supabase = createClient();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const supabase = createClient()
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(false)
 
   // 읽지 않은 알림 수 가져오기
   const fetchUnreadCount = async () => {
     try {
-      const count = await getUnreadNotificationCount();
-      setUnreadCount(count);
+      const count = await getUnreadNotificationCount()
+      setUnreadCount(count)
     } catch (error) {
-      console.error('Failed to fetch unread count:', error);
+      console.error('Failed to fetch unread count:', error)
     }
-  };
+  }
 
   // 최근 알림 가져오기
   const fetchRecentNotifications = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       const { data } = await supabase
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(5)
 
       if (data) {
-        setNotifications(data);
+        setNotifications(data)
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('Failed to fetch notifications:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 실시간 구독 설정
   useEffect(() => {
-    fetchUnreadCount();
+    fetchUnreadCount()
 
     // 실시간 알림 구독
     const subscription = supabase
@@ -95,10 +86,10 @@ export default function NotificationIcon() {
         },
         (payload) => {
           // 새 알림이 추가되면 카운트 업데이트
-          fetchUnreadCount();
+          fetchUnreadCount()
           // 알림 목록에 새 알림 추가
           if (payload.new) {
-            setNotifications(prev => [payload.new as Notification, ...prev.slice(0, 4)]);
+            setNotifications((prev) => [payload.new as Notification, ...prev.slice(0, 4)])
           }
         }
       )
@@ -111,24 +102,24 @@ export default function NotificationIcon() {
         },
         () => {
           // 알림이 읽혔을 때 카운트 업데이트
-          fetchUnreadCount();
+          fetchUnreadCount()
         }
       )
-      .subscribe();
+      .subscribe()
 
     return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-    fetchRecentNotifications();
-  };
+    setAnchorEl(event.currentTarget)
+    fetchRecentNotifications()
+  }
 
   const handleClose = () => {
-    setAnchorEl(null);
-  };
+    setAnchorEl(null)
+  }
 
   const handleNotificationClick = async (notification: Notification) => {
     // 읽음 처리
@@ -136,38 +127,38 @@ export default function NotificationIcon() {
       await supabase
         .from('notifications')
         .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('id', notification.id);
-      
-      fetchUnreadCount();
+        .eq('id', notification.id)
+
+      fetchUnreadCount()
     }
 
     // 링크가 있으면 이동
     if (notification.link) {
-      router.push(notification.link);
+      router.push(notification.link)
     }
 
-    handleClose();
-  };
+    handleClose()
+  }
 
   const handleViewAll = () => {
-    router.push('/notifications');
-    handleClose();
-  };
+    router.push('/notifications')
+    handleClose()
+  }
 
-  const open = Boolean(anchorEl);
+  const open = Boolean(anchorEl)
 
   const getIcon = (type: string) => {
-    const iconName = getNotificationIcon(type as any);
-    const IconComponent = iconComponents[iconName] || NotificationsIcon;
-    return IconComponent;
-  };
+    const iconName = getNotificationIcon(type as any)
+    const IconComponent = iconComponents[iconName] || NotificationsIcon
+    return IconComponent
+  }
 
   return (
     <>
       <IconButton
         onClick={handleClick}
-        sx={{ 
-          color: unreadCount > 0 ? 'primary.main' : 'text.secondary'
+        sx={{
+          color: unreadCount > 0 ? 'primary.main' : 'text.secondary',
         }}
       >
         <Badge badgeContent={unreadCount} color="error">
@@ -218,9 +209,9 @@ export default function NotificationIcon() {
         ) : (
           <>
             {notifications.map((notification) => {
-              const IconComponent = getIcon(notification.type);
-              const color = getNotificationColor(notification.type);
-              
+              const IconComponent = getIcon(notification.type)
+              const color = getNotificationColor(notification.type)
+
               return (
                 <MenuItem
                   key={notification.id}
@@ -294,7 +285,7 @@ export default function NotificationIcon() {
                     )}
                   </Box>
                 </MenuItem>
-              );
+              )
             })}
           </>
         )}
@@ -302,15 +293,11 @@ export default function NotificationIcon() {
         <Divider />
 
         <Box sx={{ p: 1 }}>
-          <Button
-            fullWidth
-            size="small"
-            onClick={handleViewAll}
-          >
+          <Button fullWidth size="small" onClick={handleViewAll}>
             모든 알림 보기
           </Button>
         </Box>
       </Menu>
     </>
-  );
+  )
 }

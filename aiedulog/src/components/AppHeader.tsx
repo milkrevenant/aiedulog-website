@@ -18,7 +18,7 @@ import {
   useTheme,
   alpha,
   Box,
-  Collapse
+  Collapse,
 } from '@mui/material'
 import {
   Search,
@@ -27,7 +27,7 @@ import {
   Dashboard,
   AdminPanelSettings,
   Logout,
-  Close
+  Close,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
 import NotificationIcon from '@/components/NotificationIcon'
@@ -46,39 +46,41 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
   const router = useRouter()
   const theme = useTheme()
   const supabase = createClient()
-  
+
   // Fetch user and profile if not provided via props
   useEffect(() => {
     const fetchUserData = async () => {
       if (!propsUser) {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser()
         if (authUser) {
           setUser(authUser)
-          
+
           const { data: profileData } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', authUser.id)
             .single()
-          
+
           if (profileData) {
             setProfile(profileData)
           }
         }
       }
     }
-    
+
     fetchUserData()
   }, [propsUser, propsProfile])
-  
+
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
   }
-  
+
   const handleClose = () => {
     setAnchorEl(null)
   }
-  
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     handleClose()
@@ -88,32 +90,32 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
   return (
     <>
       {/* Material 3 스타일 상단 헤더 */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          position: 'sticky', 
-          top: 0, 
+      <Paper
+        elevation={0}
+        sx={{
+          position: 'sticky',
+          top: 0,
           zIndex: 1100,
           borderRadius: 0,
           backdropFilter: 'blur(20px)',
           bgcolor: alpha(theme.palette.background.paper, 0.95),
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
         }}
       >
         <Toolbar sx={{ px: 3, minHeight: 64 }}>
           {/* 로고 */}
-          <Typography 
-            variant="h6" 
-            fontWeight="bold" 
+          <Typography
+            variant="h6"
+            fontWeight="bold"
             color="primary"
             onClick={() => router.push('/feed')}
-            sx={{ 
+            sx={{
               cursor: 'pointer',
               mr: { xs: 2, sm: 3 },
               ml: 1,
               '&:hover': {
-                opacity: 0.8
-              }
+                opacity: 0.8,
+              },
             }}
           >
             AIedulog
@@ -125,72 +127,69 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
               elevation={0}
               sx={{
                 p: '2px 4px',
-                display: { xs: 'none', sm: 'flex' },  // 모바일에서 숨김
+                display: { xs: 'none', sm: 'flex' }, // 모바일에서 숨김
                 alignItems: 'center',
                 width: '100%',
                 maxWidth: 600,
-              borderRadius: 10,
-              bgcolor: alpha(theme.palette.action.selected, 0.04),
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              transition: 'all 0.2s',  // 빠른 페이드
-              '&:hover': {
-                bgcolor: alpha(theme.palette.action.selected, 0.08),
-                borderColor: alpha(theme.palette.primary.main, 0.2),
-              },
-              '&:focus-within': {
-                bgcolor: 'background.paper',
-                borderColor: theme.palette.primary.main,
-                boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
-              }
-            }}
-          >
-            <IconButton 
-              sx={{ p: '10px' }} 
-              aria-label="search"
-              onClick={() => {
-                if (searchQuery.trim()) {
-                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-                  setSearchQuery('')
-                }
+                borderRadius: 10,
+                bgcolor: alpha(theme.palette.action.selected, 0.04),
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                transition: 'all 0.2s', // 빠른 페이드
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.action.selected, 0.08),
+                  borderColor: alpha(theme.palette.primary.main, 0.2),
+                },
+                '&:focus-within': {
+                  bgcolor: 'background.paper',
+                  borderColor: theme.palette.primary.main,
+                  boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
+                },
               }}
             >
-              <Search />
-            </IconButton>
-            <InputBase
-              sx={{ ml: 1, flex: 1 }}
-              placeholder="게시글, 사용자, 태그 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && searchQuery.trim()) {
-                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-                  setSearchQuery('')
-                }
-              }}
-              inputProps={{ 'aria-label': 'search' }}
-            />
+              <IconButton
+                sx={{ p: '10px' }}
+                aria-label="search"
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                    setSearchQuery('')
+                  }
+                }}
+              >
+                <Search />
+              </IconButton>
+              <InputBase
+                sx={{ ml: 1, flex: 1 }}
+                placeholder="게시글, 사용자, 태그 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                    setSearchQuery('')
+                  }
+                }}
+                inputProps={{ 'aria-label': 'search' }}
+              />
             </Paper>
           </Box>
 
           {/* 우측 아이콘들 */}
           <Stack direction="row" spacing={1} sx={{ ml: 'auto', alignItems: 'center' }}>
             {/* 모바일 검색 아이콘 */}
-            <IconButton 
-              sx={{ 
-                display: { xs: 'inline-flex', sm: 'none' }
+            <IconButton
+              sx={{
+                display: { xs: 'inline-flex', sm: 'none' },
               }}
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
             >
               {mobileSearchOpen ? <Close /> : <Search />}
             </IconButton>
-            
+
             <NotificationIcon />
             <IconButton onClick={handleMenu}>
               {profile?.avatar_url ? (
-                <Avatar 
-                  src={profile.avatar_url} 
-                  sx={{ width: 32, height: 32 }}
-                />
+                <Avatar src={profile.avatar_url} sx={{ width: 32, height: 32 }} />
               ) : (
                 <AccountCircle />
               )}
@@ -198,19 +197,19 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
           </Stack>
         </Toolbar>
       </Paper>
-        
+
       {/* 모바일 검색창 - 검색 아이콘 위치에서 왼쪽으로 확장 */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          position: 'sticky', 
-          top: 64, 
+      <Paper
+        elevation={0}
+        sx={{
+          position: 'sticky',
+          top: 64,
           zIndex: 1099,
           borderRadius: 0,
           backdropFilter: 'blur(20px)',
           bgcolor: alpha(theme.palette.background.paper, 0.95),
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          display: { xs: 'block', sm: 'none' }
+          display: { xs: 'block', sm: 'none' },
         }}
       >
         <Box
@@ -218,12 +217,12 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
             display: { xs: 'flex', sm: 'none' },
             position: 'absolute',
             top: '50%',
-            right: 88,  // 검색 아이콘 위치 (노티 + 프로필 아이콘 너비 고려)
+            right: 88, // 검색 아이콘 위치 (노티 + 프로필 아이콘 너비 고려)
             transform: 'translateY(-50%)',
-            width: mobileSearchOpen ? 'calc(80% - 100px)' : 0,  // 0.8배로 줄임
+            width: mobileSearchOpen ? 'calc(80% - 100px)' : 0, // 0.8배로 줄임
             transition: 'width 0.3s ease-in-out',
             overflow: 'hidden',
-            zIndex: 10
+            zIndex: 10,
           }}
         >
           <Paper
@@ -236,11 +235,11 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
               borderRadius: 10,
               bgcolor: 'background.paper',
               border: `1px solid ${theme.palette.primary.main}`,
-              boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`
+              boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.1)}`,
             }}
           >
-            <IconButton 
-              sx={{ p: '10px' }} 
+            <IconButton
+              sx={{ p: '10px' }}
               aria-label="search"
               onClick={() => {
                 if (searchQuery.trim()) {
@@ -267,7 +266,7 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
               autoFocus
               inputProps={{ 'aria-label': 'search' }}
             />
-            <IconButton 
+            <IconButton
               sx={{ p: '10px' }}
               onClick={() => {
                 setMobileSearchOpen(false)
@@ -279,7 +278,7 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
           </Paper>
         </Box>
       </Paper>
-      
+
       {/* User Dropdown Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -287,14 +286,14 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
         onClose={handleClose}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        sx={{ 
+        sx={{
           mt: 1,
           '& .MuiPaper-root': {
             minWidth: 200,
-          }
+          },
         }}
       >
-        <MenuItem 
+        <MenuItem
           onClick={() => {
             handleClose()
             router.push('/dashboard')
@@ -305,8 +304,8 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
           </ListItemIcon>
           <ListItemText>마이페이지</ListItemText>
         </MenuItem>
-        
-        <MenuItem 
+
+        <MenuItem
           onClick={() => {
             handleClose()
             router.push('/settings/profile')
@@ -317,9 +316,9 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
           </ListItemIcon>
           <ListItemText>프로필 설정</ListItemText>
         </MenuItem>
-        
+
         {(profile?.role === 'admin' || profile?.role === 'moderator') && (
-          <MenuItem 
+          <MenuItem
             onClick={() => {
               handleClose()
               router.push('/admin')
@@ -331,9 +330,9 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
             <ListItemText>사이트 관리</ListItemText>
           </MenuItem>
         )}
-        
+
         <Divider />
-        
+
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <Logout fontSize="small" />

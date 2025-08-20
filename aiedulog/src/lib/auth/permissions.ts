@@ -1,7 +1,7 @@
 // 권한 관리 시스템
 export type UserRole = 'admin' | 'moderator' | 'verified' | 'member'
 
-export type Permission = 
+export type Permission =
   // Admin 권한
   | 'manage_users'
   | 'manage_content'
@@ -115,28 +115,29 @@ export function hasHigherRole(userRole: UserRole, targetRole: UserRole): boolean
 }
 
 // 역할 표시 정보
-export const roleDisplay: Record<UserRole, { label: string; color: string; description: string }> = {
-  admin: {
-    label: '관리자',
-    color: '#f44336',
-    description: '시스템 전체 관리 권한',
-  },
-  moderator: {
-    label: '운영진',
-    color: '#ff9800',
-    description: '커뮤니티 운영 및 관리',
-  },
-  verified: {
-    label: '인증회원',
-    color: '#4caf50',
-    description: '인증된 교사 회원',
-  },
-  member: {
-    label: '일반회원',
-    color: '#2196f3',
-    description: '기본 회원',
-  },
-}
+export const roleDisplay: Record<UserRole, { label: string; color: string; description: string }> =
+  {
+    admin: {
+      label: '관리자',
+      color: '#f44336',
+      description: '시스템 전체 관리 권한',
+    },
+    moderator: {
+      label: '운영진',
+      color: '#ff9800',
+      description: '커뮤니티 운영 및 관리',
+    },
+    verified: {
+      label: '인증회원',
+      color: '#4caf50',
+      description: '인증된 교사 회원',
+    },
+    member: {
+      label: '일반회원',
+      color: '#2196f3',
+      description: '기본 회원',
+    },
+  }
 
 // 권한 설명
 export const permissionDisplay: Record<Permission, { label: string; description: string }> = {

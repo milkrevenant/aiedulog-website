@@ -38,7 +38,7 @@ export function PermissionGate({
   // 로그인 필요
   if (!user) {
     if (!showError) return null
-    
+
     return (
       fallback || (
         <Paper sx={{ p: 4, textAlign: 'center', maxWidth: 400, mx: 'auto', my: 4 }}>
@@ -49,12 +49,7 @@ export function PermissionGate({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             이 페이지에 접근하려면 로그인이 필요합니다.
           </Typography>
-          <Button
-            component={Link}
-            href="/auth/login"
-            variant="contained"
-            sx={{ borderRadius: 10 }}
-          >
+          <Button component={Link} href="/auth/login" variant="contained" sx={{ borderRadius: 10 }}>
             로그인하기
           </Button>
         </Paper>
@@ -80,7 +75,7 @@ export function PermissionGate({
   // 권한 없음
   if (!hasAccess) {
     if (!showError) return null
-    
+
     return (
       fallback || (
         <Paper sx={{ p: 4, textAlign: 'center', maxWidth: 400, mx: 'auto', my: 4 }}>
@@ -101,12 +96,7 @@ export function PermissionGate({
               </Box>
             )}
           </Typography>
-          <Button
-            component={Link}
-            href="/dashboard"
-            variant="outlined"
-            sx={{ borderRadius: 10 }}
-          >
+          <Button component={Link} href="/dashboard" variant="outlined" sx={{ borderRadius: 10 }}>
             대시보드로 이동
           </Button>
         </Paper>
@@ -127,13 +117,7 @@ interface CanProps {
   fallback?: ReactNode
 }
 
-export function Can({
-  permission,
-  role,
-  minimumRole,
-  children,
-  fallback = null,
-}: CanProps) {
+export function Can({ permission, role, minimumRole, children, fallback = null }: CanProps) {
   return (
     <PermissionGate
       permission={permission}

@@ -183,9 +183,7 @@ export default function TrainingProgramsPage() {
         if (error) throw error
       } else {
         // 추가
-        const { error } = await supabase
-          .from('training_programs')
-          .insert([editingProgram])
+        const { error } = await supabase.from('training_programs').insert([editingProgram])
 
         if (error) throw error
       }
@@ -201,21 +199,31 @@ export default function TrainingProgramsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'primary'
-      case 'ongoing': return 'success'
-      case 'completed': return 'default'
-      case 'cancelled': return 'error'
-      default: return 'default'
+      case 'scheduled':
+        return 'primary'
+      case 'ongoing':
+        return 'success'
+      case 'completed':
+        return 'default'
+      case 'cancelled':
+        return 'error'
+      default:
+        return 'default'
     }
   }
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'scheduled': return '예정'
-      case 'ongoing': return '진행중'
-      case 'completed': return '완료'
-      case 'cancelled': return '취소'
-      default: return status
+      case 'scheduled':
+        return '예정'
+      case 'ongoing':
+        return '진행중'
+      case 'completed':
+        return '완료'
+      case 'cancelled':
+        return '취소'
+      default:
+        return status
     }
   }
 
@@ -237,11 +245,7 @@ export default function TrainingProgramsPage() {
           <Grid size={{ xs: 12, lg: 8 }}>
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
               <Typography variant="h6">프로그램 목록</Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAdd}
-              >
+              <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
                 프로그램 추가
               </Button>
             </Box>
@@ -255,7 +259,7 @@ export default function TrainingProgramsPage() {
                         <Typography variant="h6" gutterBottom>
                           {program.title}
                         </Typography>
-                        <Chip 
+                        <Chip
                           label={getStatusLabel(program.status)}
                           color={getStatusColor(program.status)}
                           size="small"
@@ -290,17 +294,13 @@ export default function TrainingProgramsPage() {
                         {program.location && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <LocationIcon fontSize="small" color="action" />
-                            <Typography variant="body2">
-                              {program.location}
-                            </Typography>
+                            <Typography variant="body2">{program.location}</Typography>
                           </Box>
                         )}
 
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <PersonIcon fontSize="small" color="action" />
-                          <Typography variant="body2">
-                            강사: {program.instructor_name}
-                          </Typography>
+                          <Typography variant="body2">강사: {program.instructor_name}</Typography>
                         </Box>
 
                         {program.max_participants && (
@@ -349,9 +349,7 @@ export default function TrainingProgramsPage() {
 
               {programs.length === 0 && !loading && (
                 <Grid size={12}>
-                  <Alert severity="info">
-                    등록된 연수 프로그램이 없습니다
-                  </Alert>
+                  <Alert severity="info">등록된 연수 프로그램이 없습니다</Alert>
                 </Grid>
               )}
             </Grid>
@@ -364,7 +362,7 @@ export default function TrainingProgramsPage() {
             </Typography>
 
             {programs
-              .filter(p => p.instructor_image || p.instructor_bio)
+              .filter((p) => p.instructor_image || p.instructor_bio)
               .slice(0, 3)
               .map((program) => (
                 <Card key={program.id} sx={{ mb: 2 }}>
@@ -382,9 +380,7 @@ export default function TrainingProgramsPage() {
                         <SchoolIcon />
                       </Avatar>
                       <Box>
-                        <Typography variant="h6">
-                          {program.instructor_name}
-                        </Typography>
+                        <Typography variant="h6">{program.instructor_name}</Typography>
                         {program.instructor_title && (
                           <Typography variant="body2" color="text.secondary">
                             {program.instructor_title}
@@ -414,19 +410,15 @@ export default function TrainingProgramsPage() {
                 </Card>
               ))}
 
-            {programs.filter(p => p.instructor_image || p.instructor_bio).length === 0 && (
-              <Alert severity="info">
-                강사 프로필이 등록된 프로그램이 없습니다
-              </Alert>
+            {programs.filter((p) => p.instructor_image || p.instructor_bio).length === 0 && (
+              <Alert severity="info">강사 프로필이 등록된 프로그램이 없습니다</Alert>
             )}
           </Grid>
         </Grid>
 
         {/* 프로그램 추가/수정 다이얼로그 */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            {selectedProgram ? '연수 프로그램 수정' : '연수 프로그램 추가'}
-          </DialogTitle>
+          <DialogTitle>{selectedProgram ? '연수 프로그램 수정' : '연수 프로그램 추가'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
@@ -450,13 +442,17 @@ export default function TrainingProgramsPage() {
                 multiline
                 rows={3}
                 value={editingProgram.description || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, description: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, description: e.target.value })
+                }
               />
 
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
                 <DatePicker
                   label="연수 날짜"
-                  value={editingProgram.training_date ? new Date(editingProgram.training_date) : null}
+                  value={
+                    editingProgram.training_date ? new Date(editingProgram.training_date) : null
+                  }
                   onChange={(date) => {
                     if (date) {
                       setEditingProgram({ ...editingProgram, training_date: date.toISOString() })
@@ -472,7 +468,9 @@ export default function TrainingProgramsPage() {
                     label="시작 시간"
                     fullWidth
                     value={editingProgram.start_time || ''}
-                    onChange={(e) => setEditingProgram({ ...editingProgram, start_time: e.target.value })}
+                    onChange={(e) =>
+                      setEditingProgram({ ...editingProgram, start_time: e.target.value })
+                    }
                     placeholder="14:00"
                   />
                 </Grid>
@@ -481,7 +479,9 @@ export default function TrainingProgramsPage() {
                     label="종료 시간"
                     fullWidth
                     value={editingProgram.end_time || ''}
-                    onChange={(e) => setEditingProgram({ ...editingProgram, end_time: e.target.value })}
+                    onChange={(e) =>
+                      setEditingProgram({ ...editingProgram, end_time: e.target.value })
+                    }
                     placeholder="16:00"
                   />
                 </Grid>
@@ -491,7 +491,12 @@ export default function TrainingProgramsPage() {
                     type="number"
                     fullWidth
                     value={editingProgram.duration_hours || ''}
-                    onChange={(e) => setEditingProgram({ ...editingProgram, duration_hours: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingProgram({
+                        ...editingProgram,
+                        duration_hours: parseInt(e.target.value),
+                      })
+                    }
                   />
                 </Grid>
               </Grid>
@@ -507,7 +512,9 @@ export default function TrainingProgramsPage() {
                 label="온라인 링크"
                 fullWidth
                 value={editingProgram.online_link || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, online_link: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, online_link: e.target.value })
+                }
               />
 
               <Divider />
@@ -518,7 +525,9 @@ export default function TrainingProgramsPage() {
                 label="강사 이름"
                 fullWidth
                 value={editingProgram.instructor_name || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, instructor_name: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, instructor_name: e.target.value })
+                }
                 required
               />
 
@@ -526,7 +535,9 @@ export default function TrainingProgramsPage() {
                 label="강사 직함"
                 fullWidth
                 value={editingProgram.instructor_title || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, instructor_title: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, instructor_title: e.target.value })
+                }
               />
 
               <TextField
@@ -535,14 +546,18 @@ export default function TrainingProgramsPage() {
                 multiline
                 rows={3}
                 value={editingProgram.instructor_bio || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, instructor_bio: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, instructor_bio: e.target.value })
+                }
               />
 
               <TextField
                 label="강사 사진 URL"
                 fullWidth
                 value={editingProgram.instructor_image || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, instructor_image: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, instructor_image: e.target.value })
+                }
               />
 
               <Divider />
@@ -551,7 +566,9 @@ export default function TrainingProgramsPage() {
                 label="자료 링크"
                 fullWidth
                 value={editingProgram.materials_link || ''}
-                onChange={(e) => setEditingProgram({ ...editingProgram, materials_link: e.target.value })}
+                onChange={(e) =>
+                  setEditingProgram({ ...editingProgram, materials_link: e.target.value })
+                }
               />
 
               <Grid container spacing={2}>
@@ -561,7 +578,12 @@ export default function TrainingProgramsPage() {
                     type="number"
                     fullWidth
                     value={editingProgram.max_participants || ''}
-                    onChange={(e) => setEditingProgram({ ...editingProgram, max_participants: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingProgram({
+                        ...editingProgram,
+                        max_participants: parseInt(e.target.value),
+                      })
+                    }
                   />
                 </Grid>
                 <Grid size={6}>
@@ -570,7 +592,9 @@ export default function TrainingProgramsPage() {
                     type="number"
                     fullWidth
                     value={editingProgram.fee || 0}
-                    onChange={(e) => setEditingProgram({ ...editingProgram, fee: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setEditingProgram({ ...editingProgram, fee: parseInt(e.target.value) })
+                    }
                   />
                 </Grid>
               </Grid>
@@ -579,7 +603,9 @@ export default function TrainingProgramsPage() {
                 <InputLabel>상태</InputLabel>
                 <Select
                   value={editingProgram.status || 'scheduled'}
-                  onChange={(e) => setEditingProgram({ ...editingProgram, status: e.target.value as any })}
+                  onChange={(e) =>
+                    setEditingProgram({ ...editingProgram, status: e.target.value as any })
+                  }
                   label="상태"
                 >
                   <MenuItem value="scheduled">예정</MenuItem>
@@ -602,9 +628,7 @@ export default function TrainingProgramsPage() {
         <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
           <DialogTitle>프로그램 삭제</DialogTitle>
           <DialogContent>
-            <Typography>
-              "{selectedProgram?.title}" 프로그램을 삭제하시겠습니까?
-            </Typography>
+            <Typography>"{selectedProgram?.title}" 프로그램을 삭제하시겠습니까?</Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>

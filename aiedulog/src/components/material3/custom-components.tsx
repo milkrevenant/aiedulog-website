@@ -8,8 +8,8 @@ import '@material/web/ripple/ripple'
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'md-icon': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-      'md-ripple': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'md-icon': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      'md-ripple': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
     }
   }
 }
@@ -34,12 +34,12 @@ export const M3AppBar: React.FC<M3AppBarProps> = ({
   variant = 'center',
   elevated = false,
   position = 'sticky',
-  className = ''
+  className = '',
 }) => {
   const elevationClass = elevated ? 'elevation-2' : ''
-  
+
   return (
-    <header 
+    <header
       className={`m3-app-bar m3-app-bar--${variant} ${elevationClass} ${className}`}
       style={{
         position,
@@ -49,15 +49,24 @@ export const M3AppBar: React.FC<M3AppBarProps> = ({
         backgroundColor: 'var(--md-sys-color-surface)',
         color: 'var(--md-sys-color-on-surface)',
         boxShadow: elevated ? 'var(--md-sys-elevation-level2)' : 'none',
-        transition: 'box-shadow 0.2s ease'
+        transition: 'box-shadow 0.2s ease',
       }}
     >
-      <div style={{
-        minHeight: variant === 'small' ? '64px' : variant === 'large' ? '152px' : variant === 'medium' ? '112px' : '64px',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px'
-      }}>
+      <div
+        style={{
+          minHeight:
+            variant === 'small'
+              ? '64px'
+              : variant === 'large'
+                ? '152px'
+                : variant === 'medium'
+                  ? '112px'
+                  : '64px',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 16px',
+        }}
+      >
         {children}
       </div>
     </header>
@@ -72,7 +81,7 @@ interface M3ToolbarProps {
 
 export const M3Toolbar: React.FC<M3ToolbarProps> = ({ children, className = '' }) => {
   return (
-    <div 
+    <div
       className={`m3-toolbar ${className}`}
       style={{
         display: 'flex',
@@ -80,7 +89,7 @@ export const M3Toolbar: React.FC<M3ToolbarProps> = ({ children, className = '' }
         width: '100%',
         minHeight: '64px',
         padding: '0 8px',
-        gap: '8px'
+        gap: '8px',
       }}
     >
       {children}
@@ -106,19 +115,19 @@ export const M3Avatar: React.FC<M3AvatarProps> = ({
   size = 'medium',
   variant = 'circle',
   onClick,
-  className = ''
+  className = '',
 }) => {
   const sizeMap = {
     small: 32,
     medium: 40,
     large: 56,
-    xlarge: 96
+    xlarge: 96,
   }
-  
+
   const dimension = sizeMap[size]
-  
+
   return (
-    <div 
+    <div
       className={`m3-avatar m3-avatar--${size} ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -137,26 +146,27 @@ export const M3Avatar: React.FC<M3AvatarProps> = ({
         overflow: 'hidden',
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
-        userSelect: 'none'
+        userSelect: 'none',
       }}
     >
       {src ? (
-        <img 
-          src={src} 
+        <img
+          src={src}
           alt={alt}
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover'
+            objectFit: 'cover',
           }}
         />
       ) : (
         children
       )}
-      {onClick && (() => {
-        const MdRipple = 'md-ripple' as any
-        return <MdRipple />
-      })()}
+      {onClick &&
+        (() => {
+          const MdRipple = 'md-ripple' as any
+          return <MdRipple />
+        })()}
     </div>
   )
 }
@@ -179,34 +189,33 @@ export const M3Badge: React.FC<M3BadgeProps> = ({
   variant = 'standard',
   invisible = false,
   max = 99,
-  className = ''
+  className = '',
 }) => {
-  const displayContent = typeof badgeContent === 'number' && badgeContent > max 
-    ? `${max}+` 
-    : badgeContent
+  const displayContent =
+    typeof badgeContent === 'number' && badgeContent > max ? `${max}+` : badgeContent
 
   const sizeStyles = {
     small: { minWidth: '16px', height: '16px', fontSize: '10px', padding: '0 4px' },
     standard: { minWidth: '20px', height: '20px', fontSize: '12px', padding: '0 6px' },
-    large: { minWidth: '24px', height: '24px', fontSize: '14px', padding: '0 8px' }
+    large: { minWidth: '24px', height: '24px', fontSize: '14px', padding: '0 8px' },
   }
 
   const colorMap = {
     error: 'var(--md-sys-color-error)',
     primary: 'var(--md-sys-color-primary)',
     secondary: 'var(--md-sys-color-secondary)',
-    tertiary: 'var(--md-sys-color-tertiary)'
+    tertiary: 'var(--md-sys-color-tertiary)',
   }
 
   const onColorMap = {
     error: 'var(--md-sys-color-on-error)',
     primary: 'var(--md-sys-color-on-primary)',
     secondary: 'var(--md-sys-color-on-secondary)',
-    tertiary: 'var(--md-sys-color-on-tertiary)'
+    tertiary: 'var(--md-sys-color-on-tertiary)',
   }
 
   return (
-    <div 
+    <div
       className={`m3-badge ${className}`}
       style={{ position: 'relative', display: 'inline-flex' }}
     >
@@ -224,7 +233,7 @@ export const M3Badge: React.FC<M3BadgeProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 500,
-            ...sizeStyles[variant]
+            ...sizeStyles[variant],
           }}
         >
           {displayContent}
@@ -246,12 +255,12 @@ export const M3Divider: React.FC<M3DividerProps> = ({
   variant = 'full',
   orientation = 'horizontal',
   className = '',
-  style = {}
+  style = {},
 }) => {
   const marginMap = {
     full: 0,
     inset: orientation === 'horizontal' ? '0 0 0 16px' : '16px 0 0 0',
-    middle: orientation === 'horizontal' ? '0 16px' : '16px 0'
+    middle: orientation === 'horizontal' ? '0 16px' : '16px 0',
   }
 
   return (
@@ -261,10 +270,10 @@ export const M3Divider: React.FC<M3DividerProps> = ({
       style={{
         backgroundColor: 'var(--md-sys-color-outline-variant)',
         margin: marginMap[variant],
-        ...(orientation === 'horizontal' 
+        ...(orientation === 'horizontal'
           ? { height: '1px', width: '100%' }
           : { width: '1px', height: '100%', display: 'inline-block' }),
-        ...style
+        ...style,
       }}
     />
   )
@@ -280,13 +289,13 @@ interface M3ContainerProps {
 export const M3Container: React.FC<M3ContainerProps> = ({
   children,
   maxWidth = 'lg',
-  className = ''
+  className = '',
 }) => {
   const maxWidthMap = {
     sm: '600px',
     md: '900px',
     lg: '1200px',
-    xl: '1536px'
+    xl: '1536px',
   }
 
   return (
@@ -299,7 +308,7 @@ export const M3Container: React.FC<M3ContainerProps> = ({
         paddingLeft: '24px',
         paddingRight: '24px',
         maxWidth: maxWidth ? maxWidthMap[maxWidth] : undefined,
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
       }}
     >
       {children}
@@ -323,7 +332,7 @@ export const M3Stack: React.FC<M3StackProps> = ({
   spacing = 2,
   alignItems = 'stretch',
   justifyContent = 'flex-start',
-  className = ''
+  className = '',
 }) => {
   return (
     <div
@@ -333,7 +342,7 @@ export const M3Stack: React.FC<M3StackProps> = ({
         flexDirection: direction,
         gap: `${spacing * 8}px`,
         alignItems,
-        justifyContent
+        justifyContent,
       }}
     >
       {children}
@@ -355,14 +364,14 @@ export const M3Box: React.FC<M3BoxProps> = ({
   sx = {},
   className = '',
   onClick,
-  component: Component = 'div'
+  component: Component = 'div',
 }) => {
   return React.createElement(
     Component,
     {
       className: `m3-box ${className}`,
       style: sx,
-      onClick: onClick
+      onClick: onClick,
     },
     children
   )
@@ -371,11 +380,22 @@ export const M3Box: React.FC<M3BoxProps> = ({
 // M3Typography Component (replaces MUI Typography)
 interface M3TypographyProps {
   children: React.ReactNode
-  variant?: 'display-large' | 'display-medium' | 'display-small' | 
-            'headline-large' | 'headline-medium' | 'headline-small' |
-            'title-large' | 'title-medium' | 'title-small' |
-            'body-large' | 'body-medium' | 'body-small' |
-            'label-large' | 'label-medium' | 'label-small'
+  variant?:
+    | 'display-large'
+    | 'display-medium'
+    | 'display-small'
+    | 'headline-large'
+    | 'headline-medium'
+    | 'headline-small'
+    | 'title-large'
+    | 'title-medium'
+    | 'title-small'
+    | 'body-large'
+    | 'body-medium'
+    | 'body-small'
+    | 'label-large'
+    | 'label-medium'
+    | 'label-small'
   component?: keyof JSX.IntrinsicElements
   color?: 'primary' | 'secondary' | 'tertiary' | 'error' | 'inherit'
   align?: 'left' | 'center' | 'right' | 'justify'
@@ -394,7 +414,7 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
   gutterBottom = false,
   noWrap = false,
   className = '',
-  sx = {}
+  sx = {},
 }) => {
   const variantMap: Record<string, string> = {
     'display-large': 'h1',
@@ -411,7 +431,7 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
     'body-small': 'p',
     'label-large': 'span',
     'label-medium': 'span',
-    'label-small': 'span'
+    'label-small': 'span',
   }
 
   const Component = component || variantMap[variant] || 'span'
@@ -421,25 +441,70 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
     secondary: 'var(--md-sys-color-secondary)',
     tertiary: 'var(--md-sys-color-tertiary)',
     error: 'var(--md-sys-color-error)',
-    inherit: 'inherit'
+    inherit: 'inherit',
   }
 
   const typographyStyles = {
-    'display-large': { fontSize: 'var(--md-sys-typescale-display-large-size)', lineHeight: 'var(--md-sys-typescale-display-large-line-height)' },
-    'display-medium': { fontSize: 'var(--md-sys-typescale-display-medium-size)', lineHeight: 'var(--md-sys-typescale-display-medium-line-height)' },
-    'display-small': { fontSize: 'var(--md-sys-typescale-display-small-size)', lineHeight: 'var(--md-sys-typescale-display-small-line-height)' },
-    'headline-large': { fontSize: 'var(--md-sys-typescale-headline-large-size)', lineHeight: 'var(--md-sys-typescale-headline-large-line-height)' },
-    'headline-medium': { fontSize: 'var(--md-sys-typescale-headline-medium-size)', lineHeight: 'var(--md-sys-typescale-headline-medium-line-height)' },
-    'headline-small': { fontSize: 'var(--md-sys-typescale-headline-small-size)', lineHeight: 'var(--md-sys-typescale-headline-small-line-height)' },
-    'title-large': { fontSize: 'var(--md-sys-typescale-title-large-size)', lineHeight: 'var(--md-sys-typescale-title-large-line-height)' },
-    'title-medium': { fontSize: 'var(--md-sys-typescale-title-medium-size)', lineHeight: 'var(--md-sys-typescale-title-medium-line-height)' },
-    'title-small': { fontSize: 'var(--md-sys-typescale-title-small-size)', lineHeight: 'var(--md-sys-typescale-title-small-line-height)' },
-    'body-large': { fontSize: 'var(--md-sys-typescale-body-large-size)', lineHeight: 'var(--md-sys-typescale-body-large-line-height)' },
-    'body-medium': { fontSize: 'var(--md-sys-typescale-body-medium-size)', lineHeight: 'var(--md-sys-typescale-body-medium-line-height)' },
-    'body-small': { fontSize: 'var(--md-sys-typescale-body-small-size)', lineHeight: 'var(--md-sys-typescale-body-small-line-height)' },
-    'label-large': { fontSize: 'var(--md-sys-typescale-label-large-size)', lineHeight: 'var(--md-sys-typescale-label-large-line-height)' },
-    'label-medium': { fontSize: 'var(--md-sys-typescale-label-medium-size)', lineHeight: 'var(--md-sys-typescale-label-medium-line-height)' },
-    'label-small': { fontSize: 'var(--md-sys-typescale-label-small-size)', lineHeight: 'var(--md-sys-typescale-label-small-line-height)' }
+    'display-large': {
+      fontSize: 'var(--md-sys-typescale-display-large-size)',
+      lineHeight: 'var(--md-sys-typescale-display-large-line-height)',
+    },
+    'display-medium': {
+      fontSize: 'var(--md-sys-typescale-display-medium-size)',
+      lineHeight: 'var(--md-sys-typescale-display-medium-line-height)',
+    },
+    'display-small': {
+      fontSize: 'var(--md-sys-typescale-display-small-size)',
+      lineHeight: 'var(--md-sys-typescale-display-small-line-height)',
+    },
+    'headline-large': {
+      fontSize: 'var(--md-sys-typescale-headline-large-size)',
+      lineHeight: 'var(--md-sys-typescale-headline-large-line-height)',
+    },
+    'headline-medium': {
+      fontSize: 'var(--md-sys-typescale-headline-medium-size)',
+      lineHeight: 'var(--md-sys-typescale-headline-medium-line-height)',
+    },
+    'headline-small': {
+      fontSize: 'var(--md-sys-typescale-headline-small-size)',
+      lineHeight: 'var(--md-sys-typescale-headline-small-line-height)',
+    },
+    'title-large': {
+      fontSize: 'var(--md-sys-typescale-title-large-size)',
+      lineHeight: 'var(--md-sys-typescale-title-large-line-height)',
+    },
+    'title-medium': {
+      fontSize: 'var(--md-sys-typescale-title-medium-size)',
+      lineHeight: 'var(--md-sys-typescale-title-medium-line-height)',
+    },
+    'title-small': {
+      fontSize: 'var(--md-sys-typescale-title-small-size)',
+      lineHeight: 'var(--md-sys-typescale-title-small-line-height)',
+    },
+    'body-large': {
+      fontSize: 'var(--md-sys-typescale-body-large-size)',
+      lineHeight: 'var(--md-sys-typescale-body-large-line-height)',
+    },
+    'body-medium': {
+      fontSize: 'var(--md-sys-typescale-body-medium-size)',
+      lineHeight: 'var(--md-sys-typescale-body-medium-line-height)',
+    },
+    'body-small': {
+      fontSize: 'var(--md-sys-typescale-body-small-size)',
+      lineHeight: 'var(--md-sys-typescale-body-small-line-height)',
+    },
+    'label-large': {
+      fontSize: 'var(--md-sys-typescale-label-large-size)',
+      lineHeight: 'var(--md-sys-typescale-label-large-line-height)',
+    },
+    'label-medium': {
+      fontSize: 'var(--md-sys-typescale-label-medium-size)',
+      lineHeight: 'var(--md-sys-typescale-label-medium-line-height)',
+    },
+    'label-small': {
+      fontSize: 'var(--md-sys-typescale-label-small-size)',
+      lineHeight: 'var(--md-sys-typescale-label-small-line-height)',
+    },
   }
 
   return React.createElement(
@@ -454,11 +519,12 @@ export const M3Typography: React.FC<M3TypographyProps> = ({
         whiteSpace: noWrap ? 'nowrap' : undefined,
         overflow: noWrap ? 'hidden' : undefined,
         textOverflow: noWrap ? 'ellipsis' : undefined,
-        fontFamily: variant.includes('display') || variant.includes('headline') 
-          ? 'var(--md-sys-typescale-font-family-brand)'
-          : 'var(--md-sys-typescale-font-family-plain)',
-        ...sx
-      }
+        fontFamily:
+          variant.includes('display') || variant.includes('headline')
+            ? 'var(--md-sys-typescale-font-family-brand)'
+            : 'var(--md-sys-typescale-font-family-plain)',
+        ...sx,
+      },
     },
     children
   )
@@ -488,7 +554,7 @@ export const M3Grid: React.FC<M3GridProps> = ({
   lg,
   xl,
   spacing = 2,
-  className = ''
+  className = '',
 }) => {
   if (container) {
     return (
@@ -498,7 +564,7 @@ export const M3Grid: React.FC<M3GridProps> = ({
           display: 'grid',
           gridTemplateColumns: 'repeat(12, 1fr)',
           gap: `${spacing * 8}px`,
-          width: '100%'
+          width: '100%',
         }}
       >
         {children}
@@ -516,7 +582,7 @@ export const M3Grid: React.FC<M3GridProps> = ({
     <div
       className={`m3-grid-item ${className}`}
       style={{
-        gridColumn: getGridColumn()
+        gridColumn: getGridColumn(),
       }}
     >
       {children}
@@ -538,12 +604,12 @@ export const M3Menu: React.FC<M3MenuProps> = ({
   open,
   anchorEl,
   onClose,
-  className = ''
+  className = '',
 }) => {
   if (!open || !anchorEl) return null
 
   const rect = anchorEl.getBoundingClientRect()
-  
+
   return (
     <>
       {/* Backdrop */}
@@ -572,7 +638,7 @@ export const M3Menu: React.FC<M3MenuProps> = ({
           boxShadow: 'var(--md-sys-elevation-level2)',
           minWidth: '200px',
           padding: '8px 0',
-          animation: 'menuOpen 0.2s ease-out'
+          animation: 'menuOpen 0.2s ease-out',
         }}
       >
         {children}
@@ -605,7 +671,7 @@ export const M3MenuItem: React.FC<M3MenuItemProps> = ({
   children,
   onClick,
   icon,
-  className = ''
+  className = '',
 }) => {
   return (
     <div
@@ -631,7 +697,17 @@ export const M3MenuItem: React.FC<M3MenuItemProps> = ({
         e.currentTarget.style.backgroundColor = 'transparent'
       }}
     >
-      {icon && <span style={{ display: 'flex', alignItems: 'center', color: 'var(--md-sys-color-on-surface-variant)' }}>{icon}</span>}
+      {icon && (
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: 'var(--md-sys-color-on-surface-variant)',
+          }}
+        >
+          {icon}
+        </span>
+      )}
       <span style={{ flex: 1 }}>{children}</span>
       {(() => {
         const MdRipple = 'md-ripple' as any
@@ -651,29 +727,29 @@ interface M3AlertProps {
 export const M3Alert: React.FC<M3AlertProps> = ({
   children,
   severity = 'info',
-  className = ''
+  className = '',
 }) => {
   const severityColors = {
     error: {
       bg: 'var(--md-sys-color-error-container)',
       color: 'var(--md-sys-color-on-error-container)',
-      icon: 'error'
+      icon: 'error',
     },
     warning: {
       bg: '#fff3e0',
       color: '#e65100',
-      icon: 'warning'
+      icon: 'warning',
     },
     info: {
       bg: 'var(--md-sys-color-primary-container)',
       color: 'var(--md-sys-color-on-primary-container)',
-      icon: 'info'
+      icon: 'info',
     },
     success: {
       bg: '#e8f5e9',
       color: '#2e7d32',
-      icon: 'check_circle'
-    }
+      icon: 'check_circle',
+    },
   }
 
   const colors = severityColors[severity]
@@ -690,7 +766,7 @@ export const M3Alert: React.FC<M3AlertProps> = ({
         alignItems: 'center',
         gap: '12px',
         fontSize: 'var(--md-sys-typescale-body-medium-size)',
-        lineHeight: 'var(--md-sys-typescale-body-medium-line-height)'
+        lineHeight: 'var(--md-sys-typescale-body-medium-line-height)',
       }}
     >
       <M3Icon>{colors.icon}</M3Icon>
@@ -709,13 +785,13 @@ interface M3CircularProgressProps {
 export const M3CircularProgress: React.FC<M3CircularProgressProps> = ({
   size = 24,
   color = 'primary',
-  className = ''
+  className = '',
 }) => {
   const colorMap = {
     primary: 'var(--md-sys-color-primary)',
     secondary: 'var(--md-sys-color-secondary)',
     tertiary: 'var(--md-sys-color-tertiary)',
-    inherit: 'currentColor'
+    inherit: 'currentColor',
   }
 
   return (
@@ -724,7 +800,7 @@ export const M3CircularProgress: React.FC<M3CircularProgressProps> = ({
       style={{
         width: size,
         height: size,
-        display: 'inline-block'
+        display: 'inline-block',
       }}
     >
       <svg
@@ -732,7 +808,7 @@ export const M3CircularProgress: React.FC<M3CircularProgressProps> = ({
         style={{
           animation: 'rotate 1.4s linear infinite',
           width: '100%',
-          height: '100%'
+          height: '100%',
         }}
       >
         <circle
@@ -746,7 +822,7 @@ export const M3CircularProgress: React.FC<M3CircularProgressProps> = ({
           strokeDasharray="31.4 31.4"
           strokeDashoffset="0"
           style={{
-            animation: 'dash 1.4s ease-in-out infinite'
+            animation: 'dash 1.4s ease-in-out infinite',
           }}
         />
       </svg>
@@ -787,7 +863,7 @@ export const M3Checkbox: React.FC<M3CheckboxProps> = ({
   checked = false,
   onChange,
   disabled = false,
-  className = ''
+  className = '',
 }) => {
   return (
     <div
@@ -805,7 +881,7 @@ export const M3Checkbox: React.FC<M3CheckboxProps> = ({
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.38 : 1,
         transition: 'all 0.2s ease',
-        position: 'relative'
+        position: 'relative',
       }}
     >
       {checked && (
@@ -837,7 +913,7 @@ export const M3Skeleton: React.FC<M3SkeletonProps> = ({
   width,
   height,
   animation = 'pulse',
-  className = ''
+  className = '',
 }) => {
   const getStyles = () => {
     const base: React.CSSProperties = {
@@ -845,7 +921,7 @@ export const M3Skeleton: React.FC<M3SkeletonProps> = ({
       opacity: 0.4,
       width: width || (variant === 'text' ? '100%' : undefined),
       height: height || (variant === 'text' ? '1.2em' : '100%'),
-      display: 'inline-block'
+      display: 'inline-block',
     }
 
     if (variant === 'circular') {
@@ -909,12 +985,12 @@ export const M3LinearProgress: React.FC<M3LinearProgressProps> = ({
   value = 0,
   height = 4,
   color = 'primary',
-  className = ''
+  className = '',
 }) => {
   const colorMap = {
     primary: 'var(--md-sys-color-primary)',
     secondary: 'var(--md-sys-color-secondary)',
-    tertiary: 'var(--md-sys-color-tertiary)'
+    tertiary: 'var(--md-sys-color-tertiary)',
   }
 
   return (
@@ -926,7 +1002,7 @@ export const M3LinearProgress: React.FC<M3LinearProgressProps> = ({
         backgroundColor: 'var(--md-sys-color-surface-variant)',
         borderRadius: 'var(--md-sys-shape-corner-full)',
         overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
       }}
     >
       <div
@@ -936,7 +1012,7 @@ export const M3LinearProgress: React.FC<M3LinearProgressProps> = ({
           borderRadius: 'var(--md-sys-shape-corner-full)',
           ...(variant === 'determinate'
             ? { width: `${Math.min(100, Math.max(0, value))}%`, transition: 'width 0.3s ease' }
-            : { width: '40%', animation: 'linear-progress 1.5s ease-in-out infinite' })
+            : { width: '40%', animation: 'linear-progress 1.5s ease-in-out infinite' }),
         }}
       />
       <style jsx>{`
@@ -963,10 +1039,10 @@ interface M3BreadcrumbsProps {
 export const M3Breadcrumbs: React.FC<M3BreadcrumbsProps> = ({
   children,
   separator = '›',
-  className = ''
+  className = '',
 }) => {
   const items = React.Children.toArray(children)
-  
+
   return (
     <nav
       className={`m3-breadcrumbs ${className}`}
@@ -976,7 +1052,7 @@ export const M3Breadcrumbs: React.FC<M3BreadcrumbsProps> = ({
         alignItems: 'center',
         fontSize: 'var(--md-sys-typescale-body-medium-size)',
         lineHeight: 'var(--md-sys-typescale-body-medium-line-height)',
-        color: 'var(--md-sys-color-on-surface-variant)'
+        color: 'var(--md-sys-color-on-surface-variant)',
       }}
     >
       {items.map((item, index) => (
@@ -987,7 +1063,7 @@ export const M3Breadcrumbs: React.FC<M3BreadcrumbsProps> = ({
               style={{
                 margin: '0 8px',
                 color: 'var(--md-sys-color-on-surface-variant)',
-                fontSize: 'var(--md-sys-typescale-body-medium-size)'
+                fontSize: 'var(--md-sys-typescale-body-medium-size)',
               }}
             >
               {separator}
@@ -1007,12 +1083,7 @@ interface M3DialogProps {
   className?: string
 }
 
-export const M3Dialog: React.FC<M3DialogProps> = ({
-  open,
-  onClose,
-  children,
-  className = ''
-}) => {
+export const M3Dialog: React.FC<M3DialogProps> = ({ open, onClose, children, className = '' }) => {
   if (!open) return null
 
   return (
@@ -1027,7 +1098,7 @@ export const M3Dialog: React.FC<M3DialogProps> = ({
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           zIndex: 1998,
-          animation: 'fadeIn 0.2s ease-out'
+          animation: 'fadeIn 0.2s ease-out',
         }}
         onClick={onClose}
       />
@@ -1047,15 +1118,19 @@ export const M3Dialog: React.FC<M3DialogProps> = ({
           maxHeight: '90vh',
           overflow: 'auto',
           zIndex: 1999,
-          animation: 'dialogOpen 0.3s ease-out'
+          animation: 'dialogOpen 0.3s ease-out',
         }}
       >
         {children}
       </div>
       <style jsx>{`
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
         @keyframes dialogOpen {
           from {
@@ -1078,10 +1153,7 @@ interface M3DialogTitleProps {
   className?: string
 }
 
-export const M3DialogTitle: React.FC<M3DialogTitleProps> = ({
-  children,
-  className = ''
-}) => {
+export const M3DialogTitle: React.FC<M3DialogTitleProps> = ({ children, className = '' }) => {
   return (
     <div
       className={`m3-dialog-title ${className}`}
@@ -1090,7 +1162,7 @@ export const M3DialogTitle: React.FC<M3DialogTitleProps> = ({
         fontSize: 'var(--md-sys-typescale-headline-small-size)',
         lineHeight: 'var(--md-sys-typescale-headline-small-line-height)',
         fontWeight: 500,
-        color: 'var(--md-sys-color-on-surface)'
+        color: 'var(--md-sys-color-on-surface)',
       }}
     >
       {children}
@@ -1104,10 +1176,7 @@ interface M3DialogContentProps {
   className?: string
 }
 
-export const M3DialogContent: React.FC<M3DialogContentProps> = ({
-  children,
-  className = ''
-}) => {
+export const M3DialogContent: React.FC<M3DialogContentProps> = ({ children, className = '' }) => {
   return (
     <div
       className={`m3-dialog-content ${className}`}
@@ -1115,7 +1184,7 @@ export const M3DialogContent: React.FC<M3DialogContentProps> = ({
         padding: '0 24px 24px',
         fontSize: 'var(--md-sys-typescale-body-medium-size)',
         lineHeight: 'var(--md-sys-typescale-body-medium-line-height)',
-        color: 'var(--md-sys-color-on-surface-variant)'
+        color: 'var(--md-sys-color-on-surface-variant)',
       }}
     >
       {children}
@@ -1129,10 +1198,7 @@ interface M3DialogActionsProps {
   className?: string
 }
 
-export const M3DialogActions: React.FC<M3DialogActionsProps> = ({
-  children,
-  className = ''
-}) => {
+export const M3DialogActions: React.FC<M3DialogActionsProps> = ({ children, className = '' }) => {
   return (
     <div
       className={`m3-dialog-actions ${className}`}
@@ -1140,7 +1206,7 @@ export const M3DialogActions: React.FC<M3DialogActionsProps> = ({
         padding: '16px 24px',
         display: 'flex',
         justifyContent: 'flex-end',
-        gap: '8px'
+        gap: '8px',
       }}
     >
       {children}
@@ -1164,12 +1230,12 @@ export const M3Link: React.FC<M3LinkProps> = ({
   onClick,
   underline = 'hover',
   color = 'primary',
-  className = ''
+  className = '',
 }) => {
   const colorMap = {
     primary: 'var(--md-sys-color-primary)',
     secondary: 'var(--md-sys-color-secondary)',
-    inherit: 'inherit'
+    inherit: 'inherit',
   }
 
   return (
@@ -1184,9 +1250,9 @@ export const M3Link: React.FC<M3LinkProps> = ({
         transition: 'text-decoration 0.2s ease',
         ...(underline === 'hover' && {
           ':hover': {
-            textDecoration: 'underline'
-          }
-        })
+            textDecoration: 'underline',
+          },
+        }),
       }}
       onMouseEnter={(e) => {
         if (underline === 'hover') {
@@ -1218,7 +1284,7 @@ export const M3Table: React.FC<M3TableProps> = ({ children, className = '' }) =>
         width: '100%',
         borderCollapse: 'collapse',
         fontSize: 'var(--md-sys-typescale-body-medium-size)',
-        color: 'var(--md-sys-color-on-surface)'
+        color: 'var(--md-sys-color-on-surface)',
       }}
     >
       {children}
@@ -1237,7 +1303,7 @@ export const M3TableHead: React.FC<M3TableHeadProps> = ({ children, className = 
       className={`m3-table-head ${className}`}
       style={{
         backgroundColor: 'var(--md-sys-color-surface-variant)',
-        borderBottom: '1px solid var(--md-sys-color-outline-variant)'
+        borderBottom: '1px solid var(--md-sys-color-outline-variant)',
       }}
     >
       {children}
@@ -1251,11 +1317,7 @@ interface M3TableBodyProps {
 }
 
 export const M3TableBody: React.FC<M3TableBodyProps> = ({ children, className = '' }) => {
-  return (
-    <tbody className={`m3-table-body ${className}`}>
-      {children}
-    </tbody>
-  )
+  return <tbody className={`m3-table-body ${className}`}>{children}</tbody>
 }
 
 interface M3TableRowProps {
@@ -1265,11 +1327,11 @@ interface M3TableRowProps {
   onClick?: () => void
 }
 
-export const M3TableRow: React.FC<M3TableRowProps> = ({ 
-  children, 
-  hover = false, 
+export const M3TableRow: React.FC<M3TableRowProps> = ({
+  children,
+  hover = false,
   className = '',
-  onClick 
+  onClick,
 }) => {
   return (
     <tr
@@ -1278,7 +1340,7 @@ export const M3TableRow: React.FC<M3TableRowProps> = ({
       style={{
         borderBottom: '1px solid var(--md-sys-color-outline-variant)',
         cursor: onClick ? 'pointer' : 'default',
-        transition: hover ? 'background-color 0.2s ease' : undefined
+        transition: hover ? 'background-color 0.2s ease' : undefined,
       }}
       onMouseEnter={(e) => {
         if (hover) {
@@ -1302,10 +1364,10 @@ interface M3TableCellProps {
   className?: string
 }
 
-export const M3TableCell: React.FC<M3TableCellProps> = ({ 
-  children, 
+export const M3TableCell: React.FC<M3TableCellProps> = ({
+  children,
   align = 'left',
-  className = '' 
+  className = '',
 }) => {
   return (
     <td
@@ -1314,7 +1376,7 @@ export const M3TableCell: React.FC<M3TableCellProps> = ({
         padding: '12px 16px',
         textAlign: align,
         fontSize: 'var(--md-sys-typescale-body-medium-size)',
-        color: 'var(--md-sys-color-on-surface)'
+        color: 'var(--md-sys-color-on-surface)',
       }}
     >
       {children}
@@ -1338,7 +1400,7 @@ export const M3Select: React.FC<M3SelectProps> = ({
   label,
   children,
   disabled = false,
-  className = ''
+  className = '',
 }) => {
   const [open, setOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null)
@@ -1360,16 +1422,18 @@ export const M3Select: React.FC<M3SelectProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           minHeight: '48px',
-          fontSize: 'var(--md-sys-typescale-body-large-size)'
+          fontSize: 'var(--md-sys-typescale-body-large-size)',
         }}
       >
         <div>
           {label && (
-            <div style={{
-              fontSize: 'var(--md-sys-typescale-body-small-size)',
-              color: 'var(--md-sys-color-on-surface-variant)',
-              marginBottom: '2px'
-            }}>
+            <div
+              style={{
+                fontSize: 'var(--md-sys-typescale-body-small-size)',
+                color: 'var(--md-sys-color-on-surface-variant)',
+                marginBottom: '2px',
+              }}
+            >
               {label}
             </div>
           )}
@@ -1387,7 +1451,7 @@ export const M3Select: React.FC<M3SelectProps> = ({
               right: 0,
               bottom: 0,
               zIndex: 1299,
-              backgroundColor: 'transparent'
+              backgroundColor: 'transparent',
             }}
             onClick={() => setOpen(false)}
           />
@@ -1403,7 +1467,7 @@ export const M3Select: React.FC<M3SelectProps> = ({
               boxShadow: 'var(--md-sys-elevation-level2)',
               maxHeight: '200px',
               overflowY: 'auto',
-              zIndex: 1300
+              zIndex: 1300,
             }}
           >
             {React.Children.map(children, (child) => {
@@ -1412,7 +1476,7 @@ export const M3Select: React.FC<M3SelectProps> = ({
                   onClick: () => {
                     onChange((child.props as any).value)
                     setOpen(false)
-                  }
+                  },
                 })
               }
               return child
@@ -1438,7 +1502,7 @@ export const M3Option: React.FC<M3OptionProps> = ({ value, children, onClick }) 
         padding: '12px 16px',
         cursor: 'pointer',
         transition: 'background-color 0.2s ease',
-        fontSize: 'var(--md-sys-typescale-body-large-size)'
+        fontSize: 'var(--md-sys-typescale-body-large-size)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = 'var(--md-sys-color-on-surface-variant)20'
@@ -1483,5 +1547,5 @@ export default {
   M3TableRow,
   M3TableCell,
   M3Select,
-  M3Option
+  M3Option,
 }

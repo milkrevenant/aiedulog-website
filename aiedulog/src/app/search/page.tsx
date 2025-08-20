@@ -31,7 +31,7 @@ import {
   CircularProgress,
   ListItemText,
   ListItemButton,
-  CardMedia
+  CardMedia,
 } from '@mui/material'
 import {
   Favorite,
@@ -45,7 +45,7 @@ import {
   Search as SearchIcon,
   Article,
   Person,
-  Tag
+  Tag,
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 
@@ -66,11 +66,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`search-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   )
 }
@@ -84,25 +80,26 @@ function SearchContent() {
   const [posts, setPosts] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [tags, setTags] = useState<any[]>([])
-  
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
   const theme = useTheme()
-  
+
   const query = searchParams.get('q') || ''
 
   // 검색 실행
   const performSearch = useCallback(async () => {
     if (!query.trim()) return
-    
+
     setSearchLoading(true)
-    
+
     try {
       // 게시글 검색
       const { data: postsData } = await supabase
         .from('posts')
-        .select(`
+        .select(
+          `
           *,
           profiles!posts_author_id_fkey (
             id,
@@ -120,51 +117,52 @@ function SearchContent() {
           bookmarks (
             user_id
           )
-        `)
+        `
+        )
         .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
         .eq('is_published', true)
         .order('created_at', { ascending: false })
         .limit(20)
-      
+
       if (postsData) {
-        const postsWithStats = postsData.map(post => ({
+        const postsWithStats = postsData.map((post) => ({
           ...post,
           author: {
             name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
             email: post.profiles?.email,
             role: post.profiles?.role || 'member',
             isVerified: post.profiles?.role === 'verified',
-            avatar_url: post.profiles?.avatar_url
+            avatar_url: post.profiles?.avatar_url,
           },
           likes: post.post_likes?.length || 0,
           comments: post.comments?.length || 0,
           isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-          isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false
+          isBookmarked:
+            post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
         }))
         setPosts(postsWithStats)
       }
-      
+
       // 사용자 검색 (닉네임 또는 이메일로 검색)
       const { data: usersData } = await supabase
         .from('profiles')
         .select('*')
         .or(`nickname.ilike.%${query}%,email.ilike.%${query}%`)
         .limit(10)
-      
+
       if (usersData) {
         setUsers(usersData)
       }
-      
+
       // 태그 검색 (현재는 카테고리로 대체)
       const categories = ['general', 'education', 'tech', 'job']
       const matchedTags = categories
-        .filter(cat => cat.toLowerCase().includes(query.toLowerCase()))
-        .map(cat => ({
+        .filter((cat) => cat.toLowerCase().includes(query.toLowerCase()))
+        .map((cat) => ({
           name: cat,
-          count: Math.floor(Math.random() * 50) // 임시 카운트
+          count: Math.floor(Math.random() * 50), // 임시 카운트
         }))
       setTags(matchedTags)
-      
     } catch (error) {
       console.error('Search error:', error)
     } finally {
@@ -174,22 +172,24 @@ function SearchContent() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
-      
+
       // 프로필 정보 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -207,53 +207,39 @@ function SearchContent() {
   }
 
   const handleLike = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isLiked) {
-      await supabase
-        .from('post_likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('post_likes')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })
     }
 
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { 
-            ...p, 
-            isLiked: !p.isLiked,
-            likes: p.isLiked ? p.likes - 1 : p.likes + 1
-          }
-        : p
-    ))
+    setPosts(
+      posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              isLiked: !p.isLiked,
+              likes: p.isLiked ? p.likes - 1 : p.likes + 1,
+            }
+          : p
+      )
+    )
   }
 
   const handleBookmark = async (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (!post || !user) return
 
     if (post.isBookmarked) {
-      await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
+      await supabase.from('bookmarks').delete().eq('post_id', postId).eq('user_id', user.id)
     } else {
-      await supabase
-        .from('bookmarks')
-        .insert({ post_id: postId, user_id: user.id })
+      await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id })
     }
 
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, isBookmarked: !p.isBookmarked }
-        : p
-    ))
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p)))
   }
 
   if (loading) {
@@ -306,28 +292,16 @@ function SearchContent() {
 
         {/* 탭 */}
         <Paper sx={{ mb: 3 }}>
-          <Tabs 
-            value={tabValue} 
+          <Tabs
+            value={tabValue}
             onChange={handleTabChange}
             indicatorColor="primary"
             textColor="primary"
             variant="fullWidth"
           >
-            <Tab 
-              icon={<Article />} 
-              label={`게시글 (${posts.length})`} 
-              iconPosition="start"
-            />
-            <Tab 
-              icon={<Person />} 
-              label={`사용자 (${users.length})`} 
-              iconPosition="start"
-            />
-            <Tab 
-              icon={<Tag />} 
-              label={`태그 (${tags.length})`} 
-              iconPosition="start"
-            />
+            <Tab icon={<Article />} label={`게시글 (${posts.length})`} iconPosition="start" />
+            <Tab icon={<Person />} label={`사용자 (${users.length})`} iconPosition="start" />
+            <Tab icon={<Tag />} label={`태그 (${tags.length})`} iconPosition="start" />
           </Tabs>
         </Paper>
 
@@ -344,11 +318,11 @@ function SearchContent() {
           ) : posts.length > 0 ? (
             <Stack spacing={2}>
               {posts.map((post) => (
-                <Card 
+                <Card
                   key={post.id}
-                  sx={{ 
+                  sx={{
                     cursor: 'pointer',
-                    '&:hover': { boxShadow: 3 }
+                    '&:hover': { boxShadow: 3 },
                   }}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('button, .MuiIconButton-root')) {
@@ -368,7 +342,7 @@ function SearchContent() {
                           ) : null
                         }
                       >
-                        <Avatar 
+                        <Avatar
                           src={post.author.avatar_url || undefined}
                           sx={{ bgcolor: 'primary.main' }}
                         >
@@ -388,19 +362,17 @@ function SearchContent() {
                     }
                     subheader={
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="caption">
-                          {post.author.name}
-                        </Typography>
+                        <Typography variant="caption">{post.author.name}</Typography>
                         <Typography variant="caption">
                           · {new Date(post.created_at).toLocaleDateString('ko-KR')}
                         </Typography>
                       </Stack>
                     }
                   />
-                  
+
                   <CardContent>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       color="text.secondary"
                       sx={{
                         overflow: 'hidden',
@@ -421,16 +393,16 @@ function SearchContent() {
                         height="200"
                         image={post.image_urls[0]}
                         alt="Post image"
-                        sx={{ 
+                        sx={{
                           objectFit: 'cover',
-                          borderRadius: '12px'
+                          borderRadius: '12px',
                         }}
                       />
                     </Box>
                   )}
 
                   <CardActions disableSpacing>
-                    <IconButton 
+                    <IconButton
                       onClick={() => handleLike(post.id)}
                       color={post.isLiked ? 'error' : 'default'}
                     >
@@ -439,17 +411,17 @@ function SearchContent() {
                     <Typography variant="body2" color="text.secondary">
                       {post.likes}
                     </Typography>
-                    
+
                     <IconButton sx={{ ml: 1 }}>
                       <ChatBubbleOutline />
                     </IconButton>
                     <Typography variant="body2" color="text.secondary">
                       {post.comments}
                     </Typography>
-                    
+
                     <Box sx={{ flexGrow: 1 }} />
-                    
-                    <IconButton 
+
+                    <IconButton
                       onClick={() => handleBookmark(post.id)}
                       color={post.isBookmarked ? 'primary' : 'default'}
                     >
@@ -493,10 +465,7 @@ function SearchContent() {
                           ) : null
                         }
                       >
-                        <Avatar 
-                          src={user.avatar_url || undefined}
-                          sx={{ bgcolor: 'primary.main' }}
-                        >
+                        <Avatar src={user.avatar_url || undefined} sx={{ bgcolor: 'primary.main' }}>
                           {user.email?.[0]?.toUpperCase()}
                         </Avatar>
                       </Badge>
@@ -559,11 +528,15 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    }>
+    <Suspense
+      fallback={
+        <Box
+          sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+        >
+          <CircularProgress />
+        </Box>
+      }
+    >
       <SearchContent />
     </Suspense>
   )

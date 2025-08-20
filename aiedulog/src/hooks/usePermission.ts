@@ -21,15 +21,17 @@ export function usePermission() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser()
+
         if (authUser) {
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', authUser.id)
             .single()
-          
+
           if (profile && !error) {
             setUser(profile)
           }
@@ -44,23 +46,23 @@ export function usePermission() {
     fetchUserProfile()
 
     // Auth 상태 변경 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-          
-          if (profile) {
-            setUser(profile)
-          }
-        } else {
-          setUser(null)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profile) {
+          setUser(profile)
         }
+      } else {
+        setUser(null)
       }
-    )
+    })
 
     return () => subscription.unsubscribe()
   }, [supabase])
@@ -79,14 +81,14 @@ export function usePermission() {
   // 최소 역할 확인 함수
   const hasMinimumRole = (minRole: UserRole): boolean => {
     if (!user) return false
-    
+
     const roleHierarchy: Record<UserRole, number> = {
       admin: 4,
       moderator: 3,
       verified: 2,
       member: 1,
     }
-    
+
     return roleHierarchy[user.role] >= roleHierarchy[minRole]
   }
 
@@ -94,10 +96,10 @@ export function usePermission() {
     user,
     loading,
     can,
-    hasPermission: can,  // 별칭 추가 (호환성)
+    hasPermission: can, // 별칭 추가 (호환성)
     hasRole,
     hasMinimumRole,
-    role: user?.role,  // 현재 사용자 role 추가
+    role: user?.role, // 현재 사용자 role 추가
     isAdmin: user?.role === 'admin',
     isModerator: user?.role === 'moderator',
     isVerified: user?.role === 'verified',

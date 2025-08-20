@@ -103,14 +103,16 @@ export default function AnnouncementsManagementPage() {
     try {
       const { data, error } = await supabase
         .from('announcements')
-        .select(`
+        .select(
+          `
           *,
           author:profiles!author_id (
             name,
             nickname,
             email
           )
-        `)
+        `
+        )
         .order('is_pinned', { ascending: false })
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false })
@@ -164,27 +166,29 @@ export default function AnnouncementsManagementPage() {
 
   const handleSave = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (selectedAnnouncement) {
         // 수정
         const { error } = await supabase
           .from('announcements')
           .update({
             ...editingAnnouncement,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', selectedAnnouncement.id)
 
         if (error) throw error
       } else {
         // 추가
-        const { error } = await supabase
-          .from('announcements')
-          .insert([{
+        const { error } = await supabase.from('announcements').insert([
+          {
             ...editingAnnouncement,
             author_id: user?.id,
-          }])
+          },
+        ])
 
         if (error) throw error
       }
@@ -228,55 +232,78 @@ export default function AnnouncementsManagementPage() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'general': return <InfoIcon />
-      case 'urgent': return <WarningIcon />
-      case 'event': return <CampaignIcon />
-      case 'maintenance': return <MaintenanceIcon />
-      default: return <InfoIcon />
+      case 'general':
+        return <InfoIcon />
+      case 'urgent':
+        return <WarningIcon />
+      case 'event':
+        return <CampaignIcon />
+      case 'maintenance':
+        return <MaintenanceIcon />
+      default:
+        return <InfoIcon />
     }
   }
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'general': return '일반'
-      case 'urgent': return '긴급'
-      case 'event': return '이벤트'
-      case 'maintenance': return '점검'
-      default: return category
+      case 'general':
+        return '일반'
+      case 'urgent':
+        return '긴급'
+      case 'event':
+        return '이벤트'
+      case 'maintenance':
+        return '점검'
+      default:
+        return category
     }
   }
 
   const getCategoryColor = (category: string): any => {
     switch (category) {
-      case 'general': return 'info'
-      case 'urgent': return 'error'
-      case 'event': return 'secondary'
-      case 'maintenance': return 'warning'
-      default: return 'default'
+      case 'general':
+        return 'info'
+      case 'urgent':
+        return 'error'
+      case 'event':
+        return 'secondary'
+      case 'maintenance':
+        return 'warning'
+      default:
+        return 'default'
     }
   }
 
   const getPriorityColor = (priority: number): any => {
     switch (priority) {
-      case 0: return 'default'
-      case 1: return 'warning'
-      case 2: return 'error'
-      default: return 'default'
+      case 0:
+        return 'default'
+      case 1:
+        return 'warning'
+      case 2:
+        return 'error'
+      default:
+        return 'default'
     }
   }
 
   const getPriorityLabel = (priority: number) => {
     switch (priority) {
-      case 0: return '보통'
-      case 1: return '중요'
-      case 2: return '긴급'
-      default: return '보통'
+      case 0:
+        return '보통'
+      case 1:
+        return '중요'
+      case 2:
+        return '긴급'
+      default:
+        return '보통'
     }
   }
 
   // 고정 공지와 일반 공지 분리
-  const pinnedAnnouncements = announcements.filter(a => a.is_pinned)
-  const normalAnnouncements = announcements.filter(a => !a.is_pinned)
+  const pinnedAnnouncements = announcements.filter((a) => a.is_pinned)
+  const normalAnnouncements = announcements.filter((a) => !a.is_pinned)
 
   return (
     <AuthGuard requireAdmin>
@@ -291,11 +318,7 @@ export default function AnnouncementsManagementPage() {
               연구회 공지사항을 관리합니다
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAdd}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
             공지사항 작성
           </Button>
         </Box>
@@ -303,16 +326,21 @@ export default function AnnouncementsManagementPage() {
         {/* 고정 공지사항 */}
         {pinnedAnnouncements.length > 0 && (
           <Paper sx={{ mb: 3, p: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            >
               <PinIcon color="primary" />
               고정 공지사항
             </Typography>
             <List>
               {pinnedAnnouncements.map((announcement) => (
-                <ListItem key={announcement.id} sx={{ bgcolor: 'action.hover', borderRadius: 1, mb: 1 }}>
-                  <ListItemIcon>
-                    {getCategoryIcon(announcement.category)}
-                  </ListItemIcon>
+                <ListItem
+                  key={announcement.id}
+                  sx={{ bgcolor: 'action.hover', borderRadius: 1, mb: 1 }}
+                >
+                  <ListItemIcon>{getCategoryIcon(announcement.category)}</ListItemIcon>
                   <ListItemText
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -330,9 +358,7 @@ export default function AnnouncementsManagementPage() {
                             size="small"
                           />
                         )}
-                        {!announcement.is_published && (
-                          <Chip label="미발행" size="small" />
-                        )}
+                        {!announcement.is_published && <Chip label="미발행" size="small" />}
                       </Box>
                     }
                     secondary={
@@ -341,7 +367,8 @@ export default function AnnouncementsManagementPage() {
                           {announcement.content.substring(0, 100)}...
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {announcement.author?.nickname || announcement.author?.name} · {new Date(announcement.created_at).toLocaleDateString('ko-KR')}
+                          {announcement.author?.nickname || announcement.author?.name} ·{' '}
+                          {new Date(announcement.created_at).toLocaleDateString('ko-KR')}
                         </Typography>
                       </Box>
                     }
@@ -354,17 +381,14 @@ export default function AnnouncementsManagementPage() {
                     >
                       <PinIcon />
                     </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => togglePublished(announcement)}
-                    >
+                    <IconButton size="small" onClick={() => togglePublished(announcement)}>
                       {announcement.is_published ? <ViewIcon /> : <HideIcon />}
                     </IconButton>
                     <IconButton size="small" onClick={() => handleEdit(announcement)}>
                       <EditIcon />
                     </IconButton>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => {
                         setSelectedAnnouncement(announcement)
                         setDeleteDialogOpen(true)
@@ -388,7 +412,14 @@ export default function AnnouncementsManagementPage() {
             <Grid size={{ xs: 12, md: 6 }} key={announcement.id}>
               <Card>
                 <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'start',
+                      mb: 1,
+                    }}
+                  >
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip
                         icon={getCategoryIcon(announcement.category)}
@@ -409,7 +440,9 @@ export default function AnnouncementsManagementPage() {
                           icon={<ScheduleIcon />}
                           label={`만료: ${new Date(announcement.expires_at).toLocaleDateString('ko-KR')}`}
                           size="small"
-                          color={new Date(announcement.expires_at) < new Date() ? 'error' : 'default'}
+                          color={
+                            new Date(announcement.expires_at) < new Date() ? 'error' : 'default'
+                          }
                         />
                       )}
                     </Box>
@@ -433,7 +466,9 @@ export default function AnnouncementsManagementPage() {
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="caption" color="text.secondary">
-                      {announcement.author?.nickname || announcement.author?.name || announcement.author?.email}
+                      {announcement.author?.nickname ||
+                        announcement.author?.name ||
+                        announcement.author?.email}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {new Date(announcement.created_at).toLocaleDateString('ko-KR')}
@@ -442,10 +477,7 @@ export default function AnnouncementsManagementPage() {
                 </CardContent>
 
                 <CardActions>
-                  <IconButton
-                    size="small"
-                    onClick={() => togglePinned(announcement)}
-                  >
+                  <IconButton size="small" onClick={() => togglePinned(announcement)}>
                     <UnpinIcon />
                   </IconButton>
                   <Button
@@ -473,25 +505,23 @@ export default function AnnouncementsManagementPage() {
 
           {normalAnnouncements.length === 0 && !loading && (
             <Grid size={12}>
-              <Alert severity="info">
-                등록된 일반 공지사항이 없습니다
-              </Alert>
+              <Alert severity="info">등록된 일반 공지사항이 없습니다</Alert>
             </Grid>
           )}
         </Grid>
 
         {/* 공지사항 추가/수정 다이얼로그 */}
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
-            {selectedAnnouncement ? '공지사항 수정' : '공지사항 작성'}
-          </DialogTitle>
+          <DialogTitle>{selectedAnnouncement ? '공지사항 수정' : '공지사항 작성'}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
                 label="제목"
                 fullWidth
                 value={editingAnnouncement.title || ''}
-                onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, title: e.target.value })}
+                onChange={(e) =>
+                  setEditingAnnouncement({ ...editingAnnouncement, title: e.target.value })
+                }
                 required
               />
 
@@ -501,7 +531,9 @@ export default function AnnouncementsManagementPage() {
                 multiline
                 rows={6}
                 value={editingAnnouncement.content || ''}
-                onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, content: e.target.value })}
+                onChange={(e) =>
+                  setEditingAnnouncement({ ...editingAnnouncement, content: e.target.value })
+                }
                 required
               />
 
@@ -511,7 +543,12 @@ export default function AnnouncementsManagementPage() {
                     <InputLabel>카테고리</InputLabel>
                     <Select
                       value={editingAnnouncement.category || 'general'}
-                      onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, category: e.target.value as any })}
+                      onChange={(e) =>
+                        setEditingAnnouncement({
+                          ...editingAnnouncement,
+                          category: e.target.value as any,
+                        })
+                      }
                       label="카테고리"
                     >
                       <MenuItem value="general">일반</MenuItem>
@@ -527,7 +564,12 @@ export default function AnnouncementsManagementPage() {
                     <InputLabel>우선순위</InputLabel>
                     <Select
                       value={editingAnnouncement.priority || 0}
-                      onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, priority: e.target.value as number })}
+                      onChange={(e) =>
+                        setEditingAnnouncement({
+                          ...editingAnnouncement,
+                          priority: e.target.value as number,
+                        })
+                      }
                       label="우선순위"
                     >
                       <MenuItem value={0}>보통</MenuItem>
@@ -541,11 +583,13 @@ export default function AnnouncementsManagementPage() {
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
                 <DateTimePicker
                   label="만료 일시 (선택사항)"
-                  value={editingAnnouncement.expires_at ? new Date(editingAnnouncement.expires_at) : null}
+                  value={
+                    editingAnnouncement.expires_at ? new Date(editingAnnouncement.expires_at) : null
+                  }
                   onChange={(date) => {
-                    setEditingAnnouncement({ 
-                      ...editingAnnouncement, 
-                      expires_at: date ? date.toISOString() : undefined 
+                    setEditingAnnouncement({
+                      ...editingAnnouncement,
+                      expires_at: date ? date.toISOString() : undefined,
                     })
                   }}
                   slotProps={{ textField: { fullWidth: true } }}
@@ -556,7 +600,12 @@ export default function AnnouncementsManagementPage() {
                 control={
                   <Switch
                     checked={editingAnnouncement.is_pinned || false}
-                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, is_pinned: e.target.checked })}
+                    onChange={(e) =>
+                      setEditingAnnouncement({
+                        ...editingAnnouncement,
+                        is_pinned: e.target.checked,
+                      })
+                    }
                   />
                 }
                 label="상단 고정"
@@ -566,7 +615,12 @@ export default function AnnouncementsManagementPage() {
                 control={
                   <Switch
                     checked={editingAnnouncement.is_published !== false}
-                    onChange={(e) => setEditingAnnouncement({ ...editingAnnouncement, is_published: e.target.checked })}
+                    onChange={(e) =>
+                      setEditingAnnouncement({
+                        ...editingAnnouncement,
+                        is_published: e.target.checked,
+                      })
+                    }
                   />
                 }
                 label="바로 발행"
@@ -585,9 +639,7 @@ export default function AnnouncementsManagementPage() {
         <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
           <DialogTitle>공지사항 삭제</DialogTitle>
           <DialogContent>
-            <Typography>
-              "{selectedAnnouncement?.title}" 공지사항을 삭제하시겠습니까?
-            </Typography>
+            <Typography>"{selectedAnnouncement?.title}" 공지사항을 삭제하시겠습니까?</Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>

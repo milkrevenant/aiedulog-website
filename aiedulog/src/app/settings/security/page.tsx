@@ -82,7 +82,7 @@ export default function SecuritySettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
-  
+
   const router = useRouter()
   const supabase = createClient()
   const theme = useTheme()
@@ -93,7 +93,9 @@ export default function SecuritySettingsPage() {
   }, [])
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       router.push('/auth/login')
       return
@@ -103,18 +105,20 @@ export default function SecuritySettingsPage() {
 
   const loadMFAFactors = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) return
 
       const { data: factors, error } = await supabase.auth.mfa.listFactors()
       if (error) throw error
 
       const allFactors: MFAFactor[] = []
-      
+
       if (factors?.totp) {
-        allFactors.push(...factors.totp.map(f => ({ ...f, type: 'totp' as const })))
+        allFactors.push(...factors.totp.map((f) => ({ ...f, type: 'totp' as const })))
       }
-      
+
       setMfaFactors(allFactors)
     } catch (error: any) {
       console.error('MFA factors load error:', error)
@@ -126,15 +130,15 @@ export default function SecuritySettingsPage() {
   const handleEnrollTOTP = async () => {
     setSaving(true)
     setError(null)
-    
+
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'Authenticator App'
+        friendlyName: 'Authenticator App',
       })
-      
+
       if (error) throw error
-      
+
       setTotpSecret(data)
       setShowTOTPSetup(true)
     } catch (error: any) {
@@ -146,25 +150,25 @@ export default function SecuritySettingsPage() {
 
   const handleVerifyTOTP = async () => {
     if (!totpSecret || !verificationCode) return
-    
+
     setSaving(true)
     setError(null)
-    
+
     try {
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId: totpSecret.id
+        factorId: totpSecret.id,
       })
-      
+
       if (challengeError) throw challengeError
-      
+
       const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: totpSecret.id,
         challengeId: challengeData.id,
-        code: verificationCode
+        code: verificationCode,
       })
-      
+
       if (verifyError) throw verifyError
-      
+
       setSuccess('2단계 인증이 성공적으로 설정되었습니다!')
       setShowTOTPSetup(false)
       setVerificationCode('')
@@ -178,17 +182,17 @@ export default function SecuritySettingsPage() {
 
   const handleUnenrollFactor = async (factorId: string) => {
     if (!confirm('정말로 이 인증 방법을 제거하시겠습니까?')) return
-    
+
     setSaving(true)
     setError(null)
-    
+
     try {
       const { error } = await supabase.auth.mfa.unenroll({
-        factorId
+        factorId,
       })
-      
+
       if (error) throw error
-      
+
       setSuccess('인증 방법이 제거되었습니다.')
       loadMFAFactors()
     } catch (error: any) {
@@ -201,7 +205,7 @@ export default function SecuritySettingsPage() {
   const handleEnrollWebAuthn = async () => {
     setSaving(true)
     setError(null)
-    
+
     try {
       setSuccess('Passkey 기능은 곧 지원될 예정입니다.')
       setShowWebAuthnSetup(false)
@@ -213,7 +217,7 @@ export default function SecuritySettingsPage() {
   }
 
   const generateBackupCodes = () => {
-    const codes = Array.from({ length: 10 }, () => 
+    const codes = Array.from({ length: 10 }, () =>
       Math.random().toString(36).substring(2, 10).toUpperCase()
     )
     setBackupCodes(codes)
@@ -236,11 +240,13 @@ export default function SecuritySettingsPage() {
     URL.revokeObjectURL(url)
   }
 
-  const hasMFA = mfaFactors.some(f => f.status === 'verified')
+  const hasMFA = mfaFactors.some((f) => f.status === 'verified')
 
   if (loading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
         <CircularProgress />
       </Box>
     )
@@ -269,32 +275,32 @@ export default function SecuritySettingsPage() {
           </Box>
 
           {/* Security Status Card */}
-          <Card sx={{ 
-            background: hasMFA 
-              ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.1)} 0%, ${alpha(theme.palette.success.light, 0.05)} 100%)`
-              : `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.1)} 0%, ${alpha(theme.palette.warning.light, 0.05)} 100%)`
-          }}>
+          <Card
+            sx={{
+              background: hasMFA
+                ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.1)} 0%, ${alpha(theme.palette.success.light, 0.05)} 100%)`
+                : `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.1)} 0%, ${alpha(theme.palette.warning.light, 0.05)} 100%)`,
+            }}
+          >
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Badge 
-                  badgeContent={hasMFA ? <CheckCircle /> : <Warning />} 
-                  color={hasMFA ? "success" : "warning"}
+                <Badge
+                  badgeContent={hasMFA ? <CheckCircle /> : <Warning />}
+                  color={hasMFA ? 'success' : 'warning'}
                 >
                   <Shield sx={{ fontSize: 48, color: hasMFA ? 'success.main' : 'warning.main' }} />
                 </Badge>
                 <Box flex={1}>
-                  <Typography variant="h6">
-                    보안 상태: {hasMFA ? '안전' : '기본'}
-                  </Typography>
+                  <Typography variant="h6">보안 상태: {hasMFA ? '안전' : '기본'}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {hasMFA 
+                    {hasMFA
                       ? '2단계 인증이 활성화되어 계정이 안전하게 보호되고 있습니다.'
                       : '2단계 인증을 설정하여 계정 보안을 강화하세요.'}
                   </Typography>
                 </Box>
-                <Chip 
-                  label={hasMFA ? "보호됨" : "권장"} 
-                  color={hasMFA ? "success" : "warning"}
+                <Chip
+                  label={hasMFA ? '보호됨' : '권장'}
+                  color={hasMFA ? 'success' : 'warning'}
                   icon={hasMFA ? <Verified /> : <Warning />}
                 />
               </Stack>
@@ -309,18 +315,20 @@ export default function SecuritySettingsPage() {
                 <Typography variant="h6" flex={1}>
                   2단계 인증 (2FA)
                 </Typography>
-                <IconButton onClick={() => setExpandedSection(expandedSection === 'mfa' ? null : 'mfa')}>
+                <IconButton
+                  onClick={() => setExpandedSection(expandedSection === 'mfa' ? null : 'mfa')}
+                >
                   {expandedSection === 'mfa' ? <ExpandLess /> : <ExpandMore />}
                 </IconButton>
               </Stack>
-              
+
               <Typography variant="body2" color="text.secondary" paragraph>
                 비밀번호 외에 추가 인증 단계를 설정하여 계정을 더욱 안전하게 보호합니다.
               </Typography>
 
               <Collapse in={expandedSection === 'mfa'}>
                 <Divider sx={{ my: 2 }} />
-                
+
                 {/* Active MFA Methods */}
                 {mfaFactors.length > 0 && (
                   <Box sx={{ mb: 3 }}>
@@ -329,23 +337,33 @@ export default function SecuritySettingsPage() {
                     </Typography>
                     <List>
                       {mfaFactors.map((factor) => (
-                        <ListItem key={factor.id} sx={{ 
-                          bgcolor: 'background.paper',
-                          borderRadius: 1,
-                          mb: 1,
-                          border: '1px solid',
-                          borderColor: 'divider'
-                        }}>
+                        <ListItem
+                          key={factor.id}
+                          sx={{
+                            bgcolor: 'background.paper',
+                            borderRadius: 1,
+                            mb: 1,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
                           <ListItemIcon>
-                            {factor.type === 'totp' ? <PhoneAndroid color="primary" /> : <Fingerprint color="primary" />}
+                            {factor.type === 'totp' ? (
+                              <PhoneAndroid color="primary" />
+                            ) : (
+                              <Fingerprint color="primary" />
+                            )}
                           </ListItemIcon>
                           <ListItemText
-                            primary={factor.friendly_name || (factor.type === 'totp' ? 'Authenticator 앱' : 'Passkey')}
+                            primary={
+                              factor.friendly_name ||
+                              (factor.type === 'totp' ? 'Authenticator 앱' : 'Passkey')
+                            }
                             secondary={`추가됨: ${new Date(factor.created_at).toLocaleDateString()}`}
                           />
                           <ListItemSecondaryAction>
-                            <IconButton 
-                              edge="end" 
+                            <IconButton
+                              edge="end"
                               onClick={() => handleUnenrollFactor(factor.id)}
                               disabled={saving}
                             >
@@ -365,22 +383,21 @@ export default function SecuritySettingsPage() {
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                           <Smartphone color="primary" />
-                          <Typography variant="subtitle1">
-                            Authenticator 앱
-                          </Typography>
+                          <Typography variant="subtitle1">Authenticator 앱</Typography>
                         </Stack>
                         <Typography variant="body2" color="text.secondary" paragraph>
-                          Google Authenticator, Microsoft Authenticator 등의 앱을 사용하여 인증 코드를 생성합니다.
+                          Google Authenticator, Microsoft Authenticator 등의 앱을 사용하여 인증
+                          코드를 생성합니다.
                         </Typography>
                       </CardContent>
                       <CardActions>
-                        <Button 
-                          fullWidth 
+                        <Button
+                          fullWidth
                           variant="outlined"
                           onClick={handleEnrollTOTP}
-                          disabled={saving || mfaFactors.some(f => f.type === 'totp')}
+                          disabled={saving || mfaFactors.some((f) => f.type === 'totp')}
                         >
-                          {mfaFactors.some(f => f.type === 'totp') ? '설정됨' : '설정하기'}
+                          {mfaFactors.some((f) => f.type === 'totp') ? '설정됨' : '설정하기'}
                         </Button>
                       </CardActions>
                     </Card>
@@ -391,17 +408,15 @@ export default function SecuritySettingsPage() {
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                           <Fingerprint color="primary" />
-                          <Typography variant="subtitle1">
-                            Passkey / 생체인증
-                          </Typography>
+                          <Typography variant="subtitle1">Passkey / 생체인증</Typography>
                         </Stack>
                         <Typography variant="body2" color="text.secondary" paragraph>
                           Face ID, Touch ID, Windows Hello 등을 사용하여 빠르고 안전하게 인증합니다.
                         </Typography>
                       </CardContent>
                       <CardActions>
-                        <Button 
-                          fullWidth 
+                        <Button
+                          fullWidth
                           variant="outlined"
                           onClick={handleEnrollWebAuthn}
                           disabled={saving}
@@ -420,15 +435,13 @@ export default function SecuritySettingsPage() {
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                           <Key color="info" />
-                          <Typography variant="subtitle1">
-                            백업 코드
-                          </Typography>
+                          <Typography variant="subtitle1">백업 코드</Typography>
                         </Stack>
                         <Typography variant="body2" color="text.secondary" paragraph>
                           휴대폰을 사용할 수 없을 때 계정에 접근할 수 있는 일회용 백업 코드입니다.
                         </Typography>
-                        <Button 
-                          variant="outlined" 
+                        <Button
+                          variant="outlined"
                           onClick={generateBackupCodes}
                           startIcon={<Download />}
                         >
@@ -451,59 +464,76 @@ export default function SecuritySettingsPage() {
         </Stack>
 
         {/* TOTP Setup Dialog */}
-        <Dialog open={showTOTPSetup} onClose={() => setShowTOTPSetup(false)} maxWidth="sm" fullWidth>
+        <Dialog
+          open={showTOTPSetup}
+          onClose={() => setShowTOTPSetup(false)}
+          maxWidth="sm"
+          fullWidth
+        >
           <DialogTitle>Authenticator 앱 설정</DialogTitle>
           <DialogContent>
             <Stack spacing={3} sx={{ mt: 2 }}>
               <Typography variant="body2">
                 1. Google Authenticator, Microsoft Authenticator 등의 앱을 다운로드하세요.
               </Typography>
-              
+
               {totpSecret?.totp?.qr_code && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, bgcolor: 'white', borderRadius: 1 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    p: 2,
+                    bgcolor: 'white',
+                    borderRadius: 1,
+                  }}
+                >
                   <QRCodeSVG value={totpSecret.totp.uri} size={200} />
                 </Box>
               )}
-              
+
               <Typography variant="body2">
                 2. 앱에서 QR 코드를 스캔하거나 아래 키를 수동으로 입력하세요:
               </Typography>
-              
+
               {totpSecret?.totp?.secret && (
                 <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
+                    >
                       {totpSecret.totp.secret}
                     </Typography>
-                    <IconButton size="small" onClick={() => copyToClipboard(totpSecret.totp.secret)}>
+                    <IconButton
+                      size="small"
+                      onClick={() => copyToClipboard(totpSecret.totp.secret)}
+                    >
                       <ContentCopy fontSize="small" />
                     </IconButton>
                   </Stack>
                 </Box>
               )}
-              
-              <Typography variant="body2">
-                3. 앱에서 생성된 6자리 코드를 입력하세요:
-              </Typography>
-              
+
+              <Typography variant="body2">3. 앱에서 생성된 6자리 코드를 입력하세요:</Typography>
+
               <TextField
                 fullWidth
                 label="인증 코드"
                 placeholder="000000"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value)}
-                inputProps={{ 
+                inputProps={{
                   maxLength: 6,
-                  pattern: "[0-9]{6}",
-                  style: { letterSpacing: '0.5em', textAlign: 'center' }
+                  pattern: '[0-9]{6}',
+                  style: { letterSpacing: '0.5em', textAlign: 'center' },
                 }}
               />
             </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowTOTPSetup(false)}>취소</Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleVerifyTOTP}
               disabled={!verificationCode || verificationCode.length !== 6 || saving}
             >
@@ -513,13 +543,18 @@ export default function SecuritySettingsPage() {
         </Dialog>
 
         {/* Backup Codes Dialog */}
-        <Dialog open={showBackupCodes} onClose={() => setShowBackupCodes(false)} maxWidth="sm" fullWidth>
+        <Dialog
+          open={showBackupCodes}
+          onClose={() => setShowBackupCodes(false)}
+          maxWidth="sm"
+          fullWidth
+        >
           <DialogTitle>백업 코드</DialogTitle>
           <DialogContent>
             <Alert severity="warning" sx={{ mb: 2 }}>
               이 코드들을 안전한 곳에 보관하세요. 각 코드는 한 번만 사용할 수 있습니다.
             </Alert>
-            
+
             <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Grid container spacing={1}>
                 {backupCodes.map((code, index) => (

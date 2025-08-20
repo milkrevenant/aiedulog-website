@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { usePermission } from '@/hooks/usePermission';
-import AppHeader from '@/components/AppHeader';
-import AuthGuard from '@/components/AuthGuard';
-import { notifyRoleChange } from '@/lib/notifications';
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { usePermission } from '@/hooks/usePermission'
+import AppHeader from '@/components/AppHeader'
+import AuthGuard from '@/components/AuthGuard'
+import { notifyRoleChange } from '@/lib/notifications'
 import {
   Box,
   Container,
@@ -40,33 +40,33 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Tooltip,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import EditIcon from '@mui/icons-material/Edit';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PersonIcon from '@mui/icons-material/Person';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import FilterListIcon from '@mui/icons-material/FilterList';
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import EditIcon from '@mui/icons-material/Edit'
+import BlockIcon from '@mui/icons-material/Block'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import PersonIcon from '@mui/icons-material/Person'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'
+import VerifiedIcon from '@mui/icons-material/Verified'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import FilterListIcon from '@mui/icons-material/FilterList'
 
-type UserRole = 'admin' | 'moderator' | 'verified' | 'member';
-type UserStatus = 'active' | 'suspended' | 'all';
+type UserRole = 'admin' | 'moderator' | 'verified' | 'member'
+type UserStatus = 'active' | 'suspended' | 'all'
 
 interface User {
-  id: string;
-  email: string;
-  username: string;
-  nickname: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-  role: UserRole;
-  created_at: string;
-  last_sign_in_at: string | null;
-  email_confirmed_at: string | null;
-  is_active: boolean;
+  id: string
+  email: string
+  username: string
+  nickname: string | null
+  full_name: string | null
+  avatar_url: string | null
+  role: UserRole
+  created_at: string
+  last_sign_in_at: string | null
+  email_confirmed_at: string | null
+  is_active: boolean
 }
 
 const roleColors: Record<UserRole, 'error' | 'warning' | 'info' | 'success'> = {
@@ -74,158 +74,161 @@ const roleColors: Record<UserRole, 'error' | 'warning' | 'info' | 'success'> = {
   moderator: 'warning',
   verified: 'info',
   member: 'success',
-};
+}
 
 const roleIcons: Record<UserRole, React.ReactElement> = {
   admin: <AdminPanelSettingsIcon fontSize="small" />,
   moderator: <SupervisorAccountIcon fontSize="small" />,
   verified: <VerifiedIcon fontSize="small" />,
   member: <PersonIcon fontSize="small" />,
-};
+}
 
 const roleLabels: Record<UserRole, string> = {
   admin: '관리자',
   moderator: '운영진',
   verified: '인증교사',
   member: '일반회원',
-};
+}
 
 function UsersManagementContent() {
-  const router = useRouter();
-  const supabase = createClient();
-  const { can, user: currentUser } = usePermission();
-  const currentUserRole = currentUser?.role;
-  
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState<UserRole | 'all'>('all');
-  const [filterStatus, setFilterStatus] = useState<UserStatus>('all');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [newRole, setNewRole] = useState<UserRole>('member');
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const router = useRouter()
+  const supabase = createClient()
+  const { can, user: currentUser } = usePermission()
+  const currentUserRole = currentUser?.role
+
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterRole, setFilterRole] = useState<UserRole | 'all'>('all')
+  const [filterStatus, setFilterStatus] = useState<UserStatus>('all')
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false)
+  const [newRole, setNewRole] = useState<UserRole>('member')
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   // 관리자 권한 체크
   useEffect(() => {
     if (currentUser && !can('manage_users')) {
-      router.push('/feed');
+      router.push('/feed')
     }
-  }, [can, currentUser, router]);
+  }, [can, currentUser, router])
 
   // 사용자 목록 조회
   const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    
+    setLoading(true)
+    setError(null)
+
     try {
-      let query = supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select('*').order('created_at', { ascending: false })
 
       // 필터링
       if (filterRole !== 'all') {
-        query = query.eq('role', filterRole);
+        query = query.eq('role', filterRole)
       }
-      
+
       if (filterStatus !== 'all') {
-        query = query.eq('is_active', filterStatus === 'active');
+        query = query.eq('is_active', filterStatus === 'active')
       }
 
       // 검색
       if (searchTerm) {
-        query = query.or(`username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`);
+        query = query.or(
+          `username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`
+        )
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (error) throw error
+      setUsers(data || [])
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchUsers();
-  }, [filterRole, filterStatus]);
+    fetchUsers()
+  }, [filterRole, filterStatus])
 
   // 권한 변경
   const handleRoleChange = async () => {
-    if (!selectedUser) return;
-    
-    setLoading(true);
-    setError(null);
-    
+    if (!selectedUser) return
+
+    setLoading(true)
+    setError(null)
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
-        .eq('id', selectedUser.id);
+        .eq('id', selectedUser.id)
 
-      if (error) throw error;
+      if (error) throw error
 
       // 권한 변경 알림 전송
-      await notifyRoleChange(selectedUser.id, newRole);
+      await notifyRoleChange(selectedUser.id, newRole)
 
-      setSuccess(`${selectedUser.nickname || selectedUser.username}님의 권한이 ${roleLabels[newRole]}(으)로 변경되었습니다.`);
-      setRoleDialogOpen(false);
-      fetchUsers();
+      setSuccess(
+        `${selectedUser.nickname || selectedUser.username}님의 권한이 ${roleLabels[newRole]}(으)로 변경되었습니다.`
+      )
+      setRoleDialogOpen(false)
+      fetchUsers()
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 사용자 상태 변경
   const handleStatusToggle = async () => {
-    if (!selectedUser) return;
-    
-    setLoading(true);
-    setError(null);
-    
+    if (!selectedUser) return
+
+    setLoading(true)
+    setError(null)
+
     try {
-      const newStatus = !selectedUser.is_active;
-      
+      const newStatus = !selectedUser.is_active
+
       const { error } = await supabase
         .from('profiles')
         .update({ is_active: newStatus })
-        .eq('id', selectedUser.id);
+        .eq('id', selectedUser.id)
 
-      if (error) throw error;
+      if (error) throw error
 
-      setSuccess(`${selectedUser.nickname || selectedUser.username}님의 계정이 ${newStatus ? '활성화' : '비활성화'}되었습니다.`);
-      setStatusDialogOpen(false);
-      fetchUsers();
+      setSuccess(
+        `${selectedUser.nickname || selectedUser.username}님의 계정이 ${newStatus ? '활성화' : '비활성화'}되었습니다.`
+      )
+      setStatusDialogOpen(false)
+      fetchUsers()
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
+    setPage(newPage)
+  }
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+    setRowsPerPage(parseInt(event.target.value, 10))
+    setPage(0)
+  }
 
   // 필터된 사용자 목록
-  const filteredUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const filteredUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   if (!can('manage_users')) {
-    return null;
+    return null
   }
 
   return (
@@ -273,7 +276,7 @@ function UsersManagementContent() {
                 ),
               }}
             />
-            
+
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>권한 필터</InputLabel>
               <Select
@@ -295,15 +298,9 @@ function UsersManagementContent() {
               onChange={(e, newStatus) => newStatus && setFilterStatus(newStatus)}
               size="small"
             >
-              <ToggleButton value="all">
-                전체
-              </ToggleButton>
-              <ToggleButton value="active">
-                활성
-              </ToggleButton>
-              <ToggleButton value="suspended">
-                정지
-              </ToggleButton>
+              <ToggleButton value="all">전체</ToggleButton>
+              <ToggleButton value="active">활성</ToggleButton>
+              <ToggleButton value="suspended">정지</ToggleButton>
             </ToggleButtonGroup>
 
             <Button
@@ -362,12 +359,7 @@ function UsersManagementContent() {
                         <TableCell>
                           <Typography variant="body2">{user.email}</Typography>
                           {!user.email_confirmed_at && (
-                            <Chip
-                              label="미인증"
-                              size="small"
-                              color="warning"
-                              sx={{ mt: 0.5 }}
-                            />
+                            <Chip label="미인증" size="small" color="warning" sx={{ mt: 0.5 }} />
                           )}
                         </TableCell>
                         <TableCell align="center">
@@ -406,9 +398,9 @@ function UsersManagementContent() {
                               <IconButton
                                 size="small"
                                 onClick={() => {
-                                  setSelectedUser(user);
-                                  setNewRole(user.role);
-                                  setRoleDialogOpen(true);
+                                  setSelectedUser(user)
+                                  setNewRole(user.role)
+                                  setRoleDialogOpen(true)
                                 }}
                                 disabled={user.role === 'admin' && currentUserRole !== 'admin'}
                               >
@@ -419,8 +411,8 @@ function UsersManagementContent() {
                               <IconButton
                                 size="small"
                                 onClick={() => {
-                                  setSelectedUser(user);
-                                  setStatusDialogOpen(true);
+                                  setSelectedUser(user)
+                                  setStatusDialogOpen(true)
                                 }}
                                 disabled={user.role === 'admin' && currentUserRole !== 'admin'}
                               >
@@ -438,7 +430,7 @@ function UsersManagementContent() {
                   </TableBody>
                 </Table>
               </TableContainer>
-              
+
               <TablePagination
                 rowsPerPageOptions={[5, 10, 25, 50]}
                 component="div"
@@ -448,9 +440,7 @@ function UsersManagementContent() {
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 labelRowsPerPage="페이지당 행:"
-                labelDisplayedRows={({ from, to, count }) =>
-                  `${from}-${to} / 전체 ${count}명`
-                }
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 전체 ${count}명`}
               />
             </>
           )}
@@ -479,19 +469,13 @@ function UsersManagementContent() {
               <MenuItem value="member">일반회원</MenuItem>
               <MenuItem value="verified">인증교사</MenuItem>
               <MenuItem value="moderator">운영진</MenuItem>
-              {currentUserRole === 'admin' && (
-                <MenuItem value="admin">관리자</MenuItem>
-              )}
+              {currentUserRole === 'admin' && <MenuItem value="admin">관리자</MenuItem>}
             </Select>
           </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoleDialogOpen(false)}>취소</Button>
-          <Button
-            onClick={handleRoleChange}
-            variant="contained"
-            disabled={loading}
-          >
+          <Button onClick={handleRoleChange} variant="contained" disabled={loading}>
             변경
           </Button>
         </DialogActions>
@@ -499,9 +483,7 @@ function UsersManagementContent() {
 
       {/* 상태 변경 다이얼로그 */}
       <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)}>
-        <DialogTitle>
-          계정 {selectedUser?.is_active ? '정지' : '활성화'}
-        </DialogTitle>
+        <DialogTitle>계정 {selectedUser?.is_active ? '정지' : '활성화'}</DialogTitle>
         <DialogContent>
           <DialogContentText>
             {selectedUser?.nickname || selectedUser?.username}님의 계정을{' '}
@@ -526,12 +508,12 @@ function UsersManagementContent() {
         </DialogActions>
       </Dialog>
     </>
-  );
+  )
 }
 export default function UsersManagementPage() {
   return (
     <AuthGuard requireAuth requireAdmin>
       <UsersManagementContent />
     </AuthGuard>
-  );
+  )
 }

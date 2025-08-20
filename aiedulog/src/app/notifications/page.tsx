@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import {
   getNotifications,
   markNotificationAsRead,
@@ -11,8 +11,8 @@ import {
   getNotificationIcon,
   getNotificationColor,
   getRelativeTime,
-} from '@/lib/notifications';
-import AppHeader from '@/components/AppHeader';
+} from '@/lib/notifications'
+import AppHeader from '@/components/AppHeader'
 import {
   Container,
   Paper,
@@ -35,47 +35,47 @@ import {
   Tabs,
   Tab,
   Tooltip,
-} from '@mui/material';
-import { Notification } from '@/types/notification';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import CommentIcon from '@mui/icons-material/Comment';
-import ReplyIcon from '@mui/icons-material/Reply';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-import InfoIcon from '@mui/icons-material/Info';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CelebrationIcon from '@mui/icons-material/Celebration';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
+} from '@mui/material'
+import { Notification } from '@/types/notification'
+import FavoriteIcon from '@mui/icons-material/Favorite'
+import CommentIcon from '@mui/icons-material/Comment'
+import ReplyIcon from '@mui/icons-material/Reply'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail'
+import InfoIcon from '@mui/icons-material/Info'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CelebrationIcon from '@mui/icons-material/Celebration'
+import NotificationsIcon from '@mui/icons-material/Notifications'
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import DeleteIcon from '@mui/icons-material/Delete'
+import DoneAllIcon from '@mui/icons-material/DoneAll'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead'
+import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread'
 
 const iconComponents: Record<string, React.ElementType> = {
-  'Favorite': FavoriteIcon,
-  'Comment': CommentIcon,
-  'Reply': ReplyIcon,
-  'PersonAdd': PersonAddIcon,
-  'AlternateEmail': AlternateEmailIcon,
-  'Info': InfoIcon,
-  'AdminPanelSettings': AdminPanelSettingsIcon,
-  'CheckCircle': CheckCircleIcon,
-  'Celebration': CelebrationIcon,
-  'Notifications': NotificationsIcon,
-};
+  Favorite: FavoriteIcon,
+  Comment: CommentIcon,
+  Reply: ReplyIcon,
+  PersonAdd: PersonAddIcon,
+  AlternateEmail: AlternateEmailIcon,
+  Info: InfoIcon,
+  AdminPanelSettings: AdminPanelSettingsIcon,
+  CheckCircle: CheckCircleIcon,
+  Celebration: CelebrationIcon,
+  Notifications: NotificationsIcon,
+}
 
 interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
+  children?: React.ReactNode
+  index: number
+  value: number
 }
 
 function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+  const { children, value, index, ...other } = props
 
   return (
     <div
@@ -87,38 +87,38 @@ function TabPanel(props: TabPanelProps) {
     >
       {value === index && children}
     </div>
-  );
+  )
 }
 
 export default function NotificationsPage() {
-  const router = useRouter();
-  const supabase = createClient();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tabValue, setTabValue] = useState(0);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const router = useRouter()
+  const supabase = createClient()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [tabValue, setTabValue] = useState(0)
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
 
   // 알림 목록 가져오기
   const fetchNotifications = async () => {
-    setLoading(true);
-    setError(null);
-    
+    setLoading(true)
+    setError(null)
+
     try {
-      const data = await getNotifications(50, 0);
-      setNotifications(data);
+      const data = await getNotifications(50, 0)
+      setNotifications(data)
     } catch (err: any) {
-      setError('알림을 불러오는 중 오류가 발생했습니다.');
-      console.error(err);
+      setError('알림을 불러오는 중 오류가 발생했습니다.')
+      console.error(err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // 실시간 구독 설정
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications()
 
     // 실시간 알림 구독
     const subscription = supabase
@@ -132,81 +132,77 @@ export default function NotificationsPage() {
         },
         () => {
           // 변경사항이 있으면 목록 새로고침
-          fetchNotifications();
+          fetchNotifications()
         }
       )
-      .subscribe();
+      .subscribe()
 
     return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
+    setTabValue(newValue)
+  }
 
   const handleNotificationClick = async (notification: Notification) => {
     // 읽지 않은 알림이면 읽음 처리
     if (!notification.is_read) {
       try {
-        await markNotificationAsRead(notification.id);
-        setNotifications(prev =>
-          prev.map(n =>
-            n.id === notification.id ? { ...n, is_read: true } : n
-          )
-        );
+        await markNotificationAsRead(notification.id)
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+        )
       } catch (err) {
-        console.error('Failed to mark as read:', err);
+        console.error('Failed to mark as read:', err)
       }
     }
 
     // 링크가 있으면 이동
     if (notification.link) {
-      router.push(notification.link);
+      router.push(notification.link)
     }
-  };
+  }
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllNotificationsAsRead();
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, is_read: true }))
-      );
+      await markAllNotificationsAsRead()
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
     } catch (err) {
-      setError('알림 읽음 처리 중 오류가 발생했습니다.');
+      setError('알림 읽음 처리 중 오류가 발생했습니다.')
     }
-  };
+  }
 
   const handleDeleteNotification = async (id: string) => {
     try {
-      await deleteNotification(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      await deleteNotification(id)
+      setNotifications((prev) => prev.filter((n) => n.id !== id))
     } catch (err) {
-      setError('알림 삭제 중 오류가 발생했습니다.');
+      setError('알림 삭제 중 오류가 발생했습니다.')
     }
-    handleMenuClose();
-  };
+    handleMenuClose()
+  }
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, notification: Notification) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedNotification(notification);
-  };
+    setAnchorEl(event.currentTarget)
+    setSelectedNotification(notification)
+  }
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedNotification(null);
-  };
+    setAnchorEl(null)
+    setSelectedNotification(null)
+  }
 
   const getIcon = (type: string) => {
-    const iconName = getNotificationIcon(type as any);
-    const IconComponent = iconComponents[iconName] || NotificationsIcon;
-    return IconComponent;
-  };
+    const iconName = getNotificationIcon(type as any)
+    const IconComponent = iconComponents[iconName] || NotificationsIcon
+    return IconComponent
+  }
 
   // 필터링된 알림
-  const unreadNotifications = notifications.filter(n => !n.is_read);
-  const readNotifications = notifications.filter(n => n.is_read);
+  const unreadNotifications = notifications.filter((n) => !n.is_read)
+  const readNotifications = notifications.filter((n) => n.is_read)
 
   const renderNotificationList = (notificationList: Notification[]) => {
     if (notificationList.length === 0) {
@@ -217,14 +213,14 @@ export default function NotificationsPage() {
             알림이 없습니다
           </Typography>
         </Box>
-      );
+      )
     }
 
     return (
       <List sx={{ p: 0 }}>
         {notificationList.map((notification, index) => {
-          const IconComponent = getIcon(notification.type);
-          const color = getNotificationColor(notification.type);
+          const IconComponent = getIcon(notification.type)
+          const color = getNotificationColor(notification.type)
 
           return (
             <React.Fragment key={notification.id}>
@@ -236,8 +232,8 @@ export default function NotificationsPage() {
                   <IconButton
                     edge="end"
                     onClick={(e) => {
-                      e.stopPropagation();
-                      handleMenuOpen(e, notification);
+                      e.stopPropagation()
+                      handleMenuOpen(e, notification)
                     }}
                     sx={{ mr: 2 }}
                   >
@@ -276,22 +272,13 @@ export default function NotificationsPage() {
                           {notification.title}
                         </Typography>
                         {!notification.is_read && (
-                          <Chip
-                            label="새 알림"
-                            size="small"
-                            color="primary"
-                            sx={{ height: 20 }}
-                          />
+                          <Chip label="새 알림" size="small" color="primary" sx={{ height: 20 }} />
                         )}
                       </Box>
                     }
                     secondary={
                       <>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.primary"
-                        >
+                        <Typography component="span" variant="body2" color="text.primary">
                           {notification.message}
                         </Typography>
                         <Typography
@@ -309,11 +296,11 @@ export default function NotificationsPage() {
               </ListItem>
               {index < notificationList.length - 1 && <Divider />}
             </React.Fragment>
-          );
+          )
         })}
       </List>
-    );
-  };
+    )
+  }
 
   return (
     <>
@@ -322,7 +309,9 @@ export default function NotificationsPage() {
         <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden' }}>
           {/* 헤더 */}
           <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
               <Typography variant="h4" fontWeight="bold">
                 알림
               </Typography>
@@ -346,17 +335,15 @@ export default function NotificationsPage() {
 
             {/* 탭 */}
             <Tabs value={tabValue} onChange={handleTabChange}>
-              <Tab 
+              <Tab
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     전체
-                    {notifications.length > 0 && (
-                      <Chip label={notifications.length} size="small" />
-                    )}
+                    {notifications.length > 0 && <Chip label={notifications.length} size="small" />}
                   </Box>
                 }
               />
-              <Tab 
+              <Tab
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     읽지 않음
@@ -366,7 +353,7 @@ export default function NotificationsPage() {
                   </Box>
                 }
               />
-              <Tab 
+              <Tab
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     읽음
@@ -413,21 +400,15 @@ export default function NotificationsPage() {
       </Container>
 
       {/* 개별 알림 메뉴 */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {selectedNotification && !selectedNotification.is_read && (
           <MenuItem
             onClick={async () => {
-              await markNotificationAsRead(selectedNotification.id);
-              setNotifications(prev =>
-                prev.map(n =>
-                  n.id === selectedNotification.id ? { ...n, is_read: true } : n
-                )
-              );
-              handleMenuClose();
+              await markNotificationAsRead(selectedNotification.id)
+              setNotifications((prev) =>
+                prev.map((n) => (n.id === selectedNotification.id ? { ...n, is_read: true } : n))
+              )
+              handleMenuClose()
             }}
           >
             <MarkEmailReadIcon sx={{ mr: 1 }} />
@@ -442,5 +423,5 @@ export default function NotificationsPage() {
         </MenuItem>
       </Menu>
     </>
-  );
+  )
 }

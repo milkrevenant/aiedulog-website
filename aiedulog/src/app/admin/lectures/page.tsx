@@ -35,7 +35,7 @@ import {
   InputAdornment,
   Tabs,
   Tab,
-  Badge
+  Badge,
 } from '@mui/material'
 import {
   Add,
@@ -49,7 +49,7 @@ import {
   Close,
   Search,
   CheckCircle,
-  Cancel
+  Cancel,
 } from '@mui/icons-material'
 import { DatePicker, TimePicker } from '@mui/x-date-pickers'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -111,7 +111,9 @@ export default function LecturesAdminPage() {
   const [openDialog, setOpenDialog] = useState(false)
   const [openRegistrationsDialog, setOpenRegistrationsDialog] = useState(false)
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null)
-  const [selectedLectureRegistrations, setSelectedLectureRegistrations] = useState<LectureRegistration[]>([])
+  const [selectedLectureRegistrations, setSelectedLectureRegistrations] = useState<
+    LectureRegistration[]
+  >([])
   const [searchTerm, setSearchTerm] = useState('')
   const [tabValue, setTabValue] = useState(0)
   const [formData, setFormData] = useState({
@@ -139,7 +141,7 @@ export default function LecturesAdminPage() {
     status: 'draft',
     registration_open: true,
     featured: false,
-    tags: [] as string[]
+    tags: [] as string[],
   })
 
   useEffect(() => {
@@ -166,13 +168,15 @@ export default function LecturesAdminPage() {
     try {
       const { data, error } = await supabase
         .from('lecture_registrations')
-        .select(`
+        .select(
+          `
           *,
           profiles:user_id (
             name,
             email
           )
-        `)
+        `
+        )
         .eq('lecture_id', lectureId)
         .order('registration_date', { ascending: false })
 
@@ -194,7 +198,7 @@ export default function LecturesAdminPage() {
         start_date: formData.start_date?.toISOString().split('T')[0],
         end_date: formData.end_date?.toISOString().split('T')[0],
         start_time: formData.start_time?.toTimeString().split(' ')[0],
-        end_time: formData.end_time?.toTimeString().split(' ')[0]
+        end_time: formData.end_time?.toTimeString().split(' ')[0],
       }
 
       if (selectedLecture) {
@@ -205,9 +209,7 @@ export default function LecturesAdminPage() {
 
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('lectures')
-          .insert([lectureData])
+        const { error } = await supabase.from('lectures').insert([lectureData])
 
         if (error) throw error
       }
@@ -224,10 +226,7 @@ export default function LecturesAdminPage() {
     if (!confirm('정말 이 강의를 삭제하시겠습니까?')) return
 
     try {
-      const { error } = await supabase
-        .from('lectures')
-        .delete()
-        .eq('id', id)
+      const { error } = await supabase.from('lectures').delete().eq('id', id)
 
       if (error) throw error
       fetchLectures()
@@ -243,7 +242,7 @@ export default function LecturesAdminPage() {
       start_date: lecture.start_date ? new Date(lecture.start_date) : null,
       end_date: lecture.end_date ? new Date(lecture.end_date) : null,
       start_time: lecture.start_time ? new Date(`2000-01-01T${lecture.start_time}`) : null,
-      end_time: lecture.end_time ? new Date(`2000-01-01T${lecture.end_time}`) : null
+      end_time: lecture.end_time ? new Date(`2000-01-01T${lecture.end_time}`) : null,
     })
     setOpenDialog(true)
   }
@@ -297,35 +296,47 @@ export default function LecturesAdminPage() {
       status: 'draft',
       registration_open: true,
       featured: false,
-      tags: []
+      tags: [],
     })
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return 'success'
-      case 'draft': return 'default'
-      case 'ongoing': return 'primary'
-      case 'completed': return 'info'
-      case 'cancelled': return 'error'
-      default: return 'default'
+      case 'published':
+        return 'success'
+      case 'draft':
+        return 'default'
+      case 'ongoing':
+        return 'primary'
+      case 'completed':
+        return 'info'
+      case 'cancelled':
+        return 'error'
+      default:
+        return 'default'
     }
   }
 
   const getRegistrationStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'success'
-      case 'pending': return 'warning'
-      case 'cancelled': return 'error'
-      case 'attended': return 'info'
-      default: return 'default'
+      case 'confirmed':
+        return 'success'
+      case 'pending':
+        return 'warning'
+      case 'cancelled':
+        return 'error'
+      case 'attended':
+        return 'info'
+      default:
+        return 'default'
     }
   }
 
-  const filteredLectures = lectures.filter(lecture => {
-    const matchesSearch = lecture.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          lecture.instructor_name.toLowerCase().includes(searchTerm.toLowerCase())
-    
+  const filteredLectures = lectures.filter((lecture) => {
+    const matchesSearch =
+      lecture.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lecture.instructor_name.toLowerCase().includes(searchTerm.toLowerCase())
+
     if (tabValue === 0) return matchesSearch // 전체
     if (tabValue === 1) return matchesSearch && lecture.status === 'published'
     if (tabValue === 2) return matchesSearch && lecture.status === 'draft'
@@ -365,33 +376,42 @@ export default function LecturesAdminPage() {
                     <InputAdornment position="start">
                       <Search />
                     </InputAdornment>
-                  )
+                  ),
                 }}
                 fullWidth
               />
 
               <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
                 <Tab label={`전체 (${lectures.length})`} />
-                <Tab 
+                <Tab
                   label={
-                    <Badge badgeContent={lectures.filter(l => l.status === 'published').length} color="success">
+                    <Badge
+                      badgeContent={lectures.filter((l) => l.status === 'published').length}
+                      color="success"
+                    >
                       <span>게시됨</span>
                     </Badge>
-                  } 
+                  }
                 />
-                <Tab 
+                <Tab
                   label={
-                    <Badge badgeContent={lectures.filter(l => l.status === 'draft').length} color="default">
+                    <Badge
+                      badgeContent={lectures.filter((l) => l.status === 'draft').length}
+                      color="default"
+                    >
                       <span>초안</span>
                     </Badge>
-                  } 
+                  }
                 />
-                <Tab 
+                <Tab
                   label={
-                    <Badge badgeContent={lectures.filter(l => l.status === 'ongoing').length} color="primary">
+                    <Badge
+                      badgeContent={lectures.filter((l) => l.status === 'ongoing').length}
+                      color="primary"
+                    >
                       <span>진행중</span>
                     </Badge>
-                  } 
+                  }
                 />
               </Tabs>
             </Stack>
@@ -412,29 +432,29 @@ export default function LecturesAdminPage() {
                             {lecture.subtitle}
                           </Typography>
                         </Box>
-                        <Chip 
-                          label={lecture.status} 
-                          size="small" 
+                        <Chip
+                          label={lecture.status}
+                          size="small"
                           color={getStatusColor(lecture.status)}
                         />
                       </Stack>
 
                       <Stack direction="row" spacing={1} flexWrap="wrap">
-                        <Chip 
-                          icon={<People />} 
+                        <Chip
+                          icon={<People />}
                           label={`${lecture.current_participants}/${lecture.max_participants}명`}
                           size="small"
                           variant="outlined"
                         />
-                        <Chip 
-                          icon={<Event />} 
+                        <Chip
+                          icon={<Event />}
                           label={new Date(lecture.start_date).toLocaleDateString()}
                           size="small"
                           variant="outlined"
                         />
                         {lecture.price > 0 && (
-                          <Chip 
-                            icon={<AttachMoney />} 
+                          <Chip
+                            icon={<AttachMoney />}
                             label={`${lecture.price.toLocaleString()}원`}
                             size="small"
                             variant="outlined"
@@ -442,13 +462,9 @@ export default function LecturesAdminPage() {
                         )}
                       </Stack>
 
-                      <Typography variant="body2">
-                        강사: {lecture.instructor_name}
-                      </Typography>
+                      <Typography variant="body2">강사: {lecture.instructor_name}</Typography>
 
-                      {lecture.featured && (
-                        <Chip label="추천 강의" color="primary" size="small" />
-                      )}
+                      {lecture.featured && <Chip label="추천 강의" color="primary" size="small" />}
                     </Stack>
                   </CardContent>
                   <CardActions>
@@ -458,7 +474,7 @@ export default function LecturesAdminPage() {
                     <IconButton onClick={() => handleViewRegistrations(lecture)} size="small">
                       <People />
                     </IconButton>
-                    <IconButton 
+                    <IconButton
                       onClick={() => router.push(`/board/lectures/${lecture.id}`)}
                       size="small"
                     >
@@ -475,9 +491,7 @@ export default function LecturesAdminPage() {
 
           {/* 강의 등록/수정 다이얼로그 */}
           <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
-            <DialogTitle>
-              {selectedLecture ? '강의 수정' : '새 강의 등록'}
-            </DialogTitle>
+            <DialogTitle>{selectedLecture ? '강의 수정' : '새 강의 등록'}</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid size={12}>
@@ -632,7 +646,9 @@ export default function LecturesAdminPage() {
                     label="최대 인원"
                     type="number"
                     value={formData.max_participants}
-                    onChange={(e) => setFormData({ ...formData, max_participants: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_participants: Number(e.target.value) })
+                    }
                     fullWidth
                   />
                 </Grid>
@@ -641,7 +657,9 @@ export default function LecturesAdminPage() {
                     <TextField
                       label="장소 주소"
                       value={formData.location_address}
-                      onChange={(e) => setFormData({ ...formData, location_address: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, location_address: e.target.value })
+                      }
                       fullWidth
                     />
                   </Grid>
@@ -678,7 +696,9 @@ export default function LecturesAdminPage() {
                     control={
                       <Switch
                         checked={formData.registration_open}
-                        onChange={(e) => setFormData({ ...formData, registration_open: e.target.checked })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, registration_open: e.target.checked })
+                        }
                       />
                     }
                     label="등록 가능"
@@ -706,17 +726,15 @@ export default function LecturesAdminPage() {
           </Dialog>
 
           {/* 수강 신청자 목록 다이얼로그 */}
-          <Dialog 
-            open={openRegistrationsDialog} 
-            onClose={() => setOpenRegistrationsDialog(false)} 
-            maxWidth="lg" 
+          <Dialog
+            open={openRegistrationsDialog}
+            onClose={() => setOpenRegistrationsDialog(false)}
+            maxWidth="lg"
             fullWidth
           >
             <DialogTitle>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6">
-                  {selectedLecture?.title} - 수강 신청자 목록
-                </Typography>
+                <Typography variant="h6">{selectedLecture?.title} - 수강 신청자 목록</Typography>
                 <IconButton onClick={() => setOpenRegistrationsDialog(false)}>
                   <Close />
                 </IconButton>
@@ -745,25 +763,21 @@ export default function LecturesAdminPage() {
                           {new Date(reg.registration_date).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <Chip 
-                            label={reg.status} 
+                          <Chip
+                            label={reg.status}
                             size="small"
                             color={getRegistrationStatusColor(reg.status)}
                           />
                         </TableCell>
                         <TableCell>
-                          <Chip 
-                            label={reg.payment_status} 
-                            size="small"
-                            variant="outlined"
-                          />
+                          <Chip label={reg.payment_status} size="small" variant="outlined" />
                         </TableCell>
                         <TableCell>{reg.notes}</TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1}>
                             {reg.status === 'pending' && (
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 color="success"
                                 onClick={() => updateRegistrationStatus(reg.id, 'confirmed')}
                               >
@@ -771,8 +785,8 @@ export default function LecturesAdminPage() {
                               </IconButton>
                             )}
                             {reg.status !== 'cancelled' && (
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 color="error"
                                 onClick={() => updateRegistrationStatus(reg.id, 'cancelled')}
                               >

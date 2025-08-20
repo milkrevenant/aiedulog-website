@@ -30,17 +30,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Autocomplete
+  Autocomplete,
 } from '@mui/material'
-import {
-  Chat,
-  Search,
-  Add,
-  Person,
-  Group,
-  MoreVert,
-  Circle
-} from '@mui/icons-material'
+import { Chat, Search, Add, Person, Group, MoreVert, Circle } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 
 interface ChatRoom {
@@ -72,28 +64,30 @@ export default function ChatPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [users, setUsers] = useState<any[]>([])
   const [creatingChat, setCreatingChat] = useState(false)
-  
+
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       if (!user) {
         router.push('/auth/login')
         return
       }
-      
+
       setUser(user)
-      
+
       // 프로필 정보 가져오기
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
-      
+
       setProfile(profileData)
       setLoading(false)
     }
@@ -113,7 +107,8 @@ export default function ChatPage() {
     // 채팅방 목록 가져오기
     const { data: rooms, error } = await supabase
       .from('chat_participants')
-      .select(`
+      .select(
+        `
         room_id,
         chat_rooms!inner (
           id,
@@ -122,7 +117,8 @@ export default function ChatPage() {
           last_message,
           last_message_at
         )
-      `)
+      `
+      )
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('chat_rooms(last_message_at)', { ascending: false })
@@ -134,7 +130,8 @@ export default function ChatPage() {
           // 참가자 정보
           const { data: participants } = await supabase
             .from('chat_participants')
-            .select(`
+            .select(
+              `
               user_id,
               profiles!inner (
                 id,
@@ -143,7 +140,8 @@ export default function ChatPage() {
                 avatar_url,
                 role
               )
-            `)
+            `
+            )
             .eq('room_id', room.chat_rooms.id)
             .eq('is_active', true)
 
@@ -158,7 +156,7 @@ export default function ChatPage() {
           return {
             ...room.chat_rooms,
             participants: participants || [],
-            unread_count: unreadCount || 0
+            unread_count: unreadCount || 0,
           }
         })
       )
@@ -178,7 +176,7 @@ export default function ChatPage() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'chat_messages'
+          table: 'chat_messages',
         },
         (payload) => {
           // 채팅방 목록 새로고침
@@ -190,7 +188,7 @@ export default function ChatPage() {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'chat_rooms'
+          table: 'chat_rooms',
         },
         (payload) => {
           // 채팅방 업데이트
@@ -228,11 +226,10 @@ export default function ChatPage() {
     setCreatingChat(true)
 
     // Direct 채팅방 생성 또는 가져오기
-    const { data: roomId, error } = await supabase
-      .rpc('create_or_get_direct_chat', {
-        user1_id: user.id,
-        user2_id: selectedUser.id
-      })
+    const { data: roomId, error } = await supabase.rpc('create_or_get_direct_chat', {
+      user1_id: user.id,
+      user2_id: selectedUser.id,
+    })
 
     if (roomId) {
       router.push(`/chat/${roomId}`)
@@ -245,43 +242,43 @@ export default function ChatPage() {
   const getChatDisplayInfo = (room: ChatRoom) => {
     if (room.type === 'direct') {
       // DM인 경우 상대방 정보 표시
-      const otherUser = room.participants.find(p => p.user_id !== user?.id)
+      const otherUser = room.participants.find((p) => p.user_id !== user?.id)
       return {
         name: otherUser?.profile.nickname || otherUser?.profile.email?.split('@')[0] || '사용자',
         avatar: otherUser?.profile.avatar_url,
-        isOnline: false // 온라인 상태는 추후 구현
+        isOnline: false, // 온라인 상태는 추후 구현
       }
     } else {
       // 그룹 채팅
       return {
         name: room.name || '그룹 채팅',
         avatar: null,
-        isOnline: false
+        isOnline: false,
       }
     }
   }
 
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return ''
-    
+
     const date = new Date(timestamp)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
+
     if (days === 0) {
-      return date.toLocaleTimeString('ko-KR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      return date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
       })
     } else if (days === 1) {
       return '어제'
     } else if (days < 7) {
       return `${days}일 전`
     } else {
-      return date.toLocaleDateString('ko-KR', { 
-        month: 'numeric', 
-        day: 'numeric' 
+      return date.toLocaleDateString('ko-KR', {
+        month: 'numeric',
+        day: 'numeric',
       })
     }
   }
@@ -325,12 +322,12 @@ export default function ChatPage() {
                   <InputAdornment position="start">
                     <Search />
                   </InputAdornment>
-                )
+                ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2
-                }
+                  borderRadius: 2,
+                },
               }}
             />
           </Box>
@@ -339,9 +336,7 @@ export default function ChatPage() {
           <List sx={{ p: 0 }}>
             {chatRooms.length === 0 ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
-                <Typography color="text.secondary">
-                  아직 채팅방이 없습니다
-                </Typography>
+                <Typography color="text.secondary">아직 채팅방이 없습니다</Typography>
                 <Button
                   variant="contained"
                   startIcon={<Add />}
@@ -353,7 +348,7 @@ export default function ChatPage() {
               </Box>
             ) : (
               chatRooms
-                .filter(room => {
+                .filter((room) => {
                   if (!searchQuery) return true
                   const info = getChatDisplayInfo(room)
                   return info.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -370,33 +365,27 @@ export default function ChatPage() {
                             {formatTime(room.last_message_at)}
                           </Typography>
                           {room.unread_count > 0 && (
-                            <Badge
-                              badgeContent={room.unread_count}
-                              color="error"
-                              max={99}
-                            />
+                            <Badge badgeContent={room.unread_count} color="error" max={99} />
                           )}
                         </Stack>
                       }
                     >
-                      <ListItemButton
-                        onClick={() => router.push(`/chat/${room.id}`)}
-                      >
+                      <ListItemButton onClick={() => router.push(`/chat/${room.id}`)}>
                         <ListItemAvatar>
                           <Badge
                             overlap="circular"
-                            anchorOrigin={{ 
-                              vertical: 'bottom', 
-                              horizontal: 'right' 
+                            anchorOrigin={{
+                              vertical: 'bottom',
+                              horizontal: 'right',
                             }}
                             badgeContent={
                               info.isOnline ? (
-                                <Circle 
-                                  sx={{ 
+                                <Circle
+                                  sx={{
                                     color: 'success.main',
                                     width: 12,
-                                    height: 12
-                                  }} 
+                                    height: 12,
+                                  }}
                                 />
                               ) : null
                             }
@@ -407,11 +396,7 @@ export default function ChatPage() {
                           </Badge>
                         </ListItemAvatar>
                         <ListItemText
-                          primary={
-                            <Typography fontWeight="medium">
-                              {info.name}
-                            </Typography>
-                          }
+                          primary={<Typography fontWeight="medium">{info.name}</Typography>}
                           secondary={
                             <Typography
                               variant="body2"
@@ -419,7 +404,7 @@ export default function ChatPage() {
                               sx={{
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               {room.last_message || '대화를 시작해보세요'}
@@ -441,7 +426,7 @@ export default function ChatPage() {
         sx={{
           position: 'fixed',
           bottom: 16,
-          right: 16
+          right: 16,
         }}
         onClick={() => setNewChatDialog(true)}
       >
@@ -449,25 +434,15 @@ export default function ChatPage() {
       </Fab>
 
       {/* 새 채팅 다이얼로그 */}
-      <Dialog
-        open={newChatDialog}
-        onClose={() => setNewChatDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={newChatDialog} onClose={() => setNewChatDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>새 채팅 시작</DialogTitle>
         <DialogContent>
           <Autocomplete
             options={users}
-            getOptionLabel={(option) => 
-              option.nickname || option.email || ''
-            }
+            getOptionLabel={(option) => option.nickname || option.email || ''}
             renderOption={(props, option) => (
               <Box component="li" {...props}>
-                <Avatar
-                  src={option.avatar_url}
-                  sx={{ mr: 2, width: 32, height: 32 }}
-                >
+                <Avatar src={option.avatar_url} sx={{ mr: 2, width: 32, height: 32 }}>
                   {option.email?.[0]?.toUpperCase()}
                 </Avatar>
                 <Box>
@@ -497,9 +472,7 @@ export default function ChatPage() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setNewChatDialog(false)}>
-            취소
-          </Button>
+          <Button onClick={() => setNewChatDialog(false)}>취소</Button>
           <Button
             variant="contained"
             onClick={createNewChat}

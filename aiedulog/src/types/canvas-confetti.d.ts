@@ -1,28 +1,28 @@
 declare module 'canvas-confetti' {
   interface Options {
-    particleCount?: number;
-    spread?: number;
-    startVelocity?: number;
-    decay?: number;
-    gravity?: number;
-    drift?: number;
-    ticks?: number;
+    particleCount?: number
+    spread?: number
+    startVelocity?: number
+    decay?: number
+    gravity?: number
+    drift?: number
+    ticks?: number
     origin?: {
-      x?: number;
-      y?: number;
-    };
-    colors?: string[];
-    shapes?: string[];
-    scalar?: number;
-    zIndex?: number;
-    disableForReducedMotion?: boolean;
+      x?: number
+      y?: number
+    }
+    colors?: string[]
+    shapes?: string[]
+    scalar?: number
+    zIndex?: number
+    disableForReducedMotion?: boolean
   }
 
   interface ConfettiFunction {
-    (options?: Options): Promise<null>;
-    reset(): void;
+    (options?: Options): Promise<null>
+    reset(): void
   }
 
-  const confetti: ConfettiFunction;
-  export default confetti;
+  const confetti: ConfettiFunction
+  export default confetti
 }

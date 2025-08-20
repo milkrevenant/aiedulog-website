@@ -8,41 +8,33 @@ interface EmptyPostMessageProps {
   subMessage?: string
 }
 
-export default function EmptyPostMessage({ 
-  message = "아직 게시글이 없습니다",
-  subMessage = "첫 번째 글을 작성해보세요!"
+export default function EmptyPostMessage({
+  message = '아직 게시글이 없습니다',
+  subMessage = '첫 번째 글을 작성해보세요!',
 }: EmptyPostMessageProps) {
   return (
-    <Card 
+    <Card
       variant="outlined"
-      sx={{ 
+      sx={{
         border: '1px solid',
         borderColor: 'divider',
         boxShadow: 'none',
-        bgcolor: 'background.paper'
+        bgcolor: 'background.paper',
       }}
     >
       <CardContent>
-        <Stack 
-          spacing={1} 
-          alignItems="center" 
-          sx={{ py: 3 }}
-        >
-          <Typography 
-            variant="body1" 
-            color="text.secondary"
-            align="center"
-          >
+        <Stack spacing={1} alignItems="center" sx={{ py: 3 }}>
+          <Typography variant="body1" color="text.secondary" align="center">
             {message}
           </Typography>
-          <Typography 
-            variant="body2" 
+          <Typography
+            variant="body2"
             color="text.secondary"
             align="center"
-            sx={{ 
-              display: 'flex', 
+            sx={{
+              display: 'flex',
               alignItems: 'center',
-              gap: 0.5
+              gap: 0.5,
             }}
           >
             <Create fontSize="small" />

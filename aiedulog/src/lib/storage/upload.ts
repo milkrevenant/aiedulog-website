@@ -21,44 +21,42 @@ export async function uploadFile(
 ): Promise<UploadResult> {
   try {
     const supabase = createClient()
-    
+
     // 파일명 생성 (timestamp + random + original name)
     const timestamp = Date.now()
     const random = Math.random().toString(36).substring(2, 8)
     const fileExt = file.name.split('.').pop()
     const fileName = `${timestamp}_${random}.${fileExt}`
-    
+
     // 전체 경로 생성
     const filePath = folder ? `${folder}/${fileName}` : fileName
-    
+
     // 파일 업로드
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
-    
+    const { data, error } = await supabase.storage.from(bucket).upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    })
+
     if (error) {
       console.error('Upload error:', error)
       return { success: false, error: error.message }
     }
-    
+
     // Public URL 가져오기
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath)
-    
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucket).getPublicUrl(filePath)
+
     return {
       success: true,
       url: publicUrl,
-      path: filePath
+      path: filePath,
     }
   } catch (error) {
     console.error('Upload exception:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다'
+      error: error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다',
     }
   }
 }
@@ -75,7 +73,7 @@ export async function uploadMultipleFiles(
   bucket: string,
   folder?: string
 ): Promise<UploadResult[]> {
-  const uploadPromises = files.map(file => uploadFile(file, bucket, folder))
+  const uploadPromises = files.map((file) => uploadFile(file, bucket, folder))
   return Promise.all(uploadPromises)
 }
 
@@ -85,22 +83,17 @@ export async function uploadMultipleFiles(
  * @param path - 파일 경로
  * @returns 삭제 성공 여부
  */
-export async function deleteFile(
-  bucket: string,
-  path: string
-): Promise<boolean> {
+export async function deleteFile(bucket: string, path: string): Promise<boolean> {
   try {
     const supabase = createClient()
-    
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([path])
-    
+
+    const { error } = await supabase.storage.from(bucket).remove([path])
+
     if (error) {
       console.error('Delete error:', error)
       return false
     }
-    
+
     return true
   } catch (error) {
     console.error('Delete exception:', error)
@@ -123,19 +116,19 @@ export function validateImageFile(
   if (!allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: '지원되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)'
+      error: '지원되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)',
     }
   }
-  
+
   // 파일 크기 검증
   if (file.size > maxSize) {
     const maxSizeMB = maxSize / (1024 * 1024)
     return {
       valid: false,
-      error: `파일 크기는 ${maxSizeMB}MB를 초과할 수 없습니다.`
+      error: `파일 크기는 ${maxSizeMB}MB를 초과할 수 없습니다.`,
     }
   }
-  
+
   return { valid: true }
 }
 
@@ -151,10 +144,10 @@ export function base64ToFile(base64: string, fileName: string): File {
   const bstr = atob(arr[1])
   let n = bstr.length
   const u8arr = new Uint8Array(n)
-  
+
   while (n--) {
     u8arr[n] = bstr.charCodeAt(n)
   }
-  
+
   return new File([u8arr], fileName, { type: mime })
 }
