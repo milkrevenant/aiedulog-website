@@ -1,17 +1,18 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - cd aiedulog
-        - npm ci
-    build:
-      commands:
-        - npm run build
-  artifacts:
-    baseDirectory: aiedulog/.next
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - aiedulog/node_modules/**/*
+applications:
+  - appRoot: aiedulog
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
