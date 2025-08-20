@@ -146,7 +146,7 @@ export default function SignUpPage() {
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${location.origin}/auth/callback`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || location.origin}/auth/callback`,
           data: {
             name: formData.name,
             school: formData.school,
