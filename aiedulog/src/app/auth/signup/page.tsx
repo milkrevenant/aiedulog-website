@@ -179,7 +179,10 @@ export default function SignUpPage() {
         }
       }
 
-      // 3. 성공 페이지로 이동
+      // 3. 이메일 저장 (재발송용) 및 성공 페이지로 이동
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('signupEmail', formData.email)
+      }
       router.push('/auth/signup-success')
     } catch (error: any) {
       setError(error.message)
