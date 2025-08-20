@@ -65,7 +65,8 @@ export default function LoginPage() {
         // MFA가 필요한 경우 체크
         if (error.message.includes('mfa') || error.message.includes('factor')) {
           // MFA 필요 - 사용자 ID 저장하고 MFA 화면으로 전환
-          setTempUserId(authData?.user?.id || null)
+          // authData가 error일 때는 user가 없을 수 있음
+          setTempUserId(null)
           
           // MFA factors 확인
           const { data: factors } = await supabase.auth.mfa.listFactors()

@@ -26,7 +26,6 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
-  Alert,
   Table,
   TableBody,
   TableCell,
@@ -46,14 +45,11 @@ import {
   School,
   Event,
   People,
-  LocationOn,
   AttachMoney,
-  Upload,
   Close,
   Search,
   CheckCircle,
-  Cancel,
-  Schedule
+  Cancel
 } from '@mui/icons-material'
 import { DatePicker, TimePicker } from '@mui/x-date-pickers'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
