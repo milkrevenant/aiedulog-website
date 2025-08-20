@@ -125,7 +125,7 @@
 
 ## 🔗 링크
 - [GitHub](https://github.com/milkrevenant/aiedulog-website)
-- [Supabase Dashboard](https://supabase.com/dashboard/project/nnfpdhtpbjijdctslexc)
+- [Supabase Dashboard](https://supabase.com/dashboard/project/njnrezduzotxfombfanu)
 
 ---
 *마지막 업데이트: 2025-08-19 15:30*

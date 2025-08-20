@@ -52,4 +52,4 @@ npm run dev  # Always use port 3000 only
 
 ## 🔗 관련 링크
 - GitHub: https://github.com/milkrevenant/aiedulog-website
-- Supabase: https://supabase.com/dashboard/project/nnfpdhtpbjijdctslexc
+- Supabase: https://supabase.com/dashboard/project/njnrezduzotxfombfanu

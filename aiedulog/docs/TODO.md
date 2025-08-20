@@ -30,7 +30,7 @@
 
 ## 🔗 주요 링크
 - GitHub: https://github.com/milkrevenant/aiedulog-website
-- Supabase: https://supabase.com/dashboard/project/nnfpdhtpbjijdctslexc
+- Supabase: https://supabase.com/dashboard/project/njnrezduzotxfombfanu
 
 ## 🔧 다음 세션 태스크
 
