@@ -475,6 +475,8 @@ export default function Home() {
                   <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
                     <NotificationIcon />
                     <IconButton
+                      component={Link}
+                      href="/chat"
                       sx={{
                         color: '#191C20', // Material Theme: onBackground
                       }}

@@ -467,7 +467,8 @@ export default function PostEditor({
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                minRows={4}
+                maxRows={15}
                 placeholder={placeholder}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -475,6 +476,9 @@ export default function PostEditor({
                 sx={{
                   '& .MuiOutlinedInput-notchedOutline': {
                     border: 'none',
+                  },
+                  '& .MuiInputBase-root': {
+                    alignItems: 'flex-start',
                   },
                 }}
               />

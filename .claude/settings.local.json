@@ -31,7 +31,10 @@
       "Bash(git checkout:*)",
       "Bash(npx prettier:*)",
       "Bash(mv:*)",
-      "mcp__supabase__execute_sql"
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_tables",
+      "Bash(claude mcp:*)",
+      "mcp__supabase__apply_migration"
     ],
     "deny": [],
     "ask": [],

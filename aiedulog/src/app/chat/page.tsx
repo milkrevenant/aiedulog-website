@@ -17,7 +17,6 @@ import {
   Typography,
   Stack,
   Divider,
-  Fab,
   Paper,
   TextField,
   InputAdornment,
@@ -31,9 +30,13 @@ import {
   DialogContent,
   DialogActions,
   Autocomplete,
+  useMediaQuery,
+  useTheme,
+  Grid,
 } from '@mui/material'
-import { Chat, Search, Add, Person, Group, MoreVert, Circle } from '@mui/icons-material'
+import { Chat, Search, Add, Person, Group, MoreVert, Circle, Create, PersonAdd, Notes } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
+import ChatInterface from '@/components/ChatInterface'
 
 interface ChatRoom {
   id: string
@@ -58,38 +61,67 @@ export default function ChatPage() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [newChatDialog, setNewChatDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [users, setUsers] = useState<any[]>([])
   const [creatingChat, setCreatingChat] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null)
+  const [isNewChat, setIsNewChat] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [participantSearchAnchor, setParticipantSearchAnchor] = useState<null | HTMLElement>(null)
 
   const router = useRouter()
   const supabase = createClient()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTabletUp = useMediaQuery(theme.breakpoints.up('md'))  // 태블릿 이상에서 Split View
 
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      try {
+        console.log('Getting user...')
+        const {
+          data: { user },
+          error: authError
+        } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push('/auth/login')
-        return
+        if (authError) {
+          console.error('Auth error:', authError)
+          setError('인증 오류가 발생했습니다.')
+          setLoading(false)
+          return
+        }
+
+        if (!user) {
+          console.log('No user, redirecting to login...')
+          router.push('/auth/login')
+          return
+        }
+
+        console.log('User found:', user.id)
+        setUser(user)
+
+        // 프로필 정보 가져오기
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError) {
+          console.error('Profile error:', profileError)
+        }
+
+        setProfile(profileData)
+        setLoading(false)
+      } catch (err) {
+        console.error('Error in getUser:', err)
+        setError('사용자 정보를 불러오는데 실패했습니다.')
+        setLoading(false)
       }
-
-      setUser(user)
-
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
     }
     getUser()
   }, [router, supabase])
@@ -102,66 +134,115 @@ export default function ChatPage() {
   }, [user])
 
   const fetchChatRooms = async () => {
-    if (!user) return
+    try {
+      if (!user) return
+      
+      console.log('Fetching chat rooms for user:', user.id)
 
-    // 채팅방 목록 가져오기
-    const { data: rooms, error } = await supabase
-      .from('chat_participants')
-      .select(
-        `
-        room_id,
-        chat_rooms!inner (
-          id,
-          name,
-          type,
-          last_message,
-          last_message_at
-        )
-      `
-      )
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .order('chat_rooms(last_message_at)', { ascending: false })
-
-    if (rooms) {
-      // 각 채팅방의 참가자 정보와 안읽은 메시지 수 가져오기
-      const roomsWithDetails = await Promise.all(
-        rooms.map(async (room: any) => {
-          // 참가자 정보
-          const { data: participants } = await supabase
-            .from('chat_participants')
-            .select(
-              `
-              user_id,
-              profiles!inner (
-                id,
-                email,
-                nickname,
-                avatar_url,
-                role
-              )
-            `
-            )
-            .eq('room_id', room.chat_rooms.id)
-            .eq('is_active', true)
-
-          // 안읽은 메시지 수
-          const { count: unreadCount } = await supabase
-            .from('chat_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('room_id', room.chat_rooms.id)
-            .neq('sender_id', user.id)
-            .gt('created_at', room.last_read_at || '1970-01-01')
-
-          return {
-            ...room.chat_rooms,
-            participants: participants || [],
-            unread_count: unreadCount || 0,
-          }
+      // 채팅방 목록 가져오기 - 간단한 쿼리로 변경
+      const { data: participantData, error: participantError } = await supabase
+        .from('chat_participants')
+        .select('room_id, last_read_at')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+      
+      if (participantError) {
+        console.error('Error fetching participants:', {
+          message: participantError.message || 'Unknown error',
+          details: participantError.details || 'No details',
+          hint: participantError.hint || 'No hint',
+          code: participantError.code || 'No code',
+          fullError: JSON.stringify(participantError)
         })
-      )
+        setError(`채팅방 목록을 불러오는데 실패했습니다: ${participantError.message || '알 수 없는 오류'}`)
+        return
+      }
+      
+      if (!participantData || participantData.length === 0) {
+        console.log('No chat rooms found - showing empty state')
+        setChatRooms([])
+        setLoading(false)
+        return
+      }
+      
+      console.log('Found participant data:', participantData)
+      
+      // 각 room_id로 채팅방 정보 가져오기
+      const roomIds = participantData.map(p => p.room_id).filter(id => id != null)
+      
+      if (roomIds.length === 0) {
+        setChatRooms([])
+        return
+      }
+      
+      const { data: rooms, error } = await supabase
+        .from('chat_rooms')
+        .select('*')
+        .in('id', roomIds)
 
-      setChatRooms(roomsWithDetails)
+      if (error) {
+        console.error('Error fetching chat rooms:', {
+          message: error.message || 'Unknown error',
+          details: error.details || 'No details',
+          code: error.code || 'No code',
+          fullError: JSON.stringify(error)
+        })
+        setError(`채팅방 정보를 불러오는데 실패했습니다: ${error.message || '알 수 없는 오류'}`)
+        return
+      }
+
+      console.log('Fetched rooms:', rooms)
+
+      if (rooms && rooms.length > 0) {
+        // 각 채팅방의 참가자 정보와 안읽은 메시지 수 가져오기
+        const roomsWithDetails = await Promise.all(
+          rooms.map(async (room: any) => {
+            // 해당 방의 last_read_at 찾기
+            const participantInfo = participantData.find(p => p.room_id === room.id)
+            
+            // 참가자 정보
+            const { data: participants } = await supabase
+              .from('chat_participants')
+              .select(
+                `
+                user_id,
+                profiles:user_id (
+                  id,
+                  email,
+                  nickname,
+                  avatar_url,
+                  role
+                )
+              `
+              )
+              .eq('room_id', room.id)
+              .eq('is_active', true)
+
+            // 안읽은 메시지 수
+            const { count: unreadCount } = await supabase
+              .from('chat_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('room_id', room.id)
+              .neq('sender_id', user.id)
+              .gt('created_at', participantInfo?.last_read_at || '1970-01-01')
+            
+            return {
+              ...room,
+              participants: participants || [],
+              unread_count: unreadCount || 0,
+            }
+          })
+        )
+
+        // null 값 필터링
+        const validRooms = roomsWithDetails.filter(room => room !== null)
+        setChatRooms(validRooms)
+      } else {
+        setChatRooms([])
+      }
+    } catch (err) {
+      console.error('Error in fetchChatRooms:', err)
+      setError('채팅방을 불러오는데 실패했습니다.')
     }
   }
 
@@ -232,21 +313,65 @@ export default function ChatPage() {
     })
 
     if (roomId) {
-      router.push(`/chat/${roomId}`)
+      if (isTabletUp) {
+        // 태블릿/데스크탑에서는 오른쪽 패널에 표시
+        const room = {
+          id: roomId,
+          name: selectedUser.nickname || selectedUser.email?.split('@')[0],
+          type: 'direct' as const,
+          last_message: null,
+          last_message_at: null,
+          unread_count: 0,
+          participants: [
+            {
+              user_id: selectedUser.id,
+              profile: selectedUser,
+            },
+          ],
+        }
+        setSelectedRoom(room)
+        await fetchChatRooms()
+      } else {
+        // 모바일에서는 페이지 이동
+        router.push(`/chat/${roomId}`)
+      }
     }
 
     setCreatingChat(false)
     setNewChatDialog(false)
+    setIsNewChat(false)
+  }
+
+  const startNewChat = () => {
+    // 선택된 방 해제하고 새 채팅 모드로
+    setSelectedRoom(null)
+    setIsNewChat(true)
+    
+    if (!isTabletUp) {
+      // 모바일에서는 새 채팅 페이지로 이동
+      router.push('/chat/new')
+    }
   }
 
   const getChatDisplayInfo = (room: ChatRoom) => {
-    if (room.type === 'direct') {
+    // Solo 채팅 (참가자가 나 혼자)
+    if (room.participants && room.participants.length === 1 && room.participants[0].user_id === user?.id) {
+      return {
+        name: room.name || '나만의 메모',
+        avatar: null,
+        isOnline: false,
+        isSolo: true,
+      }
+    }
+    
+    if (room.type === 'direct' && room.participants) {
       // DM인 경우 상대방 정보 표시
       const otherUser = room.participants.find((p) => p.user_id !== user?.id)
       return {
-        name: otherUser?.profile.nickname || otherUser?.profile.email?.split('@')[0] || '사용자',
-        avatar: otherUser?.profile.avatar_url,
+        name: otherUser?.profile?.nickname || otherUser?.profile?.email?.split('@')[0] || room.name || '사용자',
+        avatar: otherUser?.profile?.avatar_url,
         isOnline: false, // 온라인 상태는 추후 구현
+        isSolo: false,
       }
     } else {
       // 그룹 채팅
@@ -254,6 +379,7 @@ export default function ChatPage() {
         name: room.name || '그룹 채팅',
         avatar: null,
         isOnline: false,
+        isSolo: false,
       }
     }
   }
@@ -287,36 +413,82 @@ export default function ChatPage() {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <AppHeader user={user} profile={profile} />
-        <Container maxWidth="md" sx={{ pt: 3 }}>
+        <Container maxWidth="md" sx={{ pt: 3, textAlign: 'center' }}>
           <CircularProgress />
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            채팅을 불러오는 중...
+          </Typography>
         </Container>
       </Box>
     )
   }
 
-  return (
-    <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>
-      <AppHeader user={user} profile={profile} />
+  if (error) {
+    return (
+      <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
+        <AppHeader user={user} profile={profile} />
+        <Container maxWidth="md" sx={{ pt: 3, textAlign: 'center' }}>
+          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+            오류가 발생했습니다
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {error}
+          </Typography>
+          <Button variant="contained" onClick={() => window.location.reload()}>
+            새로고침
+          </Button>
+        </Container>
+      </Box>
+    )
+  }
 
-      <Container maxWidth="md" sx={{ pt: 3 }}>
-        <Paper elevation={0} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-          {/* 헤더 */}
-          <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white' }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Chat />
-              <Typography variant="h5" fontWeight="bold">
+  // 채팅방 목록 컴포넌트
+  const ChatRoomList = () => (
+    <Paper elevation={0} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* 데스크탑: 검색바만, 모바일: 헤더 + 검색바 */}
+      {isTabletUp ? (
+        // 데스크탑: 검색바를 최상단에 배치
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <TextField
+            fullWidth
+            placeholder="채팅방 검색..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+              },
+            }}
+          />
+        </Box>
+      ) : (
+        // 모바일: 헤더와 검색바 모두 표시
+        <>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Typography variant="h6" fontWeight="bold">
                 채팅
               </Typography>
+              <IconButton onClick={startNewChat} color="primary">
+                <Create />
+              </IconButton>
             </Stack>
           </Box>
-
-          {/* 검색 바 */}
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
             <TextField
               fullWidth
               placeholder="채팅방 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -331,107 +503,141 @@ export default function ChatPage() {
               }}
             />
           </Box>
+        </>
+      )}
 
-          {/* 채팅방 목록 */}
-          <List sx={{ p: 0 }}>
-            {chatRooms.length === 0 ? (
-              <Box sx={{ p: 4, textAlign: 'center' }}>
-                <Typography color="text.secondary">아직 채팅방이 없습니다</Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<Add />}
-                  sx={{ mt: 2 }}
-                  onClick={() => setNewChatDialog(true)}
+      {/* 채팅방 목록 */}
+      <List sx={{ flex: 1, overflowY: 'auto', p: 0 }}>
+        {chatRooms.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center' }}>
+            <Typography color="text.secondary">아직 채팅방이 없습니다</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              새 채팅을 시작하려면 위의 + 버튼을 클릭하거나
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              오른쪽에서 메시지를 입력하세요
+            </Typography>
+          </Box>
+        ) : (
+          chatRooms
+            .filter((room) => {
+              if (!searchQuery) return true
+              const info = getChatDisplayInfo(room)
+              return info.name.toLowerCase().includes(searchQuery.toLowerCase())
+            })
+            .map((room) => {
+              const info = getChatDisplayInfo(room)
+              const isSelected = selectedRoom?.id === room.id
+              return (
+                <ListItem
+                  key={room.id}
+                  disablePadding
+                  secondaryAction={
+                    <Stack alignItems="flex-end" spacing={0.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatTime(room.last_message_at)}
+                      </Typography>
+                      {room.unread_count > 0 && (
+                        <Badge badgeContent={room.unread_count} color="error" max={99} />
+                      )}
+                    </Stack>
+                  }
                 >
-                  새 채팅 시작하기
-                </Button>
-              </Box>
-            ) : (
-              chatRooms
-                .filter((room) => {
-                  if (!searchQuery) return true
-                  const info = getChatDisplayInfo(room)
-                  return info.name.toLowerCase().includes(searchQuery.toLowerCase())
-                })
-                .map((room) => {
-                  const info = getChatDisplayInfo(room)
-                  return (
-                    <ListItem
-                      key={room.id}
-                      disablePadding
-                      secondaryAction={
-                        <Stack alignItems="flex-end" spacing={0.5}>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatTime(room.last_message_at)}
-                          </Typography>
-                          {room.unread_count > 0 && (
-                            <Badge badgeContent={room.unread_count} color="error" max={99} />
-                          )}
-                        </Stack>
+                  <ListItemButton
+                    selected={isSelected}
+                    onClick={() => {
+                      setSelectedRoom(room)
+                      setIsNewChat(false)
+                      if (!isTabletUp) {
+                        router.push(`/chat/${room.id}`)
                       }
-                    >
-                      <ListItemButton onClick={() => router.push(`/chat/${room.id}`)}>
-                        <ListItemAvatar>
-                          <Badge
-                            overlap="circular"
-                            anchorOrigin={{
-                              vertical: 'bottom',
-                              horizontal: 'right',
-                            }}
-                            badgeContent={
-                              info.isOnline ? (
-                                <Circle
-                                  sx={{
-                                    color: 'success.main',
-                                    width: 12,
-                                    height: 12,
-                                  }}
-                                />
-                              ) : null
-                            }
-                          >
-                            <Avatar src={info.avatar || undefined}>
-                              {room.type === 'direct' ? <Person /> : <Group />}
-                            </Avatar>
-                          </Badge>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={<Typography fontWeight="medium">{info.name}</Typography>}
-                          secondary={
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Badge
+                        overlap="circular"
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'right',
+                        }}
+                        badgeContent={
+                          info.isOnline ? (
+                            <Circle
                               sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
+                                color: 'success.main',
+                                width: 12,
+                                height: 12,
                               }}
-                            >
-                              {room.last_message || '대화를 시작해보세요'}
-                            </Typography>
-                          }
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                  )
-                })
-            )}
-          </List>
-        </Paper>
-      </Container>
+                            />
+                          ) : null
+                        }
+                      >
+                        <Avatar src={info.avatar || undefined}>
+                          {info.isSolo ? <Notes /> : room.type === 'direct' ? <Person /> : <Group />}
+                        </Avatar>
+                      </Badge>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={<Typography fontWeight="medium">{info.name}</Typography>}
+                      secondary={
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {room.last_message || '대화를 시작해보세요'}
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )
+            })
+        )}
+      </List>
+    </Paper>
+  )
 
-      {/* 새 채팅 FAB */}
-      <Fab
-        color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-        }}
-        onClick={() => setNewChatDialog(true)}
-      >
-        <Add />
-      </Fab>
+  return (
+    <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
+      <AppHeader user={user} profile={profile} />
+
+      {isTabletUp ? (
+        // 태블릿/데스크탑: Split View (Flexbox)
+        <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex' }}>
+          {/* 사이드바: 채팅 목록 (고정 너비) */}
+          <Box 
+            sx={{ 
+              width: 220,
+              minWidth: 220,
+              borderRight: 1, 
+              borderColor: 'divider',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <ChatRoomList />
+          </Box>
+          {/* 메인 패널: 채팅 뷰 (남은 공간 모두) */}
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            <ChatInterface
+              roomId={selectedRoom?.id || 'new'}
+              user={user!}
+              isNewChat={!selectedRoom}
+            />
+          </Box>
+        </Box>
+      ) : (
+        // 모바일: 채팅 목록만 표시
+        <Container maxWidth="md" sx={{ pt: 3 }}>
+          <ChatRoomList />
+        </Container>
+      )}
 
       {/* 새 채팅 다이얼로그 */}
       <Dialog open={newChatDialog} onClose={() => setNewChatDialog(false)} maxWidth="sm" fullWidth>
@@ -482,6 +688,7 @@ export default function ChatPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
     </Box>
   )
 }

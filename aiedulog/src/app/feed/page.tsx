@@ -29,6 +29,7 @@ import {
   alpha,
   CircularProgress,
   CardMedia,
+  Collapse,
 } from '@mui/material'
 import {
   Favorite,
@@ -46,10 +47,14 @@ import {
   VerifiedUser,
   Close,
   Menu as MenuIcon,
+  Chat as ChatIcon,
+  VisibilityOff,
+  Visibility,
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
 import FeedSidebar from '@/components/FeedSidebar'
+import TrendingWidget from '@/components/TrendingWidget'
 
 export default function FeedPage() {
   const [user, setUser] = useState<User | null>(null)
@@ -66,6 +71,9 @@ export default function FeedPage() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [hasMorePosts, setHasMorePosts] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [hiddenPosts, setHiddenPosts] = useState<string[]>([])
+  const [collapsedPosts, setCollapsedPosts] = useState<string[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -164,6 +172,12 @@ export default function FeedPage() {
       setLoading(false)
     }
     getUser()
+
+    // localStorage에서 숨긴 게시글 불러오기
+    const hidden = localStorage.getItem('hiddenPosts')
+    if (hidden) {
+      setHiddenPosts(JSON.parse(hidden))
+    }
   }, [router, supabase])
 
   useEffect(() => {
@@ -243,6 +257,24 @@ export default function FeedPage() {
     } finally {
       setLoadingMore(false)
     }
+  }
+
+  const handleHidePost = (postId: string) => {
+    setAnchorEl(null)
+    setCollapsedPosts([...collapsedPosts, postId])
+    
+    // localStorage에 저장
+    const newHiddenPosts = [...hiddenPosts, postId]
+    setHiddenPosts(newHiddenPosts)
+    localStorage.setItem('hiddenPosts', JSON.stringify(newHiddenPosts))
+  }
+
+  const handleUnhidePost = (postId: string) => {
+    setCollapsedPosts(collapsedPosts.filter(id => id !== postId))
+    
+    const newHiddenPosts = hiddenPosts.filter(id => id !== postId)
+    setHiddenPosts(newHiddenPosts)
+    localStorage.setItem('hiddenPosts', JSON.stringify(newHiddenPosts))
   }
 
   const handlePost = async () => {
@@ -520,7 +552,7 @@ export default function FeedPage() {
 
             {/* 피드 */}
             <Stack spacing={2}>
-              {posts.map((post) => (
+              {posts.filter(post => !hiddenPosts.includes(post.id)).map((post) => (
                 <Card
                   key={post.id}
                   sx={{
@@ -566,9 +598,22 @@ export default function FeedPage() {
                       </Badge>
                     }
                     action={
-                      <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                        <MoreVert />
-                      </IconButton>
+                      <Stack direction="row">
+                        {collapsedPosts.includes(post.id) && (
+                          <IconButton onClick={() => handleUnhidePost(post.id)}>
+                            <Visibility />
+                          </IconButton>
+                        )}
+                        <IconButton 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setAnchorEl(e.currentTarget)
+                          }}
+                          data-post-id={post.id}
+                        >
+                          <MoreVert />
+                        </IconButton>
+                      </Stack>
                     }
                     title={
                       <Stack>
@@ -594,14 +639,15 @@ export default function FeedPage() {
                     subheader={new Date(post.created_at).toLocaleString('ko-KR')}
                   />
 
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography
-                      variant="body1"
-                      sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', mt: 1 }}
-                    >
-                      {post.content}
-                    </Typography>
-                  </CardContent>
+                  <Collapse in={!collapsedPosts.includes(post.id)}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', mt: 1 }}
+                      >
+                        {post.content}
+                      </Typography>
+                    </CardContent>
 
                   {post.image_urls && post.image_urls.length > 0 && (
                     <Box sx={{ position: 'relative', p: 2, pt: 0 }}>
@@ -667,6 +713,7 @@ export default function FeedPage() {
                       {post.isBookmarked ? <Bookmark /> : <BookmarkBorder />}
                     </IconButton>
                   </CardActions>
+                  </Collapse>
                 </Card>
               ))}
             </Stack>
@@ -687,10 +734,10 @@ export default function FeedPage() {
             )}
           </Box>
 
-          {/* 오른쪽 채팅 영역 - 1200px 이상에서만 */}
+          {/* 오른쪽 인기 콘텐츠 위젯 - 1200px 이상에서만 */}
           <Box
             sx={{
-              width: 320,
+              width: 352,
               flexShrink: 0,
               display: { xs: 'none', lg: 'block' },
             }}
@@ -701,7 +748,7 @@ export default function FeedPage() {
                 top: 80,
               }}
             >
-              <SideChat user={user} />
+              <TrendingWidget />
             </Box>
           </Box>
         </Stack>
@@ -730,10 +777,39 @@ export default function FeedPage() {
         <MenuIcon />
       </Fab>
 
+      {/* 채팅 플로팅 버튼 - 오른쪽 하단 */}
+      <Fab
+        color="primary"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 1100,
+        }}
+        onClick={() => setChatOpen(true)}
+      >
+        <Badge badgeContent={0} color="error">
+          <ChatIcon />
+        </Badge>
+      </Fab>
+
+      {/* 채팅 모달/드로어 */}
+      <SideChat 
+        user={user} 
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
+
       {/* 메뉴 */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem onClick={() => setAnchorEl(null)}>신고하기</MenuItem>
-        <MenuItem onClick={() => setAnchorEl(null)}>숨기기</MenuItem>
+        <MenuItem onClick={() => {
+          const postId = anchorEl?.getAttribute('data-post-id')
+          if (postId) handleHidePost(postId)
+        }}>
+          <VisibilityOff sx={{ mr: 1, fontSize: 20 }} />
+          숨기기
+        </MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>공유하기</MenuItem>
       </Menu>
     </Box>

@@ -24,6 +24,9 @@ import {
   Button,
   Collapse,
   CircularProgress,
+  Drawer,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import {
   Chat,
@@ -70,7 +73,13 @@ interface ChatRoom {
   }>
 }
 
-export default function SideChat({ user }: { user: User | null }) {
+interface SideChatProps {
+  user: User | null
+  open?: boolean
+  onClose?: () => void
+}
+
+export default function SideChat({ user, open = true, onClose }: SideChatProps) {
   const [expanded, setExpanded] = useState(true)
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null)
@@ -82,6 +91,8 @@ export default function SideChat({ user }: { user: User | null }) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
   const router = useRouter()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   useEffect(() => {
     if (user) {
@@ -303,16 +314,12 @@ export default function SideChat({ user }: { user: User | null }) {
 
   if (!user) return null
 
-  return (
-    <Paper
-      elevation={0}
+  const chatContent = (
+    <Box
       sx={{
-        height: 'calc(100vh - 100px)',
+        height: isMobile ? '100vh' : 'calc(100vh - 100px)',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 2,
-        border: 1,
-        borderColor: 'divider',
         overflow: 'hidden',
       }}
     >
@@ -322,10 +329,8 @@ export default function SideChat({ user }: { user: User | null }) {
           p: 2,
           bgcolor: 'primary.main',
           color: 'white',
-          cursor: 'pointer',
           userSelect: 'none',
         }}
-        onClick={() => setExpanded(!expanded)}
       >
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -341,12 +346,15 @@ export default function SideChat({ user }: { user: User | null }) {
               />
             )}
           </Stack>
-          {expanded ? <ExpandLess /> : <ExpandMore />}
+          {onClose && (
+            <IconButton onClick={onClose} size="small" sx={{ color: 'white' }}>
+              <Close />
+            </IconButton>
+          )}
         </Stack>
       </Box>
 
-      <Collapse in={expanded} timeout="auto">
-        {selectedRoom ? (
+      {selectedRoom ? (
           // 채팅방 뷰
           <>
             {/* 채팅방 헤더 */}
@@ -543,7 +551,22 @@ export default function SideChat({ user }: { user: User | null }) {
             </Box>
           </>
         )}
-      </Collapse>
-    </Paper>
+    </Box>
+  )
+
+  return (
+    <Drawer
+      anchor={isMobile ? 'bottom' : 'right'}
+      open={open}
+      onClose={onClose}
+      sx={{
+        '& .MuiDrawer-paper': {
+          width: isMobile ? '100%' : 400,
+          maxWidth: '100%',
+        },
+      }}
+    >
+      {chatContent}
+    </Drawer>
   )
 }

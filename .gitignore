@@ -56,3 +56,8 @@ Thumbs.db
 /private/
 /.private/
 /secrets/
+
+# Test pages - not for production (개발용 테스트 페이지)
+/aiedulog/src/app/test-chat/
+/aiedulog/src/app/test-kanban/
+/aiedulog/src/app/test-layout/

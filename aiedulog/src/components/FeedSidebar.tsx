@@ -41,6 +41,7 @@ import {
   ExpandLess,
   ExpandMore,
   Event,
+  Favorite,
 } from '@mui/icons-material'
 
 interface FeedSidebarProps {
@@ -66,10 +67,16 @@ export default function FeedSidebar({
 
   const menuItems = [
     {
-      label: '홈',
+      label: '피드',
       icon: <Home />,
       href: '/feed',
       color: 'primary' as const,
+    },
+    {
+      label: '공감 게시판',
+      icon: <Favorite />,
+      href: '/board/trending',
+      color: 'error' as const,
     },
     {
       label: '자유게시판',

@@ -195,7 +195,8 @@ export default function Navbar() {
                 <>
                   <NotificationIcon />
                   <IconButton
-                    onClick={() => router.push('/chat')}
+                    component={Link}
+                    href="/chat"
                     sx={{ color: theme.palette.text.primary }}
                   >
                     <Chat />
@@ -262,7 +263,8 @@ export default function Navbar() {
                 <>
                   <NotificationIcon />
                   <IconButton
-                    onClick={() => router.push('/chat')}
+                    component={Link}
+                    href="/chat"
                     sx={{ color: theme.palette.text.primary }}
                   >
                     <Chat />
