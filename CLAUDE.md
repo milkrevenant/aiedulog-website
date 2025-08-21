@@ -40,6 +40,14 @@ npm run dev  # Always use port 3000 only
 - Material UI v6 + Material 3
 - TypeScript
 
+## 📋 ESLint Rules
+Follow these rules when writing code:
+- **Allow any type** - Use `any` type when necessary
+- **Allow unused variables** - Temporary variables allowed during development (warning only)
+- **Allow img element** - Can use HTML img tag instead of Next.js Image component
+- **Alt text recommended** - Add alt text to images when possible (not required)
+- **Allow anonymous default export** - Anonymous component exports are permitted
+
 ## 🎯 현재 진행 상황
 - Phase 1-2: ✅ 100% 완료
 - Phase 3: 🔄 60% 진행 중
@@ -50,6 +58,6 @@ npm run dev  # Always use port 3000 only
 2. Windows/Mac 환경 전환 시 npm install 필수
 3. 개발 서버 포트: 3000 또는 3001 (자동 할당)
 
-## 🔗 관련 링크
+## 🔗 Related Links
 - GitHub: https://github.com/milkrevenant/aiedulog-website
 - Supabase: https://supabase.com/dashboard/project/njnrezduzotxfombfanu
