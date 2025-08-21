@@ -35,7 +35,32 @@
 - GitHub: https://github.com/milkrevenant/aiedulog-website
 - Supabase: https://supabase.com/dashboard/project/njnrezduzotxfombfanu
 
+## 🚨 긴급 작업 (최우선)
+- [ ] Node.js 20+ 업그레이드 (AWS 요구사항)
+- [ ] 파비콘 추가 (/public/favicon.ico)
+- [ ] 가비아 도메인 설정 완료
+
 ## 🔧 다음 세션 태스크 (2025-08-23)
+
+### 강의 시스템 완성 (최우선)
+- [ ] 강의 목록 페이지 (/lectures)
+- [ ] 강의 상세 페이지 (/lectures/[id])
+- [ ] 참가 신청 버튼 로직 개선
+- [ ] 신청 확인 이메일 발송
+- [ ] 일정 관리 달력 (FullCalendar)
+
+### Supabase 보안/성능 (높음)
+- [ ] RLS 정책 전면 검토
+- [ ] API 키 권한 최소화
+- [ ] 인덱스 최적화
+- [ ] 쿼리 성능 분석
+- [ ] Rate Limiting 설정
+
+### 사용자 관리 강화 (높음)
+- [ ] 관리자 회원 삭제 기능
+- [ ] 이메일 도메인 유효성 검사
+- [ ] 일회용 이메일 차단
+- [ ] MX 레코드 확인
 
 ### 패키지 업데이트 및 정리
 - [ ] 불필요한 패키지 제거
