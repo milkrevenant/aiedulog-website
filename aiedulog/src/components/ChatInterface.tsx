@@ -70,6 +70,7 @@ interface ChatRoom {
   id: string
   name?: string
   type: 'direct' | 'group' | 'collaboration'
+  created_at?: string
   participants?: Array<{
     user_id: string
     profile: {
