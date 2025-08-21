@@ -55,14 +55,7 @@ export default function ChatRoomPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <AppHeader user={user} profile={profile}>
-        <IconButton
-          onClick={() => router.push('/chat')}
-          sx={{ mr: 1 }}
-        >
-          <ArrowBack />
-        </IconButton>
-      </AppHeader>
+      <AppHeader user={user} profile={profile} />
       
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <ChatInterface roomId={roomId} user={user} />
