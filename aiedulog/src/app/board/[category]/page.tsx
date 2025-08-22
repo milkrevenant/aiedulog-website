@@ -39,6 +39,7 @@ import {
   Favorite,
   FavoriteBorder,
   ChatBubbleOutline,
+  Chat,
   Share,
   Bookmark,
   BookmarkBorder,
@@ -114,6 +115,7 @@ export default function BoardPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -924,7 +926,21 @@ export default function BoardPage() {
                 top: 80,
               }}
             >
-              <SideChat user={user} />
+              {/* Chat button for desktop */}
+              <Fab
+                color="primary"
+                onClick={() => setChatOpen(true)}
+                sx={{
+                  position: 'fixed',
+                  bottom: 24,
+                  right: 24,
+                  display: { xs: 'none', md: 'flex' }
+                }}
+              >
+                <Badge badgeContent={0} color="error">
+                  <Chat />
+                </Badge>
+              </Fab>
             </Box>
           </Box>
         </Stack>
@@ -972,6 +988,30 @@ export default function BoardPage() {
         <MenuItem onClick={() => setAnchorEl(null)}>숨기기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>공유하기</MenuItem>
       </Menu>
+
+      {/* 모바일 채팅 FAB */}
+      <Fab
+        color="secondary"
+        onClick={() => setChatOpen(true)}
+        sx={{
+          display: { xs: 'flex', md: 'none' },
+          position: 'fixed',
+          bottom: 80,
+          right: 16,
+          zIndex: 1100,
+        }}
+      >
+        <Badge badgeContent={0} color="error">
+          <Chat />
+        </Badge>
+      </Fab>
+
+      {/* 채팅 드로어 */}
+      <SideChat 
+        user={user}
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
     </Box>
   )
 }

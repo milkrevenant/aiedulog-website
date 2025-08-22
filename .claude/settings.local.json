@@ -34,7 +34,11 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__list_tables",
       "Bash(claude mcp:*)",
-      "mcp__supabase__apply_migration"
+      "mcp__supabase__apply_migration",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__read_multiple_files",
+      "Bash(npm test:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": [],

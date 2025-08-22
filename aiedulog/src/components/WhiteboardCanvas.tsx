@@ -217,14 +217,20 @@ export default function WhiteboardCanvas({ boardId, roomId }: WhiteboardCanvasPr
         UIOptions={{
           canvasActions: {
             saveToActiveFile: false,
-            loadScene: false,
-            export: {
-              saveFileToDisk: true,
-            },
+            loadScene: true,
+            export: false,
             toggleTheme: true,
+            clearCanvas: true,
+            changeViewBackgroundColor: true,
+          },
+          tools: {
+            image: true,
           },
         }}
         name="협업 화이트보드"
+        gridModeEnabled={false}
+        viewModeEnabled={false}
+        zenModeEnabled={false}
       />
       
       {/* 협업자 커서 표시 (옵션) */}

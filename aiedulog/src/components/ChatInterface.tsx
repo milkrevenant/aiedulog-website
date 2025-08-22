@@ -47,7 +47,8 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import KanbanBoard from '@/components/KanbanBoard'
-import WhiteboardCanvas from '@/components/WhiteboardCanvas'
+// import WhiteboardCanvas from '@/components/WhiteboardCanvas'
+import WhiteboardCanvasEnhanced from '@/components/WhiteboardCanvasEnhanced'
 
 interface Message {
   id: string
@@ -541,7 +542,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
                                     borderRadius: 1,
                                     overflow: 'hidden'
                                   }}>
-                                    <WhiteboardCanvas 
+                                    <WhiteboardCanvasEnhanced 
                                       boardId={message.attachments?.boardId || message.id} 
                                       roomId={roomId}
                                     />

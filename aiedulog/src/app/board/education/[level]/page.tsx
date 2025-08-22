@@ -41,6 +41,7 @@ import {
   Favorite,
   FavoriteBorder,
   ChatBubbleOutline,
+  Chat,
   Share,
   Bookmark,
   BookmarkBorder,
@@ -119,6 +120,7 @@ export default function EducationLevelPage() {
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -978,14 +980,21 @@ export default function EducationLevelPage() {
               display: { xs: 'none', lg: 'block' },
             }}
           >
-            <Box
+            {/* Chat button for desktop */}
+            <Fab
+              color="primary"
+              onClick={() => setChatOpen(true)}
               sx={{
-                position: 'sticky',
-                top: 80,
+                position: 'fixed',
+                bottom: 24,
+                right: 24,
+                display: { xs: 'none', md: 'flex' }
               }}
             >
-              <SideChat user={user} />
-            </Box>
+              <Badge badgeContent={0} color="error">
+                <Chat />
+              </Badge>
+            </Fab>
           </Box>
         </Stack>
       </Box>
@@ -1032,6 +1041,30 @@ export default function EducationLevelPage() {
         <MenuItem onClick={() => setAnchorEl(null)}>숨기기</MenuItem>
         <MenuItem onClick={() => setAnchorEl(null)}>공유하기</MenuItem>
       </Menu>
+
+      {/* 모바일 채팅 FAB */}
+      <Fab
+        color="secondary"
+        onClick={() => setChatOpen(true)}
+        sx={{
+          display: { xs: 'flex', md: 'none' },
+          position: 'fixed',
+          bottom: 80,
+          right: 16,
+          zIndex: 1100,
+        }}
+      >
+        <Badge badgeContent={0} color="error">
+          <Chat />
+        </Badge>
+      </Fab>
+
+      {/* 채팅 드로어 */}
+      <SideChat 
+        user={user}
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
     </Box>
   )
 }

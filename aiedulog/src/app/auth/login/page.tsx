@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import MFAVerification from '@/components/MFAVerification'
+import { translateAuthError, getErrorSuggestion } from '@/lib/utils/errorTranslator'
 import {
   Box,
   Container,
@@ -25,7 +26,7 @@ import {
 } from '@mui/material'
 import { Visibility, VisibilityOff, Google, Apple, Email, Lock, School } from '@mui/icons-material'
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   // const [isSignUp, setIsSignUp] = useState(false) // 회원가입은 별도 페이지로 이동
@@ -36,10 +37,25 @@ export default function LoginPage() {
   const [showMFA, setShowMFA] = useState(false)
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
   const [tempUserId, setTempUserId] = useState<string | null>(null)
+  const [errorSuggestion, setErrorSuggestion] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const theme = useTheme()
+
+  useEffect(() => {
+    // Check for messages in URL params
+    const message = searchParams.get('message')
+    const error = searchParams.get('error')
+    
+    if (message === 'password_reset_success') {
+      setSuccessMessage('비밀번호가 성공적으로 변경되었습니다. 새로운 비밀번호로 로그인해주세요.')
+    } else if (error) {
+      setError(decodeURIComponent(error))
+    }
+  }, [searchParams])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,7 +109,9 @@ export default function LoginPage() {
       // 모든 사용자는 피드로 리다이렉트
       router.push('/feed')
     } catch (error: any) {
-      setError(error.message)
+      const translatedError = translateAuthError(error)
+      setError(translatedError)
+      setErrorSuggestion(getErrorSuggestion(error.message || error))
       setLoading(false)
     }
   }
@@ -249,16 +267,29 @@ export default function LoginPage() {
                   }
                   label={<Typography variant="body2">로그인 상태 유지</Typography>}
                 />
-                <Link href="/auth/forgot-password">
-                  <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>
+                <Link href="/auth/reset-password" style={{ textDecoration: 'none' }}>
+                  <Typography variant="body2" color="primary" sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
                     비밀번호 찾기
                   </Typography>
                 </Link>
               </Stack>
 
+              {successMessage && (
+                <Alert severity="success" sx={{ borderRadius: 2, mb: 2 }}>
+                  {successMessage}
+                </Alert>
+              )}
+
               {error && (
                 <Alert severity="error" sx={{ borderRadius: 2 }}>
-                  {error}
+                  <Box>
+                    <Typography variant="body2">{error}</Typography>
+                    {errorSuggestion && (
+                      <Typography variant="caption" sx={{ mt: 0.5, display: 'block', opacity: 0.9 }}>
+                        💡 {errorSuggestion}
+                      </Typography>
+                    )}
+                  </Box>
                 </Alert>
               )}
 
@@ -384,5 +415,17 @@ export default function LoginPage() {
         </Box>
       </Container>
     </Box>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

@@ -347,9 +347,31 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
             )}
           </Stack>
           {onClose && (
-            <IconButton onClick={onClose} size="small" sx={{ color: 'white' }}>
-              <Close />
-            </IconButton>
+            <Stack direction="row" spacing={0.5}>
+              {/* Desktop/Tablet back button */}
+              <IconButton 
+                onClick={onClose} 
+                size="small" 
+                sx={{ 
+                  color: 'white',
+                  display: { xs: 'none', sm: 'flex' }
+                }}
+                title="닫기"
+              >
+                <ArrowBack />
+              </IconButton>
+              {/* Mobile X button */}
+              <IconButton 
+                onClick={onClose} 
+                size="small" 
+                sx={{ 
+                  color: 'white',
+                  display: { xs: 'flex', sm: 'none' }
+                }}
+              >
+                <Close />
+              </IconButton>
+            </Stack>
           )}
         </Stack>
       </Box>
