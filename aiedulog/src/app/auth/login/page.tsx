@@ -24,7 +24,7 @@ import {
   alpha,
   CircularProgress,
 } from '@mui/material'
-import { Visibility, VisibilityOff, Google, Apple, Email, Lock, School } from '@mui/icons-material'
+import { Visibility, VisibilityOff, Google, Email, Lock, School } from '@mui/icons-material'
 
 function LoginContent() {
   const [email, setEmail] = useState('')
@@ -130,11 +130,28 @@ function LoginContent() {
   }
 
   const handleGoogleLogin = async () => {
-    setError('Google 로그인은 준비 중입니다.')
-  }
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      })
 
-  const handleAppleLogin = async () => {
-    setError('Apple 로그인은 준비 중입니다.')
+      if (error) throw error
+      
+      // OAuth will redirect automatically
+    } catch (error: any) {
+      setError('Google 로그인 중 오류가 발생했습니다.')
+      setLoading(false)
+    }
   }
 
   // MFA 화면 표시
@@ -321,46 +338,25 @@ function LoginContent() {
             </Divider>
           </Box>
 
-          <Stack spacing={2}>
-            <Button
-              fullWidth
-              variant="outlined"
-              size="large"
-              onClick={handleGoogleLogin}
-              startIcon={<Google />}
-              sx={{
-                borderRadius: 10,
-                textTransform: 'none',
-                py: 1.2,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.04),
-                },
-              }}
-            >
-              Google로 계속하기
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              size="large"
-              onClick={handleAppleLogin}
-              startIcon={<Apple />}
-              sx={{
-                borderRadius: 10,
-                textTransform: 'none',
-                py: 1.2,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.04),
-                },
-              }}
-            >
-              Apple로 계속하기
-            </Button>
-          </Stack>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="large"
+            onClick={handleGoogleLogin}
+            startIcon={<Google />}
+            sx={{
+              borderRadius: 10,
+              textTransform: 'none',
+              py: 1.2,
+              borderColor: 'divider',
+              color: 'text.primary',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.04),
+              },
+            }}
+          >
+            Google로 계속하기
+          </Button>
 
           {/* Switch Auth Mode */}
           <Box sx={{ mt: 4, textAlign: 'center' }}>

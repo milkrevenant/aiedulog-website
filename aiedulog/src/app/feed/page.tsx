@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useAuthContext } from '@/lib/auth/context'
 import {
   Box,
   Container,
@@ -57,9 +57,8 @@ import FeedSidebar from '@/components/FeedSidebar'
 import TrendingWidget from '@/components/TrendingWidget'
 
 export default function FeedPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, loading: authLoading } = useAuthContext()
+  const [loading, setLoading] = useState(false)
   const [posts, setPosts] = useState<any[]>([])
   const [newPost, setNewPost] = useState('')
   const [newPostTitle, setNewPostTitle] = useState('')
@@ -149,36 +148,12 @@ export default function FeedPage() {
   )
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
-    }
-    getUser()
-
     // localStorage에서 숨긴 게시글 불러오기
     const hidden = localStorage.getItem('hiddenPosts')
     if (hidden) {
       setHiddenPosts(JSON.parse(hidden))
     }
-  }, [router, supabase])
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -348,7 +323,7 @@ export default function FeedPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <Container maxWidth="sm" sx={{ py: 2 }}>

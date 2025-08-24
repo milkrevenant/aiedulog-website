@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useAuthContext } from '@/lib/auth/context'
 import {
   Box,
   Container,
@@ -72,9 +72,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 function SearchContent() {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, loading: authLoading } = useAuthContext()
+  const [loading, setLoading] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [tabValue, setTabValue] = useState(0)
   const [posts, setPosts] = useState<any[]>([])
@@ -171,30 +170,10 @@ function SearchContent() {
   }, [query, user?.id, supabase])
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
+    if (!authLoading && !user) {
+      router.push('/auth/login')
     }
-    getUser()
-  }, [router, supabase])
+  }, [authLoading, user, router])
 
   useEffect(() => {
     if (user && query) {
@@ -242,7 +221,7 @@ function SearchContent() {
     setPosts(posts.map((p) => (p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p)))
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <Container maxWidth="lg" sx={{ py: 2 }}>

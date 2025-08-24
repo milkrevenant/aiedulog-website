@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { useAuthContext } from '@/lib/auth/context'
 import { Box, IconButton, CircularProgress } from '@mui/material'
 import { ArrowBack } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
@@ -12,40 +11,17 @@ import ChatInterface from '@/components/ChatInterface'
 export default function ChatRoomPage() {
   const params = useParams()
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const { user, profile, loading: authLoading } = useAuthContext()
   
   const roomId = params.id as string
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
+    if (!authLoading && !user) {
+      router.push('/auth/login')
     }
-    getUser()
-  }, [router, supabase])
+  }, [authLoading, user, router])
 
-  if (loading || !user) {
+  if (authLoading || !user) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <CircularProgress />

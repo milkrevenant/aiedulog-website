@@ -60,4 +60,4 @@ Follow these rules when writing code:
 
 ## 🔗 Related Links
 - GitHub: https://github.com/milkrevenant/aiedulog-website
-- Supabase: https://supabase.com/dashboard/project/njnrezduzotxfombfanu
+- Supabase: https://supabase.com/dashboard/project/[your-project-id]

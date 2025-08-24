@@ -1,34 +1,78 @@
-# 📚 프로젝트 문서
+# 📚 AIedulog Documentation
 
-## 프로젝트 관리 문서
+## 📖 Core Documents
 
-### 🚀 개발 관련
-- **[NEXT_SESSION.md](./NEXT_SESSION.md)** - 다음 세션 작업 가이드
-- **[TODO.md](./TODO.md)** - 전체 할 일 목록
-- **[PROGRESS.md](./PROGRESS.md)** - 프로젝트 진행 상황
-- **[TODO_GOOGLE_MAPS.md](./TODO_GOOGLE_MAPS.md)** - Google Maps 통합 계획
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **[DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)** | Development tasks, sprint planning, auth migration | Starting work, checking tasks |
+| **[PROGRESS_TRACKER.md](./PROGRESS_TRACKER.md)** | Progress tracking, features completed, metrics | Reviewing progress, updates |
+| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | AWS Amplify setup, deployment procedures | Deploying, fixing build issues |
+| **[INFRASTRUCTURE_GUIDE.md](./INFRASTRUCTURE_GUIDE.md)** | Database schema, security config, monitoring | Database work, security setup |
+| **[AUTH_REFERENCE.md](./AUTH_REFERENCE.md)** | Authentication patterns, quick reference | Implementing auth features |
+| **[CODE_QUALITY_REPORT.md](./CODE_QUALITY_REPORT.md)** | Code quality metrics, lint results | Code review, quality checks |
+| **[GOOGLE_MAPS_SETUP.md](./GOOGLE_MAPS_SETUP.md)** | Google Maps API setup instructions | Implementing map features |
 
-### 🔧 배포 관련
-- **[DEPLOYMENT_CHANGES.md](./DEPLOYMENT_CHANGES.md)** - 배포 변경사항 기록
-- **[DEPLOYMENT_ISSUES_REPORT.md](./DEPLOYMENT_ISSUES_REPORT.md)** - 배포 이슈 분석 보고서
-- **[VERCEL_BUILD_ERRORS_LOG.md](./VERCEL_BUILD_ERRORS_LOG.md)** - Vercel 빌드 에러 및 해결 과정
+## 🚀 Quick Navigation
 
-## 문서 사용 가이드
+### Starting Development
+1. Read **DEVELOPMENT_GUIDE.md** → Quick start section
+2. Check current sprint tasks
+3. Review known issues
 
-### 작업 시작 시
-1. `NEXT_SESSION.md` 확인 - 이전 세션 종료 지점과 다음 작업 확인
-2. `TODO.md` 확인 - 우선순위별 작업 목록 확인
-3. `PROGRESS.md` 확인 - 현재 진행 상황 파악
+### Deploying Changes  
+1. Follow **DEPLOYMENT_GUIDE.md** → Pre-deployment checklist
+2. Run build verification
+3. Push to main branch (auto-deploys)
 
-### 배포 준비 시
-1. `VERCEL_BUILD_ERRORS_LOG.md` - 빌드 에러 방지 가이드
-2. `DEPLOYMENT_CHANGES.md` - 배포 관련 변경사항 기록
-3. `DEPLOYMENT_ISSUES_REPORT.md` - 기술적 이슈 분석
+### Tracking Progress
+1. Update **PROGRESS_TRACKER.md** → Daily log
+2. Mark completed features
+3. Update metrics
 
-### 작업 종료 시
-1. `NEXT_SESSION.md` 업데이트 - 작업 내용과 다음 작업 명시
-2. `TODO.md` 업데이트 - 완료된 작업 체크
-3. `PROGRESS.md` 업데이트 - 진행률 업데이트
+## 📝 Documentation Guidelines
+
+### When to Update
+- **DEVELOPMENT_GUIDE.md**: When tasks change or new issues arise
+- **PROGRESS_TRACKER.md**: Daily at session end
+- **DEPLOYMENT_GUIDE.md**: When deployment process changes
+- **CODE_QUALITY_REPORT.md**: After major refactoring
+
+### Best Practices
+- Keep documents concise and actionable
+- Use tables for structured data
+- Include code examples where helpful
+- Date all major updates
+
+## 🔄 Document History
+
+### Latest Consolidation (2025-08-23)
+**Phase 2: Merged 12 documents → 7 focused documents**
+- Consolidated scattered documentation into `/docs` directory
+- Created `INFRASTRUCTURE_GUIDE.md` for database/security info
+- Added `AUTH_REFERENCE.md` as quick reference guide
+- Eliminated remaining redundancy
+- Established clear document purposes
+
+**Newly Consolidated Files**:
+- ~~AUTH_MIGRATION_COMPLETE.md~~ → Merged into DEVELOPMENT_GUIDE.md
+- ~~AWS_DEPLOYMENT_GUIDE.md~~ → Merged into DEPLOYMENT_GUIDE.md
+- ~~DATABASE_AUDIT_REPORT.md~~ → Became INFRASTRUCTURE_GUIDE.md
+- ~~IMPLEMENTATION_COMPLETE.md~~ → Merged into PROGRESS_TRACKER.md
+- ~~aiedulog_development_checklist.md~~ → Merged into PROGRESS_TRACKER.md
+- ~~QUICK_AUTH_REFERENCE.md~~ → Renamed to AUTH_REFERENCE.md
+
+### Previous Consolidation (2025-08-23 Phase 1)
+**Merged 7 documents → 5 documents**
+- ~~NEXT_SESSION.md~~ → Merged into DEVELOPMENT_GUIDE.md
+- ~~TODO.md~~ → Merged into DEVELOPMENT_GUIDE.md  
+- ~~PROGRESS.md~~ → Became PROGRESS_TRACKER.md
+- ~~DEPLOYMENT_HISTORY.md~~ → Merged into DEPLOYMENT_GUIDE.md
+
+## 🔗 External Resources
+- [GitHub Repository](https://github.com/milkrevenant/aiedulog-website)
+- [Supabase Dashboard](https://supabase.com/dashboard/project/[your-project-id])
+- [AWS Amplify Console](https://console.aws.amazon.com/amplify/)
 
 ---
-*문서 정리: 2025-08-19*
+*Documentation restructured: 2025-08-23*
+*Maintainer: AIedulog Development Team*

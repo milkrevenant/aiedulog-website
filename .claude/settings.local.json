@@ -38,7 +38,14 @@
       "mcp__filesystem__read_text_file",
       "mcp__filesystem__read_multiple_files",
       "Bash(npm test:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__get_advisors",
+      "mcp__supabase__get_project_url",
+      "mcp__filesystem__edit_file",
+      "Bash(git restore:*)",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__write_file"
     ],
     "deny": [],
     "ask": [],

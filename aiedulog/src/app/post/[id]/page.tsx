@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useAuthContext } from '@/lib/auth/context'
 import {
   Box,
   Container,
@@ -67,9 +67,8 @@ const categoryInfo = {
 export default function PostDetailPage() {
   const params = useParams()
   const postId = params.id as string
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, loading: authLoading } = useAuthContext()
+  const [loading, setLoading] = useState(false)
   const [post, setPost] = useState<any>(null)
   const [comments, setComments] = useState<any[]>([])
   const [newComment, setNewComment] = useState('')
@@ -167,30 +166,10 @@ export default function PostDetailPage() {
   }, [supabase, postId])
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
+    if (!authLoading && !user) {
+      router.push('/auth/login')
     }
-    getUser()
-  }, [router, supabase])
+  }, [authLoading, user, router])
 
   useEffect(() => {
     if (user) {
@@ -311,7 +290,7 @@ export default function PostDetailPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <AppHeader user={user} profile={profile} />

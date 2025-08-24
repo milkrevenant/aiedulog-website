@@ -70,7 +70,7 @@ export default function AuthCallbackPage() {
         // Handle OAuth callback
         const code = queryParams.get('code')
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           
           if (exchangeError) {
             console.error('Error exchanging code:', exchangeError)
@@ -78,7 +78,35 @@ export default function AuthCallbackPage() {
             return
           }
 
-          router.push('/dashboard')
+          // Check if this is a new user (first time Google login)
+          if (data?.user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.user.id)
+              .single()
+
+            if (!profile) {
+              // Create profile for new Google user
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: data.user.id,
+                  email: data.user.email,
+                  nickname: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
+                  full_name: data.user.user_metadata?.full_name,
+                  avatar_url: data.user.user_metadata?.avatar_url,
+                  role: 'member',
+                  is_active: true
+                })
+
+              if (profileError) {
+                console.error('Error creating profile:', profileError)
+              }
+            }
+          }
+
+          router.push('/feed')
           return
         }
 

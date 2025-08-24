@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useAuthContext } from '@/lib/auth/context'
 import {
   Box,
   Container,
@@ -58,9 +58,8 @@ interface ChatRoom {
 }
 
 export default function ChatPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, loading: authLoading } = useAuthContext()
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -80,51 +79,10 @@ export default function ChatPage() {
   const isTabletUp = useMediaQuery(theme.breakpoints.up('md'))  // 태블릿 이상에서 Split View
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        console.log('Getting user...')
-        const {
-          data: { user },
-          error: authError
-        } = await supabase.auth.getUser()
-
-        if (authError) {
-          console.error('Auth error:', authError)
-          setError('인증 오류가 발생했습니다.')
-          setLoading(false)
-          return
-        }
-
-        if (!user) {
-          console.log('No user, redirecting to login...')
-          router.push('/auth/login')
-          return
-        }
-
-        console.log('User found:', user.id)
-        setUser(user)
-
-        // 프로필 정보 가져오기
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Profile error:', profileError)
-        }
-
-        setProfile(profileData)
-        setLoading(false)
-      } catch (err) {
-        console.error('Error in getUser:', err)
-        setError('사용자 정보를 불러오는데 실패했습니다.')
-        setLoading(false)
-      }
+    if (!authLoading && !user) {
+      router.push('/auth/login')
     }
-    getUser()
-  }, [router, supabase])
+  }, [authLoading, user, router])
 
   useEffect(() => {
     if (user) {
@@ -409,7 +367,7 @@ export default function ChatPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <AppHeader user={user} profile={profile} />
