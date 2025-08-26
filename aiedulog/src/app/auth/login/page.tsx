@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useAuth } from '@/lib/auth/identity-hooks'
+import { useAuth } from '@/lib/auth/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import MFAVerification from '@/components/MFAVerification'

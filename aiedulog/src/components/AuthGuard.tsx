@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useAuth } from '@/lib/auth/identity-hooks'
+import { useAuth } from '@/lib/auth/hooks'
 import { useRouter } from 'next/navigation'
 import { Box, Container, Paper, Typography, Button, CircularProgress } from '@mui/material'
 import { LockOutlined } from '@mui/icons-material'

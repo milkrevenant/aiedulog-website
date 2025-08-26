@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { useAuth } from '@/lib/auth/identity-hooks'
+import { useAuth } from '@/lib/auth/hooks'
 import {
   Box,
   Container,

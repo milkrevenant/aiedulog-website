@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/lib/auth/identity-hooks'
+import { useAuth } from '@/lib/auth/hooks'
 import {
   getNotifications,
   markNotificationAsRead,

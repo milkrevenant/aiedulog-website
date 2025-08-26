@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth/identity-hooks'
+import { useAuth } from '@/lib/auth/hooks'
 import { Box, IconButton, CircularProgress } from '@mui/material'
 import { ArrowBack } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
