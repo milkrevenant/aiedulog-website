@@ -50,6 +50,7 @@ import {
   AdminPanelSettings,
   Dashboard as DashboardIcon,
 } from '@mui/icons-material'
+// import PerformanceHealthCard from '@/components/PerformanceHealthCard' // Removed for cleanup
 
 interface Statistics {
   totalUsers: number
@@ -351,7 +352,7 @@ function AdminDashboardContent() {
           {adminMenus.map((menu, index) => {
             const hasPermission = can(menu.permission as Permission)
             return (
-              <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -404,9 +405,14 @@ function AdminDashboardContent() {
         </Grid>
 
         <Grid container spacing={3}>
+          {/* 시스템 성능 모니터링 */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Typography>Performance monitoring will be added later</Typography>
+          </Grid>
+
           {/* 최근 활동 */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider' }}>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 최근 게시글
               </Typography>
@@ -434,8 +440,8 @@ function AdminDashboardContent() {
           </Grid>
 
           {/* 빠른 작업 */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider' }}>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 빠른 작업
               </Typography>
@@ -462,7 +468,7 @@ function AdminDashboardContent() {
                   startIcon={<Assessment />}
                   onClick={() => router.push('/admin/analytics')}
                 >
-                  통계 보기
+                  성능 분석
                 </Button>
                 <Button
                   fullWidth

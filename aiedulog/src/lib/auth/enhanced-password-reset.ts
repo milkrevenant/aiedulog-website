@@ -317,7 +317,7 @@ export async function updatePassword(
 
     if (!securityCheck.allowed) {
       await Security.logSecurityEvent(
-        'password_change',
+        'suspicious_activity',
         { 
           userId: session.user.id,
           blocked: true,
@@ -369,7 +369,7 @@ export async function updatePassword(
     
     // Log error
     await Security.logSecurityEvent(
-      'password_changed',
+      'login_failed',
       { 
         error: String(error),
         failed: true

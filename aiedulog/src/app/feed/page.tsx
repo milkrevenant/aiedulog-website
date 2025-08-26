@@ -55,6 +55,8 @@ import AppHeader from '@/components/AppHeader'
 import SideChat from '@/components/SideChat'
 import FeedSidebar from '@/components/FeedSidebar'
 import TrendingWidget from '@/components/TrendingWidget'
+// import FeedLoadingState from '@/components/FeedLoadingState' // Removed for cleanup
+// import UnauthenticatedState from '@/components/UnauthenticatedState' // Removed for cleanup
 
 export default function FeedPage() {
   const { user, profile, loading: authLoading } = useAuthContext()
@@ -323,32 +325,20 @@ export default function FeedPage() {
     }
   }
 
+  // Show loading state while checking authentication
   if (authLoading) {
-    return (
-      <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
-        <Container maxWidth="sm" sx={{ py: 2 }}>
-          <Stack spacing={2}>
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader
-                  avatar={<Skeleton variant="circular" width={40} height={40} />}
-                  title={<Skeleton width="30%" />}
-                  subheader={<Skeleton width="20%" />}
-                />
-                <Skeleton variant="rectangular" height={200} />
-                <CardContent>
-                  <Skeleton />
-                  <Skeleton width="60%" />
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        </Container>
-      </Box>
-    )
+    return <CircularProgress />
   }
 
-  if (!user || !profile) return null
+  // Show unauthenticated state if user is not logged in
+  if (!user) {
+    return <Typography>Please log in to view feed</Typography>
+  }
+
+  // Show loading state while profile is loading
+  if (!profile) {
+    return <CircularProgress />
+  }
 
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>

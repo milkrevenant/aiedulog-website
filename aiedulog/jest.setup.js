@@ -1,5 +1,38 @@
 import '@testing-library/jest-dom'
 
+// Essential globals for Node environment
+const { TextEncoder, TextDecoder } = require('util')
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+
+// Mock Web API globals
+global.fetch = global.fetch || jest.fn()
+global.Request = global.Request || jest.fn()
+global.Response = global.Response || jest.fn()
+global.Headers = global.Headers || jest.fn()
+
+// Mock window.location properly (avoid redefinition error)
+if (!window.location || typeof window.location === 'undefined') {
+  Object.defineProperty(window, 'location', {
+    value: {
+      href: 'http://localhost:3000',
+      origin: 'http://localhost:3000',
+      protocol: 'http:',
+      host: 'localhost:3000',
+      hostname: 'localhost',
+      port: '3000',
+      hash: '',
+      search: '',
+      pathname: '/',
+      assign: jest.fn(),
+      reload: jest.fn(),
+      replace: jest.fn(),
+    },
+    writable: true,
+    configurable: true,
+  })
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -14,23 +47,37 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/test-path',
 }))
 
-// Mock window.location methods
-delete window.location
-window.location = {
-  href: 'http://localhost:3000',
-  origin: 'http://localhost:3000',
-  hash: '',
-  search: '',
-  pathname: '/',
-  assign: jest.fn(),
-  reload: jest.fn(),
-  replace: jest.fn(),
-}
+// Mock Web APIs
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}))
 
-// Mock console methods to avoid noise in tests
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}))
+
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+})
+
+// Suppress console noise in tests
+const originalConsole = { ...console }
 global.console = {
   ...console,
-  // Uncomment to ignore a specific log level
   log: jest.fn(),
   debug: jest.fn(),
   info: jest.fn(),
@@ -38,10 +85,7 @@ global.console = {
   error: jest.fn(),
 }
 
-// Mock setTimeout and clearTimeout
-global.setTimeout = jest.fn((cb) => cb())
-global.clearTimeout = jest.fn()
-
-// Mock Date.now for consistent testing
-const mockDateNow = jest.fn(() => 1640995200000) // Fixed timestamp: Jan 1, 2022
-Date.now = mockDateNow
+// Reset console after tests
+afterAll(() => {
+  global.console = originalConsole
+})

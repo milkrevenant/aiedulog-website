@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const startTime = Date.now()
+  
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -122,6 +124,8 @@ export async function middleware(request: NextRequest) {
       }
     }
   }
+
+  // Success - continue with request
 
   // Default - allow the request
   return supabaseResponse

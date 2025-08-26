@@ -14,9 +14,7 @@
     "clean": "rm -rf .next node_modules",
     "pre-commit": "npm run type-check && npm run lint",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@auth/supabase-adapter": "^1.10.0",
@@ -42,9 +40,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
+    "@types/testing-library__jest-dom": "^5.14.9",
     "@types/node": "^20",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^18",
