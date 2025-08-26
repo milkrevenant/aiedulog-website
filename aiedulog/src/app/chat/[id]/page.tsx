@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAuthContext } from '@/lib/auth/context'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import { Box, IconButton, CircularProgress } from '@mui/material'
 import { ArrowBack } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
@@ -11,15 +11,15 @@ import ChatInterface from '@/components/ChatInterface'
 export default function ChatRoomPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, profile, loading: authLoading } = useAuthContext()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   
   const roomId = params.id as string
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !isAuthenticated) {
       router.push('/auth/login')
     }
-  }, [authLoading, user, router])
+  }, [authLoading, isAuthenticated, router])
 
   if (authLoading || !user) {
     return (

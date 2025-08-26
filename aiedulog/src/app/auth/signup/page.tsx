@@ -164,7 +164,7 @@ export default function SignUpPage() {
       if (authData.user) {
         // 2. 프로필 정보 저장
         const { error: profileError } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .update({
             name: formData.name,
             school: formData.school,

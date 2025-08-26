@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useAuthContext } from '@/lib/auth/context'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import {
   Box,
   Container,
@@ -58,7 +58,7 @@ interface ChatRoom {
 }
 
 export default function ChatPage() {
-  const { user, profile, loading: authLoading } = useAuthContext()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
@@ -79,10 +79,10 @@ export default function ChatPage() {
   const isTabletUp = useMediaQuery(theme.breakpoints.up('md'))  // 태블릿 이상에서 Split View
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !isAuthenticated) {
       router.push('/auth/login')
     }
-  }, [authLoading, user, router])
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
     if (user) {
@@ -158,23 +158,58 @@ export default function ChatPage() {
             // 해당 방의 last_read_at 찾기
             const participantInfo = participantData.find(p => p.room_id === room.id)
             
-            // 참가자 정보
-            const { data: participants } = await supabase
-              .from('chat_participants')
-              .select(
-                `
-                user_id,
-                profiles:user_id (
-                  id,
-                  email,
-                  nickname,
-                  avatar_url,
-                  role
-                )
-              `
-              )
-              .eq('room_id', room.id)
-              .eq('is_active', true)
+            // 참가자 정보 - Try new identity system first, fallback to legacy
+            let participants = null
+            try {
+              const { data: identityParticipants, error: identityError } = await supabase
+                .from('chat_participants')
+                .select(`
+                  user_id,
+                  identities!chat_participants_user_id_fkey (
+                    id,
+                    status,
+                    user_profiles!identities_user_profiles_identity_id_fkey (
+                      email,
+                      nickname,
+                      avatar_url,
+                      role
+                    )
+                  )
+                `)
+                .eq('room_id', room.id)
+                .eq('is_active', true)
+
+              if (identityError) throw identityError
+              
+              participants = identityParticipants?.map((p: any) => ({
+                user_id: p.user_id,
+                profile: {
+                  id: p.identities?.id,
+                  email: p.identities?.user_profiles?.[0]?.email,
+                  nickname: p.identities?.user_profiles?.[0]?.nickname,
+                  avatar_url: p.identities?.user_profiles?.[0]?.avatar_url,
+                  role: p.identities?.user_profiles?.[0]?.role
+                }
+              }))
+            } catch (err) {
+              // Fallback to legacy profiles query
+              const { data: legacyParticipants } = await supabase
+                .from('chat_participants')
+                .select(`
+                  user_id,
+                  profiles:user_id (
+                    id,
+                    email,
+                    nickname,
+                    avatar_url,
+                    role
+                  )
+                `)
+                .eq('room_id', room.id)
+                .eq('is_active', true)
+              
+              participants = legacyParticipants
+            }
 
             // 안읽은 메시지 수
             const { count: unreadCount } = await supabase
@@ -247,15 +282,49 @@ export default function ChatPage() {
       return
     }
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .or(`email.ilike.%${searchText}%,nickname.ilike.%${searchText}%`)
-      .neq('id', user?.id)
-      .limit(10)
+    try {
+      // Try new identity system first
+      const { data: identityData, error: identityError } = await supabase
+        .from('user_profiles')
+        .select(`
+          identity_id,
+          email,
+          nickname,
+          avatar_url,
+          role,
+          identities!user_profiles_identity_id_fkey (
+            id,
+            status
+          )
+        `)
+        .or(`email.ilike.%${searchText}%,nickname.ilike.%${searchText}%`)
+        .neq('identity_id', user?.id)
+        .eq('is_active', true)
+        .limit(10)
 
-    if (data) {
-      setUsers(data)
+      if (identityError) throw identityError
+
+      const mappedUsers = identityData?.map(profile => ({
+        id: profile.identity_id,
+        email: profile.email,
+        nickname: profile.nickname,
+        avatar_url: profile.avatar_url,
+        role: profile.role
+      }))
+
+      setUsers(mappedUsers || [])
+    } catch (err) {
+      // Fallback to legacy profiles
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .or(`email.ilike.%${searchText}%,nickname.ilike.%${searchText}%`)
+        .neq('id', user?.id)
+        .limit(10)
+
+      if (data) {
+        setUsers(data)
+      }
     }
   }
 

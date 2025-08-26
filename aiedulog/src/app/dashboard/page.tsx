@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import AuthGuard from '@/components/AuthGuard'
 import {
   Box,
@@ -80,12 +80,10 @@ const roleConfig = {
 }
 
 function DashboardContent() {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, loading, isAuthenticated, signOut } = useAuth()
   const router = useRouter()
-  const supabase = createClient()
   const theme = useTheme()
+  const supabase = createClient()
 
   // 권한 확인 hooks
   const { can } = usePermission()
@@ -94,36 +92,49 @@ function DashboardContent() {
   const canWriteColumns = can('write_columns' as any)
   const canViewAnalytics = can('view_analytics' as any)
 
+  // 사용자 수 상태
+  const [totalUsers, setTotalUsers] = useState<number>(0)
+
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      setUser(user)
-
-      // 프로필 및 권한 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
+    if (!loading && !isAuthenticated) {
+      router.push('/auth/login')
     }
-    getUser()
-  }, [router, supabase])
+  }, [loading, isAuthenticated, router])
+
+  // 사용자 수 로드 (새로운 3-layer identity 시스템)
+  useEffect(() => {
+    const loadUserCount = async () => {
+      if (profile?.role === 'admin' || profile?.role === 'moderator') {
+        try {
+          // user_profiles가 실제 사용자 수 (identities + auth_methods + user_profiles 완성된 사용자)
+          const { count, error } = await supabase
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_active', true)
+          
+          if (error) {
+            console.error('Failed to load user profiles count:', error)
+          } else if (count !== null) {
+            setTotalUsers(count)
+          }
+        } catch (error) {
+          console.error('Error loading user count:', error)
+        }
+      }
+    }
+
+    if (profile && !loading) {
+      loadUserCount()
+    }
+  }, [profile, loading, supabase])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
-    router.refresh()
+    try {
+      await signOut()
+    } catch (error) {
+      console.error('Sign out error:', error)
+      router.push('/auth/login')
+    }
   }
 
   if (loading) {
@@ -143,7 +154,7 @@ function DashboardContent() {
     )
   }
 
-  if (!user || !profile) return null
+  if (!isAuthenticated || !user || !profile) return null
 
   const role = profile.role || 'member'
   const roleInfo = roleConfig[role as keyof typeof roleConfig]
@@ -269,7 +280,7 @@ function DashboardContent() {
                         전체 사용자
                       </Typography>
                       <Typography variant="h4" fontWeight="bold">
-                        {profile.role === 'admin' ? '2' : 'N/A'}
+                        {profile.role === 'admin' ? totalUsers : 'N/A'}
                       </Typography>
                     </Box>
                     <People color="secondary" sx={{ fontSize: 40, opacity: 0.3 }} />

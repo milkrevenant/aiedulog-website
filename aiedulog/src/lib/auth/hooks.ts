@@ -117,14 +117,20 @@ export function useAuth() {
   useEffect(() => {
     if (user && !profile) {
       setProfileLoading(true)
+      // Identity 시스템을 통한 profile 조회
       supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .from('auth_methods')
+        .select(`
+          identities!inner (
+            user_profiles!inner (*)
+          )
+        `)
+        .eq('provider', 'supabase')
+        .eq('provider_user_id', user.id)
         .single()
         .then(({ data, error }) => {
-          if (!error && data) {
-            setProfile(data)
+          if (!error && data?.identities?.user_profiles) {
+            setProfile(data.identities.user_profiles)
           }
           setProfileLoading(false)
         })
@@ -171,10 +177,22 @@ export function useAuth() {
   const updateProfile = async (updates: any) => {
     if (!user) throw new Error('No user logged in')
     
+    // Identity 시스템을 통해 identity_id 조회 후 업데이트
+    const { data: authMethod } = await supabase
+      .from('auth_methods')
+      .select('identities!inner(id)')
+      .eq('provider', 'supabase')
+      .eq('provider_user_id', user.id)
+      .single()
+    
+    if (!authMethod?.identities?.id) {
+      throw new Error('Identity not found')
+    }
+    
     const { data, error } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .update(updates)
-      .eq('id', user.id)
+      .eq('identity_id', authMethod.identities.id)
       .select()
       .single()
     

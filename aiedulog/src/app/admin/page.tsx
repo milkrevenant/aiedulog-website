@@ -90,7 +90,7 @@ function AdminDashboardContent() {
 
       if (authUserData) {
         const { data: profileData } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*')
           .eq('id', authUserData.id)
           .single()
@@ -107,21 +107,21 @@ function AdminDashboardContent() {
       try {
         // 사용자 통계
         const { count: totalUsers } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*', { count: 'exact', head: true })
 
         const { count: newUsersToday } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
 
         const { count: verifiedTeachers } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*', { count: 'exact', head: true })
           .eq('role', 'verified')
 
         const { count: activeUsers } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*', { count: 'exact', head: true })
           .eq('is_active', true)
 

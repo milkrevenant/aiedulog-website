@@ -90,13 +90,19 @@ export default function TrendingPage() {
 
       setUser(user)
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+      // Identity 시스템을 통한 profile 조회
+      const { data: authMethod } = await supabase
+        .from('auth_methods')
+        .select(`
+          identities!inner (
+            user_profiles!inner (*)
+          )
+        `)
+        .eq('provider', 'supabase')
+        .eq('provider_user_id', user.id)
         .single()
 
-      setProfile(profileData)
+      setProfile(authMethod?.identities?.user_profiles || null)
     }
     getUser()
   }, [router, supabase])
@@ -141,9 +147,9 @@ export default function TrendingPage() {
         like_count: post.like_count || 0,
         created_at: post.created_at,
         author: {
-          nickname: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
-          email: post.profiles?.email || '',
-          avatar_url: post.profiles?.avatar_url,
+          nickname: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
+          email: post.identities?.user_profiles?.email || '',
+          avatar_url: post.identities?.user_profiles?.avatar_url,
         },
       }))
       setTrendingPosts(formattedPosts)
@@ -180,9 +186,9 @@ export default function TrendingPage() {
           title: comment.posts?.title || '삭제된 게시글',
         },
         author: {
-          nickname: comment.profiles?.nickname || comment.profiles?.email?.split('@')[0] || '사용자',
-          email: comment.profiles?.email || '',
-          avatar_url: comment.profiles?.avatar_url,
+          nickname: comment.identities?.user_profiles?.nickname || comment.identities?.user_profiles?.email?.split('@')[0] || '사용자',
+          email: comment.identities?.user_profiles?.email || '',
+          avatar_url: comment.identities?.user_profiles?.avatar_url,
         },
       }))
       setTrendingComments(formattedComments)

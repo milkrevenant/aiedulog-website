@@ -175,11 +175,11 @@ export default function EducationLevelPage() {
       const postsWithStats = data.map((post) => ({
         ...post,
         author: {
-          name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
-          email: post.profiles?.email,
-          role: post.profiles?.role || 'member',
-          isVerified: post.profiles?.role === 'verified',
-          avatar_url: post.profiles?.avatar_url,
+          name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
+          email: post.identities?.user_profiles?.email,
+          role: post.identities?.user_profiles?.role || 'member',
+          isVerified: post.identities?.user_profiles?.role === 'verified',
+          avatar_url: post.identities?.user_profiles?.avatar_url,
         },
         likes: post.post_likes?.length || 0,
         comments: post.comments?.length || 0,
@@ -204,13 +204,18 @@ export default function EducationLevelPage() {
 
       setUser(user)
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+      const { data: authMethod } = await supabase
+        .from('auth_methods')
+        .select(`
+          identities!inner (
+            user_profiles!inner (*)
+          )
+        `)
+        .eq('provider', 'supabase')
+        .eq('provider_user_id', user.id)
         .single()
 
-      setProfile(profileData)
+      setProfile(authMethod?.identities?.user_profiles || null)
       setLoading(false)
     }
     getUser()

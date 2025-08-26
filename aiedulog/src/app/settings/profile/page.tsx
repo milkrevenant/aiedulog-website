@@ -72,15 +72,42 @@ export default function ProfileSettingsPage() {
       setUser(user)
       setEmail(user.email || '')
 
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+      // Identity 시스템을 통한 프로필 정보 가져오기
+      const { data: authMethod, error: authError } = await supabase
+        .from('auth_methods')
+        .select(`
+          identities!inner (
+            id,
+            status,
+            user_profiles!inner (
+              identity_id,
+              email,
+              username,
+              full_name,
+              nickname,
+              avatar_url,
+              bio,
+              school,
+              subject,
+              interests,
+              role,
+              is_active
+            )
+          )
+        `)
+        .eq('provider', 'supabase')
+        .eq('provider_user_id', user.id)
         .single()
 
-      if (profileData) {
-        setProfile(profileData)
+      if (authMethod && !authError) {
+        const identity = authMethod.identities
+        const profileData = identity.user_profiles
+        
+        setProfile({
+          id: user.id,
+          identity_id: identity.id,
+          ...profileData
+        })
         setAvatarUrl(profileData.avatar_url)
         setNickname(profileData.nickname || profileData.email?.split('@')[0] || '')
       }
@@ -144,13 +171,24 @@ export default function ProfileSettingsPage() {
         data: { publicUrl },
       } = supabase.storage.from('avatars').getPublicUrl(uploadData.path)
 
-      // 프로필 업데이트
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id)
+      // 프로필 업데이트 - Identity 시스템 우선, 레거시 fallback
+      try {
+        const { error: identityError } = await supabase
+          .from('user_profiles')
+          .update({ avatar_url: publicUrl })
+          .eq('identity_id', profile?.identity_id)
 
-      if (updateError) throw updateError
+        if (identityError) throw identityError
+      } catch (identityError) {
+        console.warn('Identity system update failed, falling back to profiles:', identityError)
+        
+        const { error: legacyError } = await supabase
+          .from('user_profiles')
+          .update({ avatar_url: publicUrl })
+          .eq('id', user.id)
+
+        if (legacyError) throw legacyError
+      }
 
       setAvatarUrl(publicUrl)
       setProfile({ ...profile, avatar_url: publicUrl })
@@ -178,13 +216,26 @@ export default function ProfileSettingsPage() {
         await supabase.storage.from('avatars').remove([`${user.id}/${path}`])
       }
 
-      // 프로필 업데이트
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
-        .eq('id', user.id)
+      // 프로필 업데이트 - Identity 시스템 우선, 레거시 fallback
+      try {
+        const { error: identityError } = await supabase
+          .from('user_profiles')
+          .update({ avatar_url: null })
+          .eq('identity_id', profile?.identity_id)
 
-      if (updateError) throw updateError
+        if (identityError) throw identityError
+      } catch (identityError) {
+        console.warn('Identity system update failed, falling back to profiles:', identityError)
+        
+        const { error: legacyError } = await supabase
+          .from('user_profiles')
+          .update({ avatar_url: null })
+          .eq('id', user.id)
+
+        if (legacyError) throw legacyError
+      }
+
+      // Error handling is done in the try-catch blocks above
 
       setAvatarUrl(null)
       setProfile({ ...profile, avatar_url: null })
@@ -212,13 +263,24 @@ export default function ProfileSettingsPage() {
     setError(null)
 
     try {
-      // 닉네임 업데이트
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ nickname: nickname.trim() })
-        .eq('id', user.id)
+      // 닉네임 업데이트 - Identity 시스템 우선, 레거시 fallback
+      try {
+        const { error: identityError } = await supabase
+          .from('user_profiles')
+          .update({ nickname: nickname.trim() })
+          .eq('identity_id', profile?.identity_id)
 
-      if (updateError) throw updateError
+        if (identityError) throw identityError
+      } catch (identityError) {
+        console.warn('Identity system update failed, falling back to profiles:', identityError)
+        
+        const { error: legacyError } = await supabase
+          .from('user_profiles')
+          .update({ nickname: nickname.trim() })
+          .eq('id', user.id)
+
+        if (legacyError) throw legacyError
+      }
 
       setProfile({ ...profile, nickname: nickname.trim() })
       setIsEditingNickname(false)

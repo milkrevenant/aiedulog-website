@@ -876,7 +876,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
               if (inviteEmail && roomId !== 'new') {
                 // 사용자 찾기
                 const { data: profileData } = await supabase
-                  .from('profiles')
+                  .from('user_profiles')
                   .select('id')
                   .eq('email', inviteEmail)
                   .single()

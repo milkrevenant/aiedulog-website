@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import {
   getNotifications,
   markNotificationAsRead,
@@ -93,6 +94,7 @@ function TabPanel(props: TabPanelProps) {
 export default function NotificationsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -116,31 +118,38 @@ export default function NotificationsPage() {
     }
   }
 
-  // 실시간 구독 설정
+  // 인증 체크 및 실시간 구독 설정
   useEffect(() => {
-    fetchNotifications()
-
-    // 실시간 알림 구독
-    const subscription = supabase
-      .channel('notifications-page')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-        },
-        () => {
-          // 변경사항이 있으면 목록 새로고침
-          fetchNotifications()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      subscription.unsubscribe()
+    if (!authLoading && !isAuthenticated) {
+      router.push('/auth/login')
+      return
     }
-  }, [])
+
+    if (isAuthenticated && !authLoading) {
+      fetchNotifications()
+
+      // 실시간 알림 구독
+      const subscription = supabase
+        .channel('notifications-page')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+          },
+          () => {
+            // 변경사항이 있으면 목록 새로고침
+            fetchNotifications()
+          }
+        )
+        .subscribe()
+
+      return () => {
+        subscription.unsubscribe()
+      }
+    }
+  }, [authLoading, isAuthenticated])
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
@@ -302,9 +311,19 @@ export default function NotificationsPage() {
     )
   }
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return <CircularProgress />
+  }
+
+  // Show unauthenticated state if user is not logged in
+  if (!isAuthenticated || !user) {
+    return null
+  }
+
   return (
     <>
-      <AppHeader />
+      <AppHeader user={user} profile={profile} />
       <Container maxWidth="md" sx={{ mt: 2, mb: 4 }}>
         <Paper elevation={0} sx={{ borderRadius: 3, overflow: 'hidden' }}>
           {/* 헤더 */}

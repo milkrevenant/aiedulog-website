@@ -40,11 +40,19 @@ export async function requireAdmin() {
   const session = await requireAuth()
   const supabase = await createClient()
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', session.user.id)
+  // Identity 시스템을 통한 profile 조회
+  const { data: authMethod } = await supabase
+    .from('auth_methods')
+    .select(`
+      identities!inner (
+        user_profiles!inner (role)
+      )
+    `)
+    .eq('provider', 'supabase')
+    .eq('provider_user_id', session.user.id)
     .single()
+  
+  const profile = authMethod?.identities?.user_profiles
   
   if (!profile || profile.role !== 'admin') {
     redirect('/dashboard')
@@ -57,11 +65,19 @@ export async function requireModerator() {
   const session = await requireAuth()
   const supabase = await createClient()
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', session.user.id)
+  // Identity 시스템을 통한 profile 조회
+  const { data: authMethod } = await supabase
+    .from('auth_methods')
+    .select(`
+      identities!inner (
+        user_profiles!inner (role)
+      )
+    `)
+    .eq('provider', 'supabase')
+    .eq('provider_user_id', session.user.id)
     .single()
+  
+  const profile = authMethod?.identities?.user_profiles
   
   if (!profile || (profile.role !== 'admin' && profile.role !== 'moderator')) {
     redirect('/dashboard')
@@ -73,10 +89,16 @@ export async function requireModerator() {
 export async function getUserProfile(userId: string) {
   const supabase = await createClient()
   
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
+  // Identity 시스템을 통한 profile 조회 (userId는 auth user id)
+  const { data: authMethod, error } = await supabase
+    .from('auth_methods')
+    .select(`
+      identities!inner (
+        user_profiles!inner (*)
+      )
+    `)
+    .eq('provider', 'supabase')
+    .eq('provider_user_id', userId)
     .single()
   
   if (error) {
@@ -84,7 +106,7 @@ export async function getUserProfile(userId: string) {
     return null
   }
   
-  return profile
+  return authMethod?.identities?.user_profiles || null
 }
 
 export async function signOut() {

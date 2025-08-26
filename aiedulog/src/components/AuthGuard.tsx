@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect } from 'react'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import { useRouter } from 'next/navigation'
 import { Box, Container, Paper, Typography, Button, CircularProgress } from '@mui/material'
 import { LockOutlined } from '@mui/icons-material'
@@ -20,65 +20,28 @@ export default function AuthGuard({
   requireModerator = false,
 }: AuthGuardProps) {
   const router = useRouter()
-  const supabase = createClient()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isAuthorized, setIsAuthorized] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const { user, profile, loading, isAuthenticated, isAdmin, isModerator } = useAuth()
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+  // Simple permission check logic
+  const isAuthorized = () => {
+    if (!requireAuth) return true
+    if (!isAuthenticated) return false
+    
+    if (requireAdmin) return isAdmin
+    if (requireModerator) return isModerator
+    
+    return true
+  }
 
-        if (!user) {
-          setIsAuthenticated(false)
-          setIsAuthorized(false)
-          setLoading(false)
-          return
-        }
-
-        setIsAuthenticated(true)
-
-        // 권한 체크가 필요한 경우
-        if (requireAdmin || requireModerator) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
-          if (profile) {
-            setUserRole(profile.role)
-
-            if (requireAdmin && profile.role === 'admin') {
-              setIsAuthorized(true)
-            } else if (
-              requireModerator &&
-              (profile.role === 'admin' || profile.role === 'moderator')
-            ) {
-              setIsAuthorized(true)
-            } else {
-              setIsAuthorized(false)
-            }
-          }
-        } else {
-          // 인증만 필요한 경우
-          setIsAuthorized(true)
-        }
-      } catch (error) {
-        console.error('Auth check error:', error)
-        setIsAuthenticated(false)
-        setIsAuthorized(false)
-      } finally {
-        setLoading(false)
-      }
+  const getRoleDisplayName = (role: string | undefined) => {
+    switch (role) {
+      case 'admin': return '관리자'
+      case 'moderator': return '운영진'
+      case 'verified': return '인증 교사'
+      case 'lecturer': return '강사'
+      default: return '일반 회원'
     }
-
-    checkAuth()
-  }, [supabase, requireAdmin, requireModerator])
+  }
 
   if (loading) {
     return (
@@ -137,7 +100,7 @@ export default function AuthGuard({
     )
   }
 
-  if (isAuthenticated && !isAuthorized && (requireAdmin || requireModerator)) {
+  if (isAuthenticated && !isAuthorized() && (requireAdmin || requireModerator)) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
         <Paper
@@ -172,14 +135,7 @@ export default function AuthGuard({
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             {requireAdmin ? '관리자' : '운영진'} 권한이 필요한 페이지입니다.
             <br />
-            현재 권한:{' '}
-            {userRole === 'admin'
-              ? '관리자'
-              : userRole === 'moderator'
-                ? '운영진'
-                : userRole === 'verified'
-                  ? '인증 교사'
-                  : '일반 회원'}
+            현재 권한: {getRoleDisplayName(profile?.role)}
           </Typography>
           <Button
             variant="outlined"

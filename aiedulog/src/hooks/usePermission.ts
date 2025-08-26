@@ -6,11 +6,14 @@ import { hasPermission, UserRole, Permission } from '@/lib/auth/permissions'
 
 interface UserProfile {
   id: string
+  identity_id: string
   email: string
   role: UserRole
   full_name?: string
   school?: string
   subject?: string
+  nickname?: string
+  avatar_url?: string
 }
 
 export function usePermission() {
@@ -26,14 +29,44 @@ export function usePermission() {
         } = await supabase.auth.getUser()
 
         if (authUser) {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authUser.id)
+          // Use identity system: auth.user.id → auth_methods → identity → user_profiles  
+          const { data: authMethod, error: authError } = await supabase
+            .from('auth_methods')
+            .select(`
+              identities!inner (
+                id,
+                status,
+                user_profiles!inner (
+                  identity_id,
+                  email,
+                  full_name,
+                  nickname,
+                  avatar_url,
+                  role,
+                  school,
+                  subject
+                )
+              )
+            `)
+            .eq('provider', 'supabase')
+            .eq('provider_user_id', authUser.id)
             .single()
 
-          if (profile && !error) {
-            setUser(profile)
+          if (authMethod && !authError) {
+            const identity = authMethod.identities
+            const profile = identity.user_profiles
+            
+            setUser({
+              id: authUser.id,
+              identity_id: identity.id,
+              email: profile.email,
+              role: profile.role,
+              full_name: profile.full_name,
+              nickname: profile.nickname,
+              avatar_url: profile.avatar_url,
+              school: profile.school,
+              subject: profile.subject
+            })
           }
         }
       } catch (error) {
@@ -50,15 +83,8 @@ export function usePermission() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-
-        if (profile) {
-          setUser(profile)
-        }
+        // Use the same logic as fetchUserProfile for consistency
+        await fetchUserProfile()
       } else {
         setUser(null)
       }
@@ -104,5 +130,6 @@ export function usePermission() {
     isModerator: user?.role === 'moderator',
     isVerified: user?.role === 'verified',
     isMember: user?.role === 'member',
+    isAuthenticated: !!user,
   }
 }

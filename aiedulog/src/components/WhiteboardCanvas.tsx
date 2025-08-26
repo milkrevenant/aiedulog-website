@@ -160,11 +160,19 @@ export default function WhiteboardCanvas({ boardId, roomId }: WhiteboardCanvasPr
         if (status === 'SUBSCRIBED') {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('nickname, email')
-              .eq('id', user.id)
+            // Identity 시스템을 통한 profile 조회
+            const { data: authMethod } = await supabase
+              .from('auth_methods')
+              .select(`
+                identities!inner (
+                  user_profiles!inner (nickname, email)
+                )
+              `)
+              .eq('provider', 'supabase')
+              .eq('provider_user_id', user.id)
               .single()
+
+            const profile = authMethod?.identities?.user_profiles
 
             await channel.track({
               user_id: user.id,

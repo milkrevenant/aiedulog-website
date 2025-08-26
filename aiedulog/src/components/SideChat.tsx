@@ -224,7 +224,7 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
         async (payload) => {
           if (selectedRoom && payload.new.room_id === selectedRoom.id) {
             const { data: senderData } = await supabase
-              .from('profiles')
+              .from('user_profiles')
               .select('id, email, nickname, avatar_url')
               .eq('id', payload.new.sender_id)
               .single()

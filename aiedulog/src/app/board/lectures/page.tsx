@@ -126,13 +126,19 @@ export default function LecturesBoardPage() {
     setUser(user)
     if (user) {
       fetchUserRegistrations(user.id)
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+      // Identity 시스템을 통한 profile 조회
+      const { data: authMethod } = await supabase
+        .from('auth_methods')
+        .select(`
+          identities!inner (
+            user_profiles!inner (*)
+          )
+        `)
+        .eq('provider', 'supabase')
+        .eq('provider_user_id', user.id)
         .single()
-      setProfile(profileData)
+      
+      setProfile(authMethod?.identities?.user_profiles || null)
     }
   }
 

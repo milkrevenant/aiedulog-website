@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { useAuthContext } from '@/lib/auth/context'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import {
   Box,
   Container,
@@ -67,7 +67,7 @@ const categoryInfo = {
 export default function PostDetailPage() {
   const params = useParams()
   const postId = params.id as string
-  const { user, profile, loading: authLoading } = useAuthContext()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const [post, setPost] = useState<any>(null)
   const [comments, setComments] = useState<any[]>([])
@@ -86,97 +86,195 @@ export default function PostDetailPage() {
 
   // 게시글 상세 정보 가져오기
   const fetchPost = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select(
-        `
-        *,
-        profiles!posts_author_id_fkey (
-          id,
-          email,
-          role
-        ),
-        post_likes (
-          user_id
-        ),
-        bookmarks (
-          user_id
-        )
-      `
-      )
-      .eq('id', postId)
-      .single()
+    if (!isAuthenticated) return
 
-    if (data) {
-      const postWithStats = {
-        ...data,
-        author: {
-          id: data.profiles?.id,
-          name: data.profiles?.email?.split('@')[0] || '사용자',
-          email: data.profiles?.email,
-          role: data.profiles?.role || 'member',
-          isVerified: data.profiles?.role === 'verified',
-        },
-        likes: data.post_likes?.length || 0,
-        isLiked: data.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-        isBookmarked:
-          data.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
-      }
-      setPost(postWithStats)
-      setEditTitle(data.title)
-      setEditContent(data.content)
+    try {
+      // First try the new identity-based query
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          identities!posts_author_id_fkey (
+            id,
+            status,
+            user_profiles!identities_user_profiles_identity_id_fkey (
+              email,
+              nickname,
+              role,
+              avatar_url
+            )
+          ),
+          post_likes (user_id),
+          bookmarks (user_id)
+        `)
+        .eq('id', postId)
+        .single()
 
-      // 조회수 증가
-      if (user) {
-        await supabase.rpc('increment_view_count', { post_id: postId })
+      if (error) {
+        // Fallback to legacy profiles query
+        console.warn('Falling back to legacy profiles query:', error)
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            profiles!posts_author_id_fkey (
+              id,
+              email,
+              nickname,
+              role,
+              avatar_url
+            ),
+            post_likes (user_id),
+            bookmarks (user_id)
+          `)
+          .eq('id', postId)
+          .single()
+
+        if (legacyError) throw legacyError
+
+        const postWithStats = {
+          ...legacyData,
+          author: {
+            id: legacyData.profiles?.id,
+            name: legacyData.profiles?.nickname || legacyData.profiles?.email?.split('@')[0] || '사용자',
+            email: legacyData.profiles?.email,
+            role: legacyData.profiles?.role || 'member',
+            isVerified: legacyData.profiles?.role === 'verified',
+            avatar_url: legacyData.profiles?.avatar_url,
+          },
+          likes: legacyData.post_likes?.length || 0,
+          isLiked: legacyData.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+          isBookmarked: legacyData.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+        }
+        setPost(postWithStats)
+        setEditTitle(legacyData.title)
+        setEditContent(legacyData.content)
+        return
       }
+
+      if (data) {
+        const userProfile = data.identities?.user_profiles?.[0]
+        const postWithStats = {
+          ...data,
+          author: {
+            id: data.identities?.id,
+            name: userProfile?.nickname || userProfile?.email?.split('@')[0] || '사용자',
+            email: userProfile?.email,
+            role: userProfile?.role || 'member',
+            isVerified: userProfile?.role === 'verified' || userProfile?.role === 'moderator' || userProfile?.role === 'admin',
+            avatar_url: userProfile?.avatar_url,
+          },
+          likes: data.post_likes?.length || 0,
+          isLiked: data.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+          isBookmarked: data.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+        }
+        setPost(postWithStats)
+        setEditTitle(data.title)
+        setEditContent(data.content)
+
+        // 조회수 증가
+        if (user) {
+          await supabase.rpc('increment_view_count', { post_id: postId })
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching post:', err)
     }
-  }, [supabase, user?.id, postId])
+  }, [supabase, user?.id, postId, isAuthenticated])
 
   // 댓글 목록 가져오기
   const fetchComments = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('comments')
-      .select(
-        `
-        *,
-        profiles!comments_author_id_fkey (
-          id,
-          email,
-          role
-        )
-      `
-      )
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true })
+    if (!isAuthenticated) return
 
-    if (data) {
-      const commentsWithAuthor = data.map((comment) => ({
-        ...comment,
-        author: {
-          id: comment.profiles?.id,
-          name: comment.profiles?.email?.split('@')[0] || '사용자',
-          email: comment.profiles?.email,
-          role: comment.profiles?.role || 'member',
-          isVerified: comment.profiles?.role === 'verified',
-        },
-      }))
-      setComments(commentsWithAuthor)
+    try {
+      // First try the new identity-based query
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          identities!comments_author_id_fkey (
+            id,
+            status,
+            user_profiles!identities_user_profiles_identity_id_fkey (
+              email,
+              nickname,
+              role,
+              avatar_url
+            )
+          )
+        `)
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        // Fallback to legacy profiles query
+        console.warn('Falling back to legacy profiles query for comments:', error)
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('comments')
+          .select(`
+            *,
+            profiles!comments_author_id_fkey (
+              id,
+              email,
+              nickname,
+              role,
+              avatar_url
+            )
+          `)
+          .eq('post_id', postId)
+          .order('created_at', { ascending: true })
+
+        if (legacyError) throw legacyError
+
+        const commentsWithAuthor = legacyData.map((comment) => ({
+          ...comment,
+          author: {
+            id: comment.identities?.user_profiles?.id,
+            name: comment.identities?.user_profiles?.nickname || comment.identities?.user_profiles?.email?.split('@')[0] || '사용자',
+            email: comment.identities?.user_profiles?.email,
+            role: comment.identities?.user_profiles?.role || 'member',
+            isVerified: comment.identities?.user_profiles?.role === 'verified',
+            avatar_url: comment.identities?.user_profiles?.avatar_url,
+          },
+        }))
+        setComments(commentsWithAuthor)
+        return
+      }
+
+      if (data) {
+        const commentsWithAuthor = data.map((comment) => {
+          const userProfile = comment.identities?.user_profiles?.[0]
+          return {
+            ...comment,
+            author: {
+              id: comment.identities?.id,
+              name: userProfile?.nickname || userProfile?.email?.split('@')[0] || '사용자',
+              email: userProfile?.email,
+              role: userProfile?.role || 'member',
+              isVerified: userProfile?.role === 'verified' || userProfile?.role === 'moderator' || userProfile?.role === 'admin',
+              avatar_url: userProfile?.avatar_url,
+            },
+          }
+        })
+        setComments(commentsWithAuthor)
+      }
+    } catch (err) {
+      console.error('Error fetching comments:', err)
     }
-  }, [supabase, postId])
+  }, [supabase, postId, isAuthenticated])
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !isAuthenticated) {
       router.push('/auth/login')
     }
-  }, [authLoading, user, router])
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && !authLoading) {
       fetchPost()
       fetchComments()
     }
-  }, [user, fetchPost, fetchComments])
+  }, [isAuthenticated, authLoading, fetchPost, fetchComments])
 
   const handleLike = async () => {
     if (!post || !user) return
@@ -236,7 +334,7 @@ export default function PostDetailPage() {
       const newCommentData = {
         ...data,
         author: {
-          id: profile?.id,
+          id: profile?.identity_id,
           name: profile?.email?.split('@')[0] || '사용자',
           email: profile?.email,
           role: profile?.role || 'member',

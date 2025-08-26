@@ -57,14 +57,20 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
         if (authUser) {
           setUser(authUser)
 
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authUser.id)
+          // Identity 시스템을 통한 profile 조회
+          const { data: authMethod } = await supabase
+            .from('auth_methods')
+            .select(`
+              identities!inner (
+                user_profiles!inner (*)
+              )
+            `)
+            .eq('provider', 'supabase')
+            .eq('provider_user_id', authUser.id)
             .single()
 
-          if (profileData) {
-            setProfile(profileData)
+          if (authMethod?.identities?.user_profiles) {
+            setProfile(authMethod.identities.user_profiles)
           }
         }
       }

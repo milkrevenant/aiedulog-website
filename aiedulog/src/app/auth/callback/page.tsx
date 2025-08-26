@@ -81,7 +81,7 @@ export default function AuthCallbackPage() {
           // Check if this is a new user (first time Google login)
           if (data?.user) {
             const { data: profile } = await supabase
-              .from('profiles')
+              .from('user_profiles')
               .select('id')
               .eq('id', data.user.id)
               .single()
@@ -89,7 +89,7 @@ export default function AuthCallbackPage() {
             if (!profile) {
               // Create profile for new Google user
               const { error: profileError } = await supabase
-                .from('profiles')
+                .from('user_profiles')
                 .insert({
                   id: data.user.id,
                   email: data.user.email,

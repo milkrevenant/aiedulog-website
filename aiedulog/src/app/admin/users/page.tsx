@@ -57,6 +57,7 @@ type UserStatus = 'active' | 'suspended' | 'all'
 
 interface User {
   id: string
+  identity_id: string
   email: string
   username: string
   nickname: string | null
@@ -67,6 +68,7 @@ interface User {
   last_sign_in_at: string | null
   email_confirmed_at: string | null
   is_active: boolean
+  status?: string
 }
 
 const roleColors: Record<UserRole, 'error' | 'warning' | 'info' | 'success'> = {
@@ -117,34 +119,110 @@ function UsersManagementContent() {
     }
   }, [can, currentUser, router])
 
-  // 사용자 목록 조회
+  // 사용자 목록 조회 - Identity 시스템 우선, 레거시 fallback
   const fetchUsers = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      let query = supabase.from('profiles').select('*').order('created_at', { ascending: false })
+      let usersData: any[] = []
+      
+      // Try new identity system first
+      try {
+        let identityQuery = supabase
+          .from('user_profiles')
+          .select(`
+            identity_id,
+            email,
+            username,
+            full_name,
+            nickname,
+            avatar_url,
+            role,
+            school,
+            subject,
+            is_active,
+            created_at,
+            updated_at,
+            identities!user_profiles_identity_id_fkey (
+              id,
+              status,
+              created_at
+            )
+          `)
+          .order('created_at', { ascending: false })
 
-      // 필터링
-      if (filterRole !== 'all') {
-        query = query.eq('role', filterRole)
+        // 필터링
+        if (filterRole !== 'all') {
+          identityQuery = identityQuery.eq('role', filterRole)
+        }
+
+        if (filterStatus !== 'all') {
+          identityQuery = identityQuery.eq('is_active', filterStatus === 'active')
+        }
+
+        // 검색
+        if (searchTerm) {
+          identityQuery = identityQuery.or(
+            `username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`
+          )
+        }
+
+        const { data: identityData, error: identityError } = await identityQuery
+
+        if (identityError) throw identityError
+        
+        // Transform identity data to match expected format
+        usersData = identityData?.map((user: any) => ({
+          id: user.identities?.id || user.identity_id,
+          identity_id: user.identity_id,
+          email: user.email,
+          username: user.username,
+          full_name: user.full_name,
+          nickname: user.nickname,
+          avatar_url: user.avatar_url,
+          role: user.role,
+          school: user.school,
+          subject: user.subject,
+          is_active: user.is_active,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+          status: user.identities?.status || 'active'
+        })) || []
+        
+      } catch (identityError) {
+        console.warn('Identity system failed, falling back to legacy profiles:', identityError)
+        
+        // Fallback to legacy profiles system
+        let legacyQuery = supabase.from('user_profiles').select('*').order('created_at', { ascending: false })
+
+        // Apply same filters to legacy query
+        if (filterRole !== 'all') {
+          legacyQuery = legacyQuery.eq('role', filterRole)
+        }
+
+        if (filterStatus !== 'all') {
+          legacyQuery = legacyQuery.eq('is_active', filterStatus === 'active')
+        }
+
+        if (searchTerm) {
+          legacyQuery = legacyQuery.or(
+            `username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`
+          )
+        }
+
+        const { data: legacyData, error: legacyError } = await legacyQuery
+        
+        if (legacyError) throw legacyError
+        
+        usersData = legacyData?.map(user => ({
+          ...user,
+          identity_id: user.id, // Use profile ID as identity_id for legacy users
+          status: user.is_active ? 'active' : 'inactive'
+        })) || []
       }
 
-      if (filterStatus !== 'all') {
-        query = query.eq('is_active', filterStatus === 'active')
-      }
-
-      // 검색
-      if (searchTerm) {
-        query = query.or(
-          `username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,nickname.ilike.%${searchTerm}%`
-        )
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      setUsers(data || [])
+      setUsers(usersData)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -156,7 +234,7 @@ function UsersManagementContent() {
     fetchUsers()
   }, [filterRole, filterStatus])
 
-  // 권한 변경
+  // 권한 변경 - Identity 시스템 우선, 레거시 fallback
   const handleRoleChange = async () => {
     if (!selectedUser) return
 
@@ -164,15 +242,28 @@ function UsersManagementContent() {
     setError(null)
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('id', selectedUser.id)
+      // Try updating in new identity system first
+      try {
+        const { error: identityError } = await supabase
+          .from('user_profiles')
+          .update({ role: newRole })
+          .eq('identity_id', selectedUser.identity_id)
 
-      if (error) throw error
+        if (identityError) throw identityError
+      } catch (identityError) {
+        console.warn('Identity system update failed, falling back to profiles:', identityError)
+        
+        // Fallback to legacy profiles system
+        const { error: legacyError } = await supabase
+          .from('user_profiles')
+          .update({ role: newRole })
+          .eq('id', selectedUser.id)
 
-      // 권한 변경 알림 전송
-      await notifyRoleChange(selectedUser.id, newRole)
+        if (legacyError) throw legacyError
+      }
+
+      // 권한 변경 알림 전송 (use identity_id or id)
+      await notifyRoleChange(selectedUser.identity_id || selectedUser.id, newRole)
 
       setSuccess(
         `${selectedUser.nickname || selectedUser.username}님의 권한이 ${roleLabels[newRole]}(으)로 변경되었습니다.`
@@ -186,7 +277,7 @@ function UsersManagementContent() {
     }
   }
 
-  // 사용자 상태 변경
+  // 사용자 상태 변경 - Identity 시스템 우선, 레거시 fallback
   const handleStatusToggle = async () => {
     if (!selectedUser) return
 
@@ -196,12 +287,34 @@ function UsersManagementContent() {
     try {
       const newStatus = !selectedUser.is_active
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: newStatus })
-        .eq('id', selectedUser.id)
+      // Try updating in new identity system first
+      try {
+        // Update user_profiles
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({ is_active: newStatus })
+          .eq('identity_id', selectedUser.identity_id)
 
-      if (error) throw error
+        if (profileError) throw profileError
+
+        // Also update identity status
+        const { error: identityError } = await supabase
+          .from('identities')
+          .update({ status: newStatus ? 'active' : 'inactive' })
+          .eq('id', selectedUser.identity_id)
+
+        if (identityError) console.warn('Failed to update identity status:', identityError)
+      } catch (identityError) {
+        console.warn('Identity system update failed, falling back to profiles:', identityError)
+        
+        // Fallback to legacy profiles system
+        const { error: legacyError } = await supabase
+          .from('user_profiles')
+          .update({ is_active: newStatus })
+          .eq('id', selectedUser.id)
+
+        if (legacyError) throw legacyError
+      }
 
       setSuccess(
         `${selectedUser.nickname || selectedUser.username}님의 계정이 ${newStatus ? '활성화' : '비활성화'}되었습니다.`

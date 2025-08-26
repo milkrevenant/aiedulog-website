@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuthContext } from '@/lib/auth/context'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import {
   Box,
   Container,
@@ -72,7 +72,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 function SearchContent() {
-  const { user, profile, loading: authLoading } = useAuthContext()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [tabValue, setTabValue] = useState(0)
@@ -94,60 +94,124 @@ function SearchContent() {
     setSearchLoading(true)
 
     try {
-      // 게시글 검색
-      const { data: postsData } = await supabase
-        .from('posts')
-        .select(
+      // 게시글 검색 - 새로운 identity 시스템 사용
+      let postsData = null
+      
+      try {
+        const { data: identityBasedPosts } = await supabase
+          .from('posts')
+          .select(
+            `
+            *,
+            identities!posts_author_id_fkey (
+              id,
+              user_profiles (
+                id,
+                email,
+                nickname,
+                role,
+                avatar_url
+              )
+            ),
+            post_likes (
+              user_id
+            ),
+            comments (
+              id
+            ),
+            bookmarks (
+              user_id
+            )
           `
-          *,
-          profiles!posts_author_id_fkey (
-            id,
-            email,
-            nickname,
-            role,
-            avatar_url
-          ),
-          post_likes (
-            user_id
-          ),
-          comments (
-            id
-          ),
-          bookmarks (
-            user_id
           )
-        `
-        )
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(20)
+          .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+          .eq('is_published', true)
+          .order('created_at', { ascending: false })
+          .limit(20)
+          
+        postsData = identityBasedPosts
+      } catch (identityError) {
+        console.warn('Identity-based post search failed, falling back to profiles:', identityError)
+        
+        // Fallback to legacy profiles system
+        const { data: legacyPosts } = await supabase
+          .from('posts')
+          .select(
+            `
+            *,
+            profiles!posts_author_id_fkey (
+              id,
+              email,
+              nickname,
+              role,
+              avatar_url
+            ),
+            post_likes (
+              user_id
+            ),
+            comments (
+              id
+            ),
+            bookmarks (
+              user_id
+            )
+          `
+          )
+          .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+          .eq('is_published', true)
+          .order('created_at', { ascending: false })
+          .limit(20)
+          
+        postsData = legacyPosts
+      }
 
       if (postsData) {
-        const postsWithStats = postsData.map((post) => ({
-          ...post,
-          author: {
-            name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
-            email: post.profiles?.email,
-            role: post.profiles?.role || 'member',
-            isVerified: post.profiles?.role === 'verified',
-            avatar_url: post.profiles?.avatar_url,
-          },
-          likes: post.post_likes?.length || 0,
-          comments: post.comments?.length || 0,
-          isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-          isBookmarked:
-            post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
-        }))
+        const postsWithStats = postsData.map((post) => {
+          // Handle both identity-based and legacy profile data
+          const profileData = post.identities?.user_profiles || post.profiles
+          
+          return {
+            ...post,
+            author: {
+              name: profileData?.nickname || profileData?.email?.split('@')[0] || '사용자',
+              email: profileData?.email,
+              role: profileData?.role || 'member',
+              isVerified: profileData?.role === 'verified',
+              avatar_url: profileData?.avatar_url,
+            },
+            likes: post.post_likes?.length || 0,
+            comments: post.comments?.length || 0,
+            isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+            isBookmarked:
+              post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+          }
+        })
         setPosts(postsWithStats)
       }
 
-      // 사용자 검색 (닉네임 또는 이메일로 검색)
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`nickname.ilike.%${query}%,email.ilike.%${query}%`)
-        .limit(10)
+      // 사용자 검색 - 새로운 identity 시스템 사용
+      let usersData = null
+      
+      try {
+        const { data: identityBasedUsers } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .or(`nickname.ilike.%${query}%,email.ilike.%${query}%`)
+          .limit(10)
+          
+        usersData = identityBasedUsers
+      } catch (identityError) {
+        console.warn('Identity-based user search failed, falling back to profiles:', identityError)
+        
+        // Fallback to legacy profiles system
+        const { data: legacyUsers } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .or(`nickname.ilike.%${query}%,email.ilike.%${query}%`)
+          .limit(10)
+          
+        usersData = legacyUsers
+      }
 
       if (usersData) {
         setUsers(usersData)
@@ -170,16 +234,16 @@ function SearchContent() {
   }, [query, user?.id, supabase])
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !isAuthenticated) {
       router.push('/auth/login')
     }
-  }, [authLoading, user, router])
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
-    if (user && query) {
+    if (isAuthenticated && user && query) {
       performSearch()
     }
-  }, [user, query, performSearch])
+  }, [isAuthenticated, user, query, performSearch])
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
@@ -246,7 +310,7 @@ function SearchContent() {
     )
   }
 
-  if (!user || !profile) return null
+  if (!isAuthenticated || !user) return null
 
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>

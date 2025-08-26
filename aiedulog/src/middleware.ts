@@ -108,11 +108,19 @@ export async function middleware(request: NextRequest) {
     // For admin routes, we'll do a basic check but leave detailed role checking to AuthGuard
     // This is because middleware should be fast and we already have AuthGuard handling roles
     if (isAdminRoute) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
+      // Identity 시스템을 통한 role 조회
+      const { data: authMethod } = await supabase
+        .from('auth_methods')
+        .select(`
+          identities!inner (
+            user_profiles!inner (role)
+          )
+        `)
+        .eq('provider', 'supabase')
+        .eq('provider_user_id', user.id)
         .single()
+
+      const profile = authMethod?.identities?.user_profiles
 
       // Only do a basic check for moderator+ access
       // AuthGuard will handle specific page requirements (e.g., admin-only for users page)

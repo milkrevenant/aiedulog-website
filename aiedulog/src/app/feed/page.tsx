@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useAuthContext } from '@/lib/auth/context'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import {
   Box,
   Container,
@@ -59,7 +59,7 @@ import TrendingWidget from '@/components/TrendingWidget'
 // import UnauthenticatedState from '@/components/UnauthenticatedState' // Removed for cleanup
 
 export default function FeedPage() {
-  const { user, profile, loading: authLoading } = useAuthContext()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const [posts, setPosts] = useState<any[]>([])
   const [newPost, setNewPost] = useState('')
@@ -85,68 +85,120 @@ export default function FeedPage() {
   // 게시글 목록 가져오기
   const fetchPosts = useCallback(
     async (offset = 0, append = false) => {
-      const { data, error } = await supabase
-        .from('posts')
-        .select(
-          `
-        *,
-        profiles!posts_author_id_fkey (
-          id,
-          email,
-          nickname,
-          role,
-          avatar_url
-        ),
-        post_likes (
-          user_id
-        ),
-        comments (
-          id
-        ),
-        bookmarks (
-          user_id
-        )
-      `
-        )
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + 19)
-        .limit(20)
+      if (!isAuthenticated) return
 
-      if (data) {
-        console.log('Fetched posts:', data) // 디버깅용
-        const postsWithStats = data.map((post) => {
-          console.log('Post image_urls:', post.image_urls) // 각 게시글의 image_urls 확인
-          return {
+      try {
+        // First try the new identity-based query
+        const { data, error } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            identities!posts_author_id_fkey (
+              id,
+              status,
+              user_profiles!identities_user_profiles_identity_id_fkey (
+                email,
+                nickname,
+                role,
+                avatar_url
+              )
+            ),
+            post_likes (user_id),
+            comments (id),
+            bookmarks (user_id)
+          `)
+          .eq('is_published', true)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + 19)
+          .limit(20)
+
+        if (error) {
+          // Fallback to legacy profiles query
+          console.warn('Falling back to legacy profiles query:', error)
+          const { data: legacyData, error: legacyError } = await supabase
+            .from('posts')
+            .select(`
+              *,
+              profiles!posts_author_id_fkey (
+                id,
+                email,
+                nickname,
+                role,
+                avatar_url
+              ),
+              post_likes (user_id),
+              comments (id),
+              bookmarks (user_id)
+            `)
+            .eq('is_published', true)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + 19)
+            .limit(20)
+
+          if (legacyError) throw legacyError
+          
+          const postsWithStats = legacyData.map((post) => ({
             ...post,
             author: {
-              name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
-              email: post.profiles?.email,
-              role: post.profiles?.role || 'member',
-              isVerified: post.profiles?.role === 'verified',
-              avatar_url: post.profiles?.avatar_url,
+              name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
+              email: post.identities?.user_profiles?.email,
+              role: post.identities?.user_profiles?.role || 'member',
+              isVerified: post.identities?.user_profiles?.role === 'verified',
+              avatar_url: post.identities?.user_profiles?.avatar_url,
             },
             likes: post.post_likes?.length || 0,
             comments: post.comments?.length || 0,
             isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-            isBookmarked:
-              post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+            isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+          }))
+
+          if (append) {
+            setPosts((prev) => [...prev, ...postsWithStats])
+          } else {
+            setPosts(postsWithStats)
           }
-        })
 
-        if (append) {
-          setPosts((prev) => [...prev, ...postsWithStats])
-        } else {
-          setPosts(postsWithStats)
+          if (legacyData.length < 20) {
+            setHasMorePosts(false)
+          }
+          return
         }
 
-        // 더 이상 게시글이 없으면 hasMorePosts를 false로
-        if (data.length < 20) {
-          setHasMorePosts(false)
+        if (data) {
+          console.log('Fetched posts:', data)
+          const postsWithStats = data.map((post) => {
+            const userProfile = post.identities?.user_profiles?.[0]
+            return {
+              ...post,
+              author: {
+                name: userProfile?.nickname || userProfile?.email?.split('@')[0] || '사용자',
+                email: userProfile?.email,
+                role: userProfile?.role || 'member',
+                isVerified: userProfile?.role === 'verified' || userProfile?.role === 'moderator' || userProfile?.role === 'admin',
+                avatar_url: userProfile?.avatar_url,
+              },
+              likes: post.post_likes?.length || 0,
+              comments: post.comments?.length || 0,
+              isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+              isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+            }
+          })
+
+          if (append) {
+            setPosts((prev) => [...prev, ...postsWithStats])
+          } else {
+            setPosts(postsWithStats)
+          }
+
+          if (data.length < 20) {
+            setHasMorePosts(false)
+          }
         }
+      } catch (err) {
+        console.error('Error fetching posts:', err)
       }
     },
-    [supabase, user?.id]
+    [supabase, user?.id, isAuthenticated]
   )
 
   useEffect(() => {
@@ -158,10 +210,10 @@ export default function FeedPage() {
   }, [])
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && !authLoading) {
       fetchPosts()
     }
-  }, [user, fetchPosts])
+  }, [isAuthenticated, authLoading, fetchPosts])
 
   const handleLike = async (postId: string) => {
     const post = posts.find((p) => p.id === postId)
@@ -331,7 +383,7 @@ export default function FeedPage() {
   }
 
   // Show unauthenticated state if user is not logged in
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return <Typography>Please log in to view feed</Typography>
   }
 

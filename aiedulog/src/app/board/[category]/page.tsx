@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useAuth } from '@/lib/auth/identity-hooks'
 import {
   Box,
   Container,
@@ -102,8 +102,7 @@ export default function BoardPage() {
   const supabase = createClient()
   const theme = useTheme()
 
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(true)
   const [posts, setPosts] = useState<any[]>([])
   const [newPost, setNewPost] = useState('')
@@ -131,83 +130,119 @@ export default function BoardPage() {
 
   // 게시글 목록 가져오기
   const fetchPosts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select(
-        `
-        *,
-        profiles!posts_author_id_fkey (
-          id,
-          email,
-          role
-        ),
-        post_likes (
-          user_id
-        ),
-        comments (
-          id
-        ),
-        bookmarks (
-          user_id
-        )
-      `
-      )
-      .eq('category', category)
-      .eq('is_published', true)
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(50)
+    if (!isAuthenticated) return
 
-    if (data) {
-      const postsWithStats = data.map((post) => ({
-        ...post,
-        author: {
-          name: post.profiles?.email?.split('@')[0] || '사용자',
-          email: post.profiles?.email,
-          role: post.profiles?.role || 'member',
-          isVerified: post.profiles?.role === 'verified',
-        },
-        likes: post.post_likes?.length || 0,
-        comments: post.comments?.length || 0,
-        isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
-        isBookmarked:
-          post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
-      }))
-      setPosts(postsWithStats)
-    }
-  }, [supabase, user?.id, category])
+    try {
+      // First try the new identity-based query
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          identities!posts_author_id_fkey (
+            id,
+            status,
+            user_profiles!identities_user_profiles_identity_id_fkey (
+              email,
+              nickname,
+              role,
+              avatar_url
+            )
+          ),
+          post_likes (user_id),
+          comments (id),
+          bookmarks (user_id)
+        `)
+        .eq('category', category)
+        .eq('is_published', true)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(50)
 
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      if (error) {
+        // Fallback to legacy profiles query
+        console.warn('Falling back to legacy profiles query:', error)
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            profiles!posts_author_id_fkey (
+              id,
+              email,
+              nickname,
+              role,
+              avatar_url
+            ),
+            post_likes (user_id),
+            comments (id),
+            bookmarks (user_id)
+          `)
+          .eq('category', category)
+          .eq('is_published', true)
+          .order('is_pinned', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(50)
 
-      if (!user) {
-        router.push('/auth/login')
+        if (legacyError) throw legacyError
+        
+        const postsWithStats = legacyData.map((post) => ({
+          ...post,
+          author: {
+            name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
+            email: post.identities?.user_profiles?.email,
+            role: post.identities?.user_profiles?.role || 'member',
+            isVerified: post.identities?.user_profiles?.role === 'verified',
+            avatar_url: post.identities?.user_profiles?.avatar_url
+          },
+          likes: post.post_likes?.length || 0,
+          comments: post.comments?.length || 0,
+          isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+          isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+        }))
+        setPosts(postsWithStats)
         return
       }
 
-      setUser(user)
-
-      // 프로필 정보 가져오기
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      setProfile(profileData)
-      setLoading(false)
+      if (data) {
+        const postsWithStats = data.map((post) => {
+          const userProfile = post.identities?.user_profiles?.[0]
+          return {
+            ...post,
+            author: {
+              name: userProfile?.nickname || userProfile?.email?.split('@')[0] || '사용자',
+              email: userProfile?.email,
+              role: userProfile?.role || 'member',
+              isVerified: userProfile?.role === 'verified' || userProfile?.role === 'moderator' || userProfile?.role === 'admin',
+              avatar_url: userProfile?.avatar_url
+            },
+            likes: post.post_likes?.length || 0,
+            comments: post.comments?.length || 0,
+            isLiked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+            isBookmarked: post.bookmarks?.some((bookmark: any) => bookmark.user_id === user?.id) || false,
+          }
+        })
+        setPosts(postsWithStats)
+      }
+    } catch (err) {
+      console.error('Error fetching posts:', err)
     }
-    getUser()
-  }, [router, supabase])
+  }, [supabase, user?.id, category, isAuthenticated])
 
   useEffect(() => {
-    if (user) {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
+    
+    if (!authLoading) {
+      setLoading(false)
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
       fetchPosts()
     }
-  }, [user, fetchPosts])
+  }, [isAuthenticated, authLoading, fetchPosts])
 
   const handleLike = async (postId: string) => {
     const post = posts.find((p) => p.id === postId)
@@ -450,7 +485,7 @@ export default function BoardPage() {
     }
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
         <AppHeader user={user} profile={profile} />
@@ -476,7 +511,9 @@ export default function BoardPage() {
     )
   }
 
-  if (!user || !profile) return null
+  if (!isAuthenticated || !user || !profile) {
+    return null
+  }
 
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>
