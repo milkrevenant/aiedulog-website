@@ -198,7 +198,7 @@ export class AdvancedRateLimiter {
     const violations = memoryStore.get(violationKey)?.count || 0
     
     // Adjust limits based on violation history
-    let adjustedConfig = { ...RATE_LIMITS[endpoint] }
+    const adjustedConfig = { ...RATE_LIMITS[endpoint] }
     if (violations > 0) {
       adjustedConfig.requests = Math.max(1, adjustedConfig.requests - violations)
       adjustedConfig.blockDuration = `${parseTimeToMs(adjustedConfig.blockDuration) * (violations + 1)}ms`

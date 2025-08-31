@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
   Container,
@@ -126,19 +127,9 @@ export default function LecturesBoardPage() {
     setUser(user)
     if (user) {
       fetchUserRegistrations(user.id)
-      // Identity 시스템을 통한 profile 조회
-      const { data: authMethod } = await supabase
-        .from('auth_methods')
-        .select(`
-          identities!inner (
-            user_profiles!inner (*)
-          )
-        `)
-        .eq('provider', 'supabase')
-        .eq('provider_user_id', user.id)
-        .single()
-      
-      setProfile(authMethod?.identities?.user_profiles || null)
+      // Use standardized identity helper
+      const identity = await getUserIdentity(user)
+      setProfile(identity?.profile || null)
     }
   }
 

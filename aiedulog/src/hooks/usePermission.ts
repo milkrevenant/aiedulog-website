@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { hasPermission, UserRole, Permission } from '@/lib/auth/permissions'
+import { getUserIdentity } from '@/lib/identity/helpers'
 
 interface UserProfile {
   id: string
@@ -29,38 +30,17 @@ export function usePermission() {
         } = await supabase.auth.getUser()
 
         if (authUser) {
-          // Use identity system: auth.user.id → auth_methods → identity → user_profiles  
-          const { data: authMethod, error: authError } = await supabase
-            .from('auth_methods')
-            .select(`
-              identities!inner (
-                id,
-                status,
-                user_profiles!inner (
-                  identity_id,
-                  email,
-                  full_name,
-                  nickname,
-                  avatar_url,
-                  role,
-                  school,
-                  subject
-                )
-              )
-            `)
-            .eq('provider', 'supabase')
-            .eq('provider_user_id', authUser.id)
-            .single()
-
-          if (authMethod && !authError) {
-            const identity = authMethod.identities
-            const profile = identity.user_profiles
+          // Use identity helper for consistent user data retrieval
+          const identity = await getUserIdentity(authUser)
+          
+          if (identity && identity.profile) {
+            const profile = identity.profile
             
             setUser({
               id: authUser.id,
-              identity_id: identity.id,
+              identity_id: identity.identity_id,
               email: profile.email,
-              role: profile.role,
+              role: profile.role as UserRole,
               full_name: profile.full_name,
               nickname: profile.nickname,
               avatar_url: profile.avatar_url,

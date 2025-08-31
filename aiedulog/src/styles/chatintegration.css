@@ -1,0 +1,276 @@
+/* Microsoft Loop-style animations and transitions */
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px rgba(25, 118, 210, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(25, 118, 210, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(25, 118, 210, 0.2);
+  }
+}
+
+/* Microsoft Loop-style collaboration cursors */
+@keyframes cursorBlink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Slash menu animations */
+.slash-menu-enter {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+.slash-menu-exit {
+  animation: fadeInUp 0.2s ease-out reverse;
+}
+
+/* Message bubble animations */
+.message-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.message-hover-actions {
+  transition: all 0.2s ease;
+  transform: translateY(2px);
+  opacity: 0;
+}
+
+.message-hover-actions.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Collaboration indicators */
+.collaboration-cursor {
+  pointer-events: none;
+  position: fixed;
+  z-index: 9999;
+  transition: all 0.1s ease;
+}
+
+.collaboration-indicator {
+  animation: pulse 2s infinite;
+}
+
+.editing-indicator {
+  animation: glow 1.5s infinite;
+  border: 2px solid #1976d2;
+  border-radius: 4px;
+}
+
+.conflict-indicator {
+  animation: shake 0.5s ease-in-out;
+  border: 2px solid #f57c00;
+  border-radius: 4px;
+}
+
+/* Embed expand/collapse animations */
+.embed-expand {
+  animation: bounceIn 0.4s ease-out;
+}
+
+.embed-collapse {
+  animation: fadeInUp 0.3s ease-out reverse;
+}
+
+/* Reaction animations */
+.reaction-bounce {
+  animation: bounceIn 0.3s ease-out;
+}
+
+.reaction-add {
+  animation: bounceIn 0.2s ease-out;
+}
+
+/* Resize handle animations */
+.resize-handle {
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover {
+  animation: glow 1s infinite;
+}
+
+.resize-active {
+  animation: pulse 0.5s infinite;
+}
+
+/* Loading states */
+.sync-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Hover effects for Microsoft Loop style */
+.loop-hover {
+  transition: all 0.2s ease;
+}
+
+.loop-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth transitions for all interactive elements */
+.smooth-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus styles for accessibility */
+.focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* Button ripple effect */
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple-effect:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Presence indicators */
+.presence-indicator {
+  animation: pulse 2s infinite;
+  border: 2px solid #4caf50;
+  border-radius: 50%;
+}
+
+.presence-editing {
+  border-color: #ff9800;
+  animation: glow 1s infinite;
+}
+
+/* Drag and drop effects */
+.drag-over {
+  border: 2px dashed #1976d2;
+  background: rgba(25, 118, 210, 0.05);
+  animation: glow 1s infinite;
+}
+
+/* Notification animations */
+.notification-slide-in {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.notification-slide-out {
+  animation: slideInRight 0.3s ease-out reverse;
+}
+
+/* Mobile-specific animations */
+@media (max-width: 768px) {
+  .message-enter {
+    animation: fadeInUp 0.2s ease-out;
+  }
+  
+  .slash-menu-enter {
+    animation: fadeInUp 0.15s ease-out;
+  }
+}

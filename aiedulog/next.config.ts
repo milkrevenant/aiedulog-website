@@ -81,6 +81,34 @@ const nextConfig: NextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
+  
+  // Webpack configuration to fix Excalidraw readonly property issues
+  webpack: (config: any, { isServer }: { isServer: boolean }) => {
+    // Handle Excalidraw's ESM modules
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      }
+    }
+    
+    // Add rule to handle Excalidraw's readonly properties
+    config.module.rules.push({
+      test: /node_modules\/@excalidraw\/excalidraw/,
+      use: {
+        loader: 'string-replace-loader',
+        options: {
+          search: /Object\.defineProperty\(([^,]+),\s*"([^"]+)",\s*\{\s*value:\s*([^,]+),\s*writable:\s*false/g,
+          replace: 'Object.defineProperty($1, "$2", { value: $3, writable: true',
+          flags: 'g'
+        }
+      }
+    })
+    
+    return config
+  }
 };
 
 export default nextConfig;

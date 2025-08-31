@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
   Card,
@@ -168,19 +169,9 @@ export default function JobBoardPage() {
       setUser(user)
 
       if (user) {
-        // 프로필 정보 가져오기
-        const { data: authMethod } = await supabase
-          .from('auth_methods')
-          .select(`
-            identities!inner (
-              user_profiles!inner (*)
-            )
-          `)
-          .eq('provider', 'supabase')
-          .eq('provider_user_id', user.id)
-          .single()
-
-        setProfile(authMethod?.identities?.user_profiles || null)
+        // Use standardized identity helper
+        const identity = await getUserIdentity(user)
+        setProfile(identity?.profile || null)
       }
 
       setLoading(false)

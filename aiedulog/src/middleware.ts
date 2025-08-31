@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getUserIdentity } from '@/lib/identity/helpers'
 
 export async function middleware(request: NextRequest) {
   const startTime = Date.now()
@@ -108,23 +109,12 @@ export async function middleware(request: NextRequest) {
     // For admin routes, we'll do a basic check but leave detailed role checking to AuthGuard
     // This is because middleware should be fast and we already have AuthGuard handling roles
     if (isAdminRoute) {
-      // Identity 시스템을 통한 role 조회
-      const { data: authMethod } = await supabase
-        .from('auth_methods')
-        .select(`
-          identities!inner (
-            user_profiles!inner (role)
-          )
-        `)
-        .eq('provider', 'supabase')
-        .eq('provider_user_id', user.id)
-        .single()
-
-      const profile = authMethod?.identities?.user_profiles
+      // Use standardized identity helper (server-side)
+      const identity = await getUserIdentity(user, supabase)
 
       // Only do a basic check for moderator+ access
       // AuthGuard will handle specific page requirements (e.g., admin-only for users page)
-      if (!profile || (profile.role !== 'admin' && profile.role !== 'moderator')) {
+      if (!identity?.profile || (identity.profile.role !== 'admin' && identity.profile.role !== 'moderator')) {
         // Redirect to dashboard with an error message
         url.pathname = '/dashboard'
         url.searchParams.set('error', 'insufficient_permissions')

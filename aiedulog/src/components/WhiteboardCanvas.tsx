@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Box, CircularProgress } from '@mui/material'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 // Type imports for Excalidraw - using any to avoid type import issues
 type ExcalidrawElement = any
 type AppState = any
@@ -160,19 +161,9 @@ export default function WhiteboardCanvas({ boardId, roomId }: WhiteboardCanvasPr
         if (status === 'SUBSCRIBED') {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            // Identity 시스템을 통한 profile 조회
-            const { data: authMethod } = await supabase
-              .from('auth_methods')
-              .select(`
-                identities!inner (
-                  user_profiles!inner (nickname, email)
-                )
-              `)
-              .eq('provider', 'supabase')
-              .eq('provider_user_id', user.id)
-              .single()
-
-            const profile = authMethod?.identities?.user_profiles
+            // Use identity helper for consistent user data retrieval
+            const identity = await getUserIdentity(user)
+            const profile = identity?.profile
 
             await channel.track({
               user_id: user.id,
@@ -224,9 +215,9 @@ export default function WhiteboardCanvas({ boardId, roomId }: WhiteboardCanvasPr
         langCode="ko-KR"
         UIOptions={{
           canvasActions: {
-            saveToActiveFile: false,
+            saveToActiveFile: true,
             loadScene: true,
-            export: false,
+            export: {},
             toggleTheme: true,
             clearCanvas: true,
             changeViewBackgroundColor: true,

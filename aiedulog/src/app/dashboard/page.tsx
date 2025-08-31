@@ -50,6 +50,7 @@ import {
 } from '@mui/icons-material'
 import { usePermission } from '@/hooks/usePermission'
 import AppHeader from '@/components/AppHeader'
+import { getUserIdentity } from '@/lib/identity/helpers'
 
 // 역할별 색상 및 아이콘
 const roleConfig = {
@@ -101,32 +102,49 @@ function DashboardContent() {
     }
   }, [loading, isAuthenticated, router])
 
-  // 사용자 수 로드 (새로운 3-layer identity 시스템)
+  // 사용자 수 로드 - 완전히 통합된 Identity 시스템 사용
   useEffect(() => {
-    const loadUserCount = async () => {
-      if (profile?.role === 'admin' || profile?.role === 'moderator') {
-        try {
-          // user_profiles가 실제 사용자 수 (identities + auth_methods + user_profiles 완성된 사용자)
-          const { count, error } = await supabase
+    const loadUserStats = async () => {
+      if (!user || !profile?.role || (profile.role !== 'admin' && profile.role !== 'moderator')) {
+        return
+      }
+      
+      try {
+        // 통합 identity 시스템을 통한 전체 사용자 수 계산
+        // identities 테이블에서 active 상태의 identity 수를 카운트
+        const { count: activeIdentities, error: identityError } = await supabase
+          .from('identities')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active')
+        
+        if (identityError) {
+          console.error('Failed to load active identities count:', identityError)
+        } else if (activeIdentities !== null) {
+          setTotalUsers(activeIdentities)
+        }
+        
+        // Alternative: Count via user_profiles with identity_id (more accurate for complete users)
+        if (!activeIdentities) {
+          const { count: profileCount, error: profileError } = await supabase
             .from('user_profiles')
-            .select('*', { count: 'exact', head: true })
+            .select('identity_id', { count: 'exact', head: true })
             .eq('is_active', true)
           
-          if (error) {
-            console.error('Failed to load user profiles count:', error)
-          } else if (count !== null) {
-            setTotalUsers(count)
+          if (profileError) {
+            console.error('Failed to load user profiles count:', profileError)
+          } else if (profileCount !== null) {
+            setTotalUsers(profileCount)
           }
-        } catch (error) {
-          console.error('Error loading user count:', error)
         }
+      } catch (error) {
+        console.error('Error loading user statistics:', error)
       }
     }
 
     if (profile && !loading) {
-      loadUserCount()
+      loadUserStats()
     }
-  }, [profile, loading, supabase])
+  }, [profile, loading, user, supabase])
 
   const handleSignOut = async () => {
     try {

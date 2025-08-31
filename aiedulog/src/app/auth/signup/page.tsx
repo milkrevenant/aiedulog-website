@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -162,20 +163,62 @@ export default function SignUpPage() {
       }
 
       if (authData.user) {
-        // 2. 프로필 정보 저장
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .update({
-            name: formData.name,
-            school: formData.school,
-            role: formData.role === 'teacher' ? 'user' : 'user', // 기본 역할은 user
-            interests: formData.interests,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', authData.user.id)
+        // 2. 완전하게 통합된 Identity 시스템을 통한 사용자 프로필 생성
+        try {
+          // Step 1: Create identity record
+          const { data: identityData, error: identityError } = await supabase
+            .from('identities')
+            .upsert({
+              id: authData.user.id,
+              status: 'active'
+            })
+            .select()
+            .single()
 
-        if (profileError) {
-          console.error('프로필 업데이트 실패:', profileError)
+          if (identityError) {
+            console.error('Failed to create/update identity:', identityError)
+          }
+
+          // Step 2: Create comprehensive user profile
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .upsert({
+              identity_id: authData.user.id,
+              email: formData.email,
+              username: formData.email.split('@')[0],
+              full_name: formData.name,
+              nickname: formData.name || formData.email.split('@')[0],
+              school: formData.school,
+              role: 'member', // All new users start as members
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+
+          if (profileError) {
+            console.error('프로필 생성 실패 (identity system):', profileError)
+            throw new Error('프로필 생성에 실패했습니다. 다시 시도해 주세요.')
+          }
+
+          // Step 3: Create auth_methods record
+          const { error: authMethodError } = await supabase
+            .from('auth_methods')
+            .upsert({
+              identity_id: authData.user.id,
+              provider: 'email',
+              provider_user_id: authData.user.id,
+              email_confirmed_at: null // Will be updated when email is confirmed
+            })
+
+          if (authMethodError) {
+            console.warn('Failed to create auth_methods record:', authMethodError)
+            // Continue as profile is created successfully
+          }
+
+          console.log('User signup completed with integrated identity system')
+        } catch (error) {
+          console.error('통합 Identity 시스템 오류:', error)
+          throw error
         }
       }
 

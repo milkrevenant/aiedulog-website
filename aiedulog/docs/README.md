@@ -16,8 +16,14 @@
 
 ### Starting Development
 1. Read **DEVELOPMENT_GUIDE.md** → Quick start section
-2. Check current sprint tasks
+2. Check current sprint tasks  
 3. Review known issues
+
+### Microsoft Loop-Style Chat System
+- **Main Chat**: `/chat` - Real-time collaborative chat with embeds
+- **Slash Commands**: Type `/` to insert Kanban, Todo, Poll, Excalidraw
+- **Database**: chat_embeds, chat_files, chat_presence tables configured
+- **UI**: MUI v6 compliant with proper modal patterns
 
 ### Deploying Changes  
 1. Follow **DEPLOYMENT_GUIDE.md** → Pre-deployment checklist

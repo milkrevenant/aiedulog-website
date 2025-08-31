@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import { getUserIdentity } from '@/lib/identity/helpers'
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null)
@@ -117,21 +118,20 @@ export function useAuth() {
   useEffect(() => {
     if (user && !profile) {
       setProfileLoading(true)
-      // Identity 시스템을 통한 profile 조회
-      supabase
-        .from('auth_methods')
-        .select(`
-          identities!inner (
-            user_profiles!inner (*)
-          )
-        `)
-        .eq('provider', 'supabase')
-        .eq('provider_user_id', user.id)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data?.identities?.user_profiles) {
-            setProfile(data.identities.user_profiles)
+      // Use fully integrated identity helper with supabase client
+      getUserIdentity(user, supabase)
+        .then((identity) => {
+          if (identity?.profile) {
+            setProfile(identity.profile)
+          } else {
+            console.warn('No profile found for authenticated user:', user.id)
+            setProfile(null)
           }
+          setProfileLoading(false)
+        })
+        .catch((error) => {
+          console.error('Failed to get user identity via integrated system:', error)
+          setProfile(null)
           setProfileLoading(false)
         })
     } else if (!user) {
@@ -177,29 +177,35 @@ export function useAuth() {
   const updateProfile = async (updates: any) => {
     if (!user) throw new Error('No user logged in')
     
-    // Identity 시스템을 통해 identity_id 조회 후 업데이트
-    const { data: authMethod } = await supabase
-      .from('auth_methods')
-      .select('identities!inner(id)')
-      .eq('provider', 'supabase')
-      .eq('provider_user_id', user.id)
-      .single()
+    // Use integrated identity helper with supabase client
+    const identity = await getUserIdentity(user, supabase)
     
-    if (!authMethod?.identities?.id) {
-      throw new Error('Identity not found')
+    if (!identity?.identity_id) {
+      throw new Error('User identity not found in integrated system')
     }
     
     const { data, error } = await supabase
       .from('user_profiles')
-      .update(updates)
-      .eq('identity_id', authMethod.identities.id)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('identity_id', identity.identity_id)
       .select()
       .single()
     
-    if (error) throw error
+    if (error) {
+      console.error('Profile update failed via identity system:', error)
+      throw new Error(`Profile update failed: ${error.message}`)
+    }
     
-    setProfile(data)
-    return data
+    // Update local state with the new profile data
+    const updatedProfile = {
+      ...data,
+      id: identity.identity_id // Ensure consistency with identity_id
+    }
+    setProfile(updatedProfile)
+    return updatedProfile
   }
 
   return {

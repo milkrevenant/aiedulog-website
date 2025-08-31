@@ -35,9 +35,11 @@
     "dotenv": "^17.2.1",
     "next": "15.4.6",
     "next-auth": "^4.24.11",
+    "node-fetch": "^3.3.2",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "string-replace-loader": "^3.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -49,9 +51,9 @@
     "@types/testing-library__jest-dom": "^5.14.9",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
+    "glob": "^11.0.0",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
-    "glob": "^11.0.0",
     "prettier": "^3.6.2",
     "tailwindcss": "^4",
     "tsx": "^4.16.2",

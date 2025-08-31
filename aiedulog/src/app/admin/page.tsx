@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { usePermission } from '@/hooks/usePermission'
 import { Permission } from '@/lib/auth/permissions'
+import { getUserIdentity, getUserStats } from '@/lib/identity/helpers'
 import AppHeader from '@/components/AppHeader'
 import AuthGuard from '@/components/AuthGuard'
 import {
@@ -80,7 +81,7 @@ function AdminDashboardContent() {
 
   // 권한 체크는 AuthGuard에서 처리되므로 제거
 
-  // 사용자 프로필 가져오기
+  // 통합 identity 시스템을 통한 사용자 프로필 가져오기
   useEffect(() => {
     const fetchUserProfile = async () => {
       const {
@@ -89,12 +90,16 @@ function AdminDashboardContent() {
       setAuthUser(authUserData)
 
       if (authUserData) {
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', authUserData.id)
-          .single()
-        setProfile(profileData)
+        try {
+          const identity = await getUserIdentity(authUserData, supabase)
+          if (identity?.profile) {
+            setProfile(identity.profile)
+          } else {
+            console.error('No profile found via identity system')
+          }
+        } catch (error) {
+          console.error('Error fetching user profile via identity system:', error)
+        }
       }
     }
 
@@ -105,25 +110,7 @@ function AdminDashboardContent() {
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
-        // 사용자 통계
-        const { count: totalUsers } = await supabase
-          .from('user_profiles')
-          .select('*', { count: 'exact', head: true })
-
-        const { count: newUsersToday } = await supabase
-          .from('user_profiles')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
-
-        const { count: verifiedTeachers } = await supabase
-          .from('user_profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('role', 'verified')
-
-        const { count: activeUsers } = await supabase
-          .from('user_profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true)
+        // 사용자 통계는 통합 identity 시스템 햬퍼로 처리
 
         // 게시글 통계
         const { count: totalPosts } = await supabase
@@ -133,14 +120,17 @@ function AdminDashboardContent() {
         const { count: totalComments } = await supabase
           .from('comments')
           .select('*', { count: 'exact', head: true })
+        
+        // 통합 identity 시스템에서 사용자 통계 가져오기
+        const userStats = await getUserStats(supabase)
 
         setStats({
-          totalUsers: totalUsers || 0,
-          newUsersToday: newUsersToday || 0,
+          totalUsers: userStats.totalUsers,
+          newUsersToday: userStats.newUsersToday,
           totalPosts: totalPosts || 0,
           totalComments: totalComments || 0,
-          activeUsers: activeUsers || 0,
-          verifiedTeachers: verifiedTeachers || 0,
+          activeUsers: userStats.activeUsers,
+          verifiedTeachers: userStats.verifiedTeachers,
         })
 
         // 최근 활동

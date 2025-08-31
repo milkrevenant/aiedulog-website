@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import {
@@ -143,21 +144,35 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
     if (rooms) {
       const roomsWithDetails = await Promise.all(
         rooms.map(async (room: any) => {
+          // Use integrated identity system for participant info
           const { data: participants } = await supabase
             .from('chat_participants')
             .select(
               `
               user_id,
-              profiles!inner (
+              identities!chat_participants_user_id_fkey (
                 id,
-                email,
-                nickname,
-                avatar_url
+                user_profiles!identities_user_profiles_identity_id_fkey (
+                  email,
+                  nickname,
+                  avatar_url
+                )
               )
             `
             )
             .eq('room_id', room.chat_rooms.id)
             .eq('is_active', true)
+
+          // Transform to expected format with fallback
+          const transformedParticipants = participants?.map((p: any) => ({
+            user_id: p.user_id,
+            profile: {
+              id: p.identities?.id || p.user_id,
+              email: p.identities?.user_profiles?.[0]?.email || '',
+              nickname: p.identities?.user_profiles?.[0]?.nickname,
+              avatar_url: p.identities?.user_profiles?.[0]?.avatar_url
+            }
+          })) || []
 
           const { count: unreadCount } = await supabase
             .from('chat_messages')
@@ -168,7 +183,7 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
 
           return {
             ...room.chat_rooms,
-            participants: participants || [],
+            participants: transformedParticipants,
             unread_count: unreadCount || 0,
           }
         })
@@ -182,16 +197,19 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
   const fetchMessages = async () => {
     if (!selectedRoom) return
 
+    // Use integrated identity system for message sender info
     const { data: messagesData } = await supabase
       .from('chat_messages')
       .select(
         `
         *,
-        profiles!chat_messages_sender_id_fkey (
+        identities!chat_messages_sender_id_fkey (
           id,
-          email,
-          nickname,
-          avatar_url
+          user_profiles!identities_user_profiles_identity_id_fkey (
+            email,
+            nickname,
+            avatar_url
+          )
         )
       `
       )
@@ -203,7 +221,12 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
     if (messagesData) {
       const formattedMessages = messagesData.map((msg) => ({
         ...msg,
-        sender: msg.profiles,
+        sender: {
+          id: msg.identities?.id || msg.sender_id,
+          email: msg.identities?.user_profiles?.[0]?.email || '',
+          nickname: msg.identities?.user_profiles?.[0]?.nickname,
+          avatar_url: msg.identities?.user_profiles?.[0]?.avatar_url
+        },
       }))
       setMessages(formattedMessages)
     }
@@ -223,15 +246,33 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
         },
         async (payload) => {
           if (selectedRoom && payload.new.room_id === selectedRoom.id) {
-            const { data: senderData } = await supabase
-              .from('user_profiles')
-              .select('id, email, nickname, avatar_url')
-              .eq('id', payload.new.sender_id)
-              .single()
+            // Use getUserIdentity helper for consistent sender info retrieval
+            let senderInfo = null
+            try {
+              // Create a minimal user object to use with getUserIdentity
+              const senderUser = { id: payload.new.sender_id } as User
+              const senderIdentity = await getUserIdentity(senderUser, supabase)
+              
+              if (senderIdentity?.profile) {
+                senderInfo = {
+                  id: senderIdentity.identity_id,
+                  email: senderIdentity.profile.email,
+                  nickname: senderIdentity.profile.nickname,
+                  avatar_url: senderIdentity.profile.avatar_url
+                }
+              }
+            } catch (error) {
+              console.error('Failed to get sender identity in realtime:', error)
+            }
 
             const newMsg = {
               ...payload.new,
-              sender: senderData,
+              sender: senderInfo || {
+                id: payload.new.sender_id,
+                email: 'Unknown User',
+                nickname: null,
+                avatar_url: null
+              },
             } as Message
 
             setMessages((prev) => [...prev, newMsg])

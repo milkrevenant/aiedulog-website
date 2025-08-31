@@ -30,6 +30,7 @@ import {
   Close,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import NotificationIcon from '@/components/NotificationIcon'
 
 interface AppHeaderProps {
@@ -57,20 +58,10 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
         if (authUser) {
           setUser(authUser)
 
-          // Identity 시스템을 통한 profile 조회
-          const { data: authMethod } = await supabase
-            .from('auth_methods')
-            .select(`
-              identities!inner (
-                user_profiles!inner (*)
-              )
-            `)
-            .eq('provider', 'supabase')
-            .eq('provider_user_id', authUser.id)
-            .single()
-
-          if (authMethod?.identities?.user_profiles) {
-            setProfile(authMethod.identities.user_profiles)
+          // Use standardized identity helper
+          const identity = await getUserIdentity(authUser)
+          if (identity?.profile) {
+            setProfile(identity.profile)
           }
         }
       }

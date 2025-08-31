@@ -24,6 +24,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   AccountCircle,
   Dashboard,
@@ -55,19 +56,9 @@ export default function Navbar() {
       setUser(user)
 
       if (user) {
-        // Identity 시스템을 통한 profile 조회
-        const { data: authMethod } = await supabase
-          .from('auth_methods')
-          .select(`
-            identities!inner (
-              user_profiles!inner (*)
-            )
-          `)
-          .eq('provider', 'supabase')
-          .eq('provider_user_id', user.id)
-          .single()
-        
-        setProfile(authMethod?.identities?.user_profiles || null)
+        // Use identity helper for consistent user data retrieval
+        const identity = await getUserIdentity(user)
+        setProfile(identity?.profile || null)
       }
     }
     getUser()
@@ -78,19 +69,9 @@ export default function Navbar() {
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        // Identity 시스템을 통한 profile 조회
-        const { data: authMethod } = await supabase
-          .from('auth_methods')
-          .select(`
-            identities!inner (
-              user_profiles!inner (*)
-            )
-          `)
-          .eq('provider', 'supabase')
-          .eq('provider_user_id', session.user.id)
-          .single()
-        
-        setProfile(authMethod?.identities?.user_profiles || null)
+        // Use identity helper for consistent user data retrieval
+        const identity = await getUserIdentity(session.user)
+        setProfile(identity?.profile || null)
       } else {
         setProfile(null)
       }

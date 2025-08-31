@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
   Container,
@@ -72,44 +73,17 @@ export default function ProfileSettingsPage() {
       setUser(user)
       setEmail(user.email || '')
 
-      // Identity 시스템을 통한 프로필 정보 가져오기
-      const { data: authMethod, error: authError } = await supabase
-        .from('auth_methods')
-        .select(`
-          identities!inner (
-            id,
-            status,
-            user_profiles!inner (
-              identity_id,
-              email,
-              username,
-              full_name,
-              nickname,
-              avatar_url,
-              bio,
-              school,
-              subject,
-              interests,
-              role,
-              is_active
-            )
-          )
-        `)
-        .eq('provider', 'supabase')
-        .eq('provider_user_id', user.id)
-        .single()
-
-      if (authMethod && !authError) {
-        const identity = authMethod.identities
-        const profileData = identity.user_profiles
-        
-        setProfile({
-          id: user.id,
-          identity_id: identity.id,
-          ...profileData
-        })
-        setAvatarUrl(profileData.avatar_url)
-        setNickname(profileData.nickname || profileData.email?.split('@')[0] || '')
+      // Use standardized identity helper - complete integration
+      const identity = await getUserIdentity(user, supabase)
+      
+      if (identity?.profile) {
+        setProfile(identity.profile)
+        setAvatarUrl(identity.profile.avatar_url || null)
+        setNickname(identity.profile.nickname || identity.profile.email?.split('@')[0] || '')
+      } else {
+        // If no identity profile found, this should not happen in a properly migrated system
+        console.error('No identity profile found for user:', user.id)
+        setError('프로필을 불러올 수 없습니다. 관리자에게 문의하세요.')
       }
 
       setLoading(false)
@@ -171,23 +145,15 @@ export default function ProfileSettingsPage() {
         data: { publicUrl },
       } = supabase.storage.from('avatars').getPublicUrl(uploadData.path)
 
-      // 프로필 업데이트 - Identity 시스템 우선, 레거시 fallback
-      try {
-        const { error: identityError } = await supabase
-          .from('user_profiles')
-          .update({ avatar_url: publicUrl })
-          .eq('identity_id', profile?.identity_id)
+      // 프로필 업데이트 - 완전히 통합된 Identity 시스템 사용
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('identity_id', profile?.identity_id)
 
-        if (identityError) throw identityError
-      } catch (identityError) {
-        console.warn('Identity system update failed, falling back to profiles:', identityError)
-        
-        const { error: legacyError } = await supabase
-          .from('user_profiles')
-          .update({ avatar_url: publicUrl })
-          .eq('id', user.id)
-
-        if (legacyError) throw legacyError
+      if (error) {
+        console.error('Avatar URL update failed:', error)
+        throw new Error(`아바타 URL 업데이트 실패: ${error.message}`)
       }
 
       setAvatarUrl(publicUrl)
@@ -216,26 +182,16 @@ export default function ProfileSettingsPage() {
         await supabase.storage.from('avatars').remove([`${user.id}/${path}`])
       }
 
-      // 프로필 업데이트 - Identity 시스템 우선, 레거시 fallback
-      try {
-        const { error: identityError } = await supabase
-          .from('user_profiles')
-          .update({ avatar_url: null })
-          .eq('identity_id', profile?.identity_id)
+      // 프로필 업데이트 - 완전히 통합된 Identity 시스템 사용
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ avatar_url: null })
+        .eq('identity_id', profile?.identity_id)
 
-        if (identityError) throw identityError
-      } catch (identityError) {
-        console.warn('Identity system update failed, falling back to profiles:', identityError)
-        
-        const { error: legacyError } = await supabase
-          .from('user_profiles')
-          .update({ avatar_url: null })
-          .eq('id', user.id)
-
-        if (legacyError) throw legacyError
+      if (error) {
+        console.error('Avatar removal failed:', error)
+        throw new Error(`아바타 삭제 실패: ${error.message}`)
       }
-
-      // Error handling is done in the try-catch blocks above
 
       setAvatarUrl(null)
       setProfile({ ...profile, avatar_url: null })
@@ -263,23 +219,15 @@ export default function ProfileSettingsPage() {
     setError(null)
 
     try {
-      // 닉네임 업데이트 - Identity 시스템 우선, 레거시 fallback
-      try {
-        const { error: identityError } = await supabase
-          .from('user_profiles')
-          .update({ nickname: nickname.trim() })
-          .eq('identity_id', profile?.identity_id)
+      // 닉네임 업데이트 - 완전히 통합된 Identity 시스템 사용
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ nickname: nickname.trim() })
+        .eq('identity_id', profile?.identity_id)
 
-        if (identityError) throw identityError
-      } catch (identityError) {
-        console.warn('Identity system update failed, falling back to profiles:', identityError)
-        
-        const { error: legacyError } = await supabase
-          .from('user_profiles')
-          .update({ nickname: nickname.trim() })
-          .eq('id', user.id)
-
-        if (legacyError) throw legacyError
+      if (error) {
+        console.error('Nickname update failed:', error)
+        throw new Error(`닉네임 업데이트 실패: ${error.message}`)
       }
 
       setProfile({ ...profile, nickname: nickname.trim() })

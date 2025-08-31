@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import { Box, CircularProgress, Typography } from '@mui/material'
 
 export default function AuthCallbackPage() {
@@ -78,30 +79,66 @@ export default function AuthCallbackPage() {
             return
           }
 
-          // Check if this is a new user (first time Google login)
+          // Check if this is a new user using integrated identity system
           if (data?.user) {
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('id')
-              .eq('id', data.user.id)
-              .single()
+            const existingIdentity = await getUserIdentity(data.user, supabase)
+            
+            if (!existingIdentity) {
+              console.log('Creating new user identity and profile for OAuth login')
+              
+              try {
+                // Step 1: Create identity record
+                const { data: identityData, error: identityError } = await supabase
+                  .from('identities')
+                  .insert({
+                    id: data.user.id,
+                    status: 'active'
+                  })
+                  .select()
+                  .single()
 
-            if (!profile) {
-              // Create profile for new Google user
-              const { error: profileError } = await supabase
-                .from('user_profiles')
-                .insert({
-                  id: data.user.id,
-                  email: data.user.email,
-                  nickname: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
-                  full_name: data.user.user_metadata?.full_name,
-                  avatar_url: data.user.user_metadata?.avatar_url,
-                  role: 'member',
-                  is_active: true
-                })
+                if (identityError) {
+                  console.error('Failed to create identity:', identityError)
+                } else {
+                  // Step 2: Create user profile linked to identity
+                  const { error: profileError } = await supabase
+                    .from('user_profiles')
+                    .insert({
+                      identity_id: data.user.id,
+                      email: data.user.email || '',
+                      username: data.user.email?.split('@')[0] || 'user',
+                      nickname: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
+                      full_name: data.user.user_metadata?.full_name,
+                      avatar_url: data.user.user_metadata?.avatar_url,
+                      role: 'member',
+                      is_active: true
+                    })
 
-              if (profileError) {
-                console.error('Error creating profile:', profileError)
+                  if (profileError) {
+                    console.error('Error creating user profile via identity system:', profileError)
+                    // Try to clean up identity if profile creation failed
+                    await supabase.from('identities').delete().eq('id', data.user.id)
+                  } else {
+                    // Step 3: Create auth_methods record
+                    const { error: authMethodError } = await supabase
+                      .from('auth_methods')
+                      .insert({
+                        identity_id: data.user.id,
+                        provider: 'oauth',
+                        provider_user_id: data.user.id,
+                        email_confirmed_at: new Date().toISOString(),
+                        last_sign_in_at: new Date().toISOString()
+                      })
+
+                    if (authMethodError) {
+                      console.warn('Failed to create auth_methods record:', authMethodError)
+                      // Continue anyway as the main profile is created
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error('Failed to create complete identity system records:', err)
+                // Continue to login even if identity creation partially failed
               }
             }
           }

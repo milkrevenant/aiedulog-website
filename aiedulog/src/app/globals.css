@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../styles/chatintegration.css";
 
 :root {
   --background: #ffffff;
@@ -23,4 +24,201 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Fix Excalidraw icon sizes */
+.excalidraw {
+  --icon-size: 16px !important;
+}
+
+.excalidraw .Island button {
+  font-size: 14px !important;
+  padding: 8px !important;
+}
+
+.excalidraw .Island button svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.excalidraw .ToolIcon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.excalidraw .ToolIcon svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Fix any oversized toolbar icons */
+.excalidraw .App-toolbar button {
+  min-height: 32px !important;
+  min-width: 32px !important;
+}
+
+.excalidraw .App-toolbar button svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Slash Menu Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+/* Pulse animation for online presence */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+
+/* Chat input improvements */
+.chat-input-container {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-input-container .MuiOutlinedInput-root {
+  transition: all 0.2s ease;
+}
+
+.chat-input-container .MuiOutlinedInput-root:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chat-input-container .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Slash menu improvements */
+.slash-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999998;
+  background: transparent;
+}
+
+.slash-menu-paper {
+  position: fixed;
+  z-index: 999999;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+.slash-menu-header {
+  background: linear-gradient(135deg, var(--mui-palette-primary-main) 0%, var(--mui-palette-primary-dark) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.slash-menu-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 600px) {
+  .slash-menu-paper {
+    max-width: calc(100vw - 32px);
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+  }
+  
+  .chat-input-container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .slash-menu-paper {
+    border-width: 3px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  
+  .slash-menu-item {
+    border-bottom: 2px solid;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .slash-menu-paper {
+    animation: none !important;
+  }
+  
+  .slash-menu-item {
+    transition: none;
+  }
+  
+  .slash-menu-header::before {
+    animation: none;
+  }
 }

@@ -29,6 +29,7 @@ import {
   FitScreen
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 
 // Type imports for Excalidraw
 type ExcalidrawElement = any
@@ -244,19 +245,9 @@ export default function WhiteboardCanvasEnhanced({
         if (status === 'SUBSCRIBED') {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            // Identity 시스템을 통한 profile 조회
-            const { data: authMethod } = await supabase
-              .from('auth_methods')
-              .select(`
-                identities!inner (
-                  user_profiles!inner (nickname, email)
-                )
-              `)
-              .eq('provider', 'supabase')
-              .eq('provider_user_id', user.id)
-              .single()
-
-            const profile = authMethod?.identities?.user_profiles
+            // Use identity helper for consistent user data retrieval
+            const identity = await getUserIdentity(user)
+            const profile = identity?.profile
 
             await channel.track({
               user_id: user.id,
@@ -455,11 +446,11 @@ export default function WhiteboardCanvasEnhanced({
           name="협업 화이트보드"
           UIOptions={{
             canvasActions: {
-              saveToActiveFile: false,
-              loadScene: false,
-              export: false,
+              saveToActiveFile: true,
+              loadScene: true,
+              export: {},
               toggleTheme: true,
-              clearCanvas: false,
+              clearCanvas: true,
               changeViewBackgroundColor: true,
             },
             tools: {
@@ -467,7 +458,6 @@ export default function WhiteboardCanvasEnhanced({
             },
             welcomeScreen: false,
           }}
-          renderTopRightUI={() => null}
         >
           {/* MainMenu and WelcomeScreen are handled internally by Excalidraw */}
         </Excalidraw>

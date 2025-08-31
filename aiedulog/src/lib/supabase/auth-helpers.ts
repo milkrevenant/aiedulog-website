@@ -1,6 +1,7 @@
 import { createClient } from './server'
 import { redirect } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
+import { getUserIdentity } from '@/lib/identity/helpers'
 
 export async function getSession() {
   const supabase = await createClient()
@@ -38,23 +39,11 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const session = await requireAuth()
-  const supabase = await createClient()
   
-  // Identity 시스템을 통한 profile 조회
-  const { data: authMethod } = await supabase
-    .from('auth_methods')
-    .select(`
-      identities!inner (
-        user_profiles!inner (role)
-      )
-    `)
-    .eq('provider', 'supabase')
-    .eq('provider_user_id', session.user.id)
-    .single()
+  // Use standardized identity helper (server-side)
+  const identity = await getUserIdentity(session.user, true)
   
-  const profile = authMethod?.identities?.user_profiles
-  
-  if (!profile || profile.role !== 'admin') {
+  if (!identity?.profile || identity.profile.role !== 'admin') {
     redirect('/dashboard')
   }
   
@@ -63,23 +52,11 @@ export async function requireAdmin() {
 
 export async function requireModerator() {
   const session = await requireAuth()
-  const supabase = await createClient()
   
-  // Identity 시스템을 통한 profile 조회
-  const { data: authMethod } = await supabase
-    .from('auth_methods')
-    .select(`
-      identities!inner (
-        user_profiles!inner (role)
-      )
-    `)
-    .eq('provider', 'supabase')
-    .eq('provider_user_id', session.user.id)
-    .single()
+  // Use standardized identity helper (server-side)
+  const identity = await getUserIdentity(session.user, true)
   
-  const profile = authMethod?.identities?.user_profiles
-  
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'moderator')) {
+  if (!identity?.profile || (identity.profile.role !== 'admin' && identity.profile.role !== 'moderator')) {
     redirect('/dashboard')
   }
   
@@ -87,26 +64,13 @@ export async function requireModerator() {
 }
 
 export async function getUserProfile(userId: string) {
-  const supabase = await createClient()
+  // Create a User object for the helper function
+  const userObj = { id: userId } as User
   
-  // Identity 시스템을 통한 profile 조회 (userId는 auth user id)
-  const { data: authMethod, error } = await supabase
-    .from('auth_methods')
-    .select(`
-      identities!inner (
-        user_profiles!inner (*)
-      )
-    `)
-    .eq('provider', 'supabase')
-    .eq('provider_user_id', userId)
-    .single()
+  // Use standardized identity helper (server-side)
+  const identity = await getUserIdentity(userObj, true)
   
-  if (error) {
-    console.error('Error fetching user profile:', error)
-    return null
-  }
-  
-  return authMethod?.identities?.user_profiles || null
+  return identity?.profile || null
 }
 
 export async function signOut() {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity, searchUsers } from '@/lib/identity/helpers'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/hooks'
 import {
@@ -37,6 +38,7 @@ import {
 import { Chat, Search, Add, Person, Group, MoreVert, Circle, Create, PersonAdd, Notes } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 import ChatInterface from '@/components/ChatInterface'
+import ResizableSidebar from '@/components/ResizableSidebar'
 
 interface ChatRoom {
   id: string
@@ -283,48 +285,27 @@ export default function ChatPage() {
     }
 
     try {
-      // Try new identity system first
-      const { data: identityData, error: identityError } = await supabase
-        .from('user_profiles')
-        .select(`
-          identity_id,
-          email,
-          nickname,
-          avatar_url,
-          role,
-          identities!user_profiles_identity_id_fkey (
-            id,
-            status
-          )
-        `)
-        .or(`email.ilike.%${searchText}%,nickname.ilike.%${searchText}%`)
-        .neq('identity_id', user?.id)
-        .eq('is_active', true)
-        .limit(10)
-
-      if (identityError) throw identityError
-
-      const mappedUsers = identityData?.map(profile => ({
+      // 통합 identity 시스템을 통한 사용자 검색
+      const currentIdentity = user ? await getUserIdentity(user, supabase) : null
+      const currentIdentityId = currentIdentity?.identity_id
+      
+      // 신규 통합 검색 헬퍼 사용
+      const searchResults = await searchUsers(searchText, supabase, currentIdentityId, 10)
+      
+      // 호환성을 위해 기존 형식으로 매핑
+      const mappedUsers = searchResults.map(profile => ({
         id: profile.identity_id,
         email: profile.email,
         nickname: profile.nickname,
         avatar_url: profile.avatar_url,
-        role: profile.role
+        role: profile.role,
+        full_name: profile.full_name
       }))
 
       setUsers(mappedUsers || [])
     } catch (err) {
-      // Fallback to legacy profiles
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .or(`email.ilike.%${searchText}%,nickname.ilike.%${searchText}%`)
-        .neq('id', user?.id)
-        .limit(10)
-
-      if (data) {
-        setUsers(data)
-      }
+      console.error('User search failed:', err)
+      setUsers([])
     }
   }
 
@@ -636,20 +617,15 @@ export default function ChatPage() {
       {isTabletUp ? (
         // 태블릿/데스크탑: Split View (Flexbox)
         <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex' }}>
-          {/* 사이드바: 채팅 목록 (고정 너비) */}
-          <Box 
-            sx={{ 
-              width: 220,
-              minWidth: 220,
-              borderRight: 1, 
-              borderColor: 'divider',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+          {/* 사이드바: 채팅 목록 (리사이징 가능) */}
+          <ResizableSidebar
+            defaultWidth={220}
+            minWidth={180}
+            maxWidth={400}
+            storageKey="chat-sidebar-width"
           >
             <ChatRoomList />
-          </Box>
+          </ResizableSidebar>
           {/* 메인 패널: 채팅 뷰 (남은 공간 모두) */}
           <Box sx={{ flex: 1, overflow: 'hidden' }}>
             <ChatInterface

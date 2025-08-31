@@ -29,6 +29,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.EXCALIDRAW_ASSET_PATH = "/";`
+          }}
+        />
+      </head>
       <body className={`${notoSansKr.variable} ${ibmPlexSansKr.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>

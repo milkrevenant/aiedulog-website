@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserIdentity } from '@/lib/identity/helpers'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/auth/hooks'
 import {
@@ -189,32 +190,31 @@ function SearchContent() {
         setPosts(postsWithStats)
       }
 
-      // 사용자 검색 - 새로운 identity 시스템 사용
-      let usersData = null
-      
+      // 사용자 검색 - 완전히 통합된 Identity 시스템 사용
       try {
-        const { data: identityBasedUsers } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .or(`nickname.ilike.%${query}%,email.ilike.%${query}%`)
-          .limit(10)
-          
-        usersData = identityBasedUsers
-      } catch (identityError) {
-        console.warn('Identity-based user search failed, falling back to profiles:', identityError)
+        // Use the standardized searchUsers helper from identity system
+        const currentIdentity = user ? await getUserIdentity(user, supabase) : null
+        const currentIdentityId = currentIdentity?.identity_id
         
-        // Fallback to legacy profiles system
-        const { data: legacyUsers } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .or(`nickname.ilike.%${query}%,email.ilike.%${query}%`)
-          .limit(10)
-          
-        usersData = legacyUsers
-      }
+        // Use the helper function for consistent user search
+        const { searchUsers } = await import('@/lib/identity/helpers')
+        const searchResults = await searchUsers(query, supabase, currentIdentityId, 10)
+        
+        // Map to consistent format for UI
+        const usersData = searchResults.map(profile => ({
+          id: profile.identity_id,
+          email: profile.email,
+          nickname: profile.nickname,
+          avatar_url: profile.avatar_url,
+          role: profile.role,
+          full_name: profile.full_name,
+          school: profile.school
+        }))
 
-      if (usersData) {
         setUsers(usersData)
+      } catch (error) {
+        console.error('User search failed with integrated identity system:', error)
+        setUsers([])
       }
 
       // 태그 검색 (현재는 카테고리로 대체)
