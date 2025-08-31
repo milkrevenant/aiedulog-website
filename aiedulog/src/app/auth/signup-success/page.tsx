@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Container, Typography, Button, Paper, Stack, Alert } from '@mui/material'
 import { CheckCircleOutline, EmailOutlined, LoginOutlined, RefreshOutlined } from '@mui/icons-material'
-import confetti from 'canvas-confetti'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupSuccessPage() {
@@ -16,13 +15,6 @@ export default function SignupSuccessPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // 축하 애니메이션
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    })
-
     // 저장된 이메일 가져오기
     const email = localStorage.getItem('signupEmail')
     if (email) {

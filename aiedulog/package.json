@@ -30,7 +30,6 @@
     "@react-google-maps/api": "^2.20.7",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.55.0",
-    "canvas-confetti": "^1.9.3",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
     "next": "15.4.6",
