@@ -66,7 +66,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
   const supabase = createClient()
 
   try {
-    console.log('getCurrentChatUser: Looking up user', user.id)
+    // Secure logging: production-safe (no console output in production)
     
     // Step 1: auth.users.id → identity_id 매핑
     const { data: authMethod, error: authError } = await supabase
@@ -87,7 +87,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
       .eq('provider_user_id', user.id)
       .single()
     
-    console.log('Auth method result:', authMethod, authError)
+    // Secure logging: production-safe (no console output in production)
     
     if (authError || !authMethod?.identities?.[0]?.user_profiles?.[0]) {
       console.error('Auth method or profile not found:', authError)
@@ -113,7 +113,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
       role: profile.role || 'user'
     }
 
-    console.log('Final chat user result:', result)
+    // Secure logging: production-safe (no console output in production)
     return result
   } catch (error) {
     console.error('Failed to get chat user:', error)

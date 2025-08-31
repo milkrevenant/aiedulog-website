@@ -6,6 +6,7 @@ import '@material/web/ripple/ripple'
 
 // Type declarations for Material 3 web components
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       'md-icon': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
@@ -547,7 +548,6 @@ interface M3GridProps {
 export const M3Grid: React.FC<M3GridProps> = ({
   children,
   container = false,
-  item = false,
   xs,
   sm,
   md,
@@ -1494,7 +1494,7 @@ interface M3OptionProps {
   onClick?: () => void
 }
 
-export const M3Option: React.FC<M3OptionProps> = ({ value, children, onClick }) => {
+export const M3Option: React.FC<M3OptionProps> = ({ children, onClick }) => {
   return (
     <div
       onClick={onClick}

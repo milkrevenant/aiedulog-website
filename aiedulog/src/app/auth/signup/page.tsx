@@ -42,6 +42,7 @@ import {
   ArrowForward,
   Check,
 } from '@mui/icons-material'
+import { SecureStorage } from '@/lib/utils/secure-storage'
 
 const steps = ['기본 정보', '추가 정보', '이메일 인증']
 
@@ -224,7 +225,7 @@ export default function SignUpPage() {
 
       // 3. 이메일 저장 (재발송용) 및 성공 페이지로 이동
       if (typeof window !== 'undefined') {
-        localStorage.setItem('signupEmail', formData.email)
+        SecureStorage.setItem('signupEmail', formData.email)
       }
       router.push('/auth/signup-success')
     } catch (error: any) {

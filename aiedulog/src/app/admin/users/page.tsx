@@ -127,7 +127,7 @@ function UsersManagementContent() {
 
     try {
       // 통합 identity 시스템을 통한 모든 사용자 프로필 가져오기
-      let query = supabase
+      const query = supabase
         .from('identities')
         .select(`
           id,

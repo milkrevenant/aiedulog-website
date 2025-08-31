@@ -76,14 +76,18 @@ class ChatSizingManager {
     if (typeof window === 'undefined') return
     
     Object.keys(DEFAULT_SIZES).forEach(type => {
-      const stored = localStorage.getItem(`sizing_${type}`)
-      if (stored) {
-        try {
+      try {
+        const stored = localStorage.getItem(`sizing_${type}`)
+        if (stored && stored !== 'undefined' && stored !== '') {
           const config = JSON.parse(stored)
-          this.sizes.set(type, { ...DEFAULT_SIZES[type as ComponentType], ...config })
-        } catch (error) {
-          console.warn(`Failed to parse stored sizing for ${type}:`, error)
+          if (config && typeof config === 'object') {
+            this.sizes.set(type, { ...DEFAULT_SIZES[type as ComponentType], ...config })
+          }
         }
+      } catch (error) {
+        console.warn(`Failed to parse stored sizing for ${type}:`, error)
+        // Clean up corrupted data
+        localStorage.removeItem(`sizing_${type}`)
       }
     })
   }

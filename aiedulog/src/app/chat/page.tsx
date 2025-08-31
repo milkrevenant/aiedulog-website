@@ -97,7 +97,7 @@ export default function ChatPage() {
     try {
       if (!user) return
       
-      console.log('Fetching chat rooms for user:', user.id)
+      // Secure logging: production-safe (no console output in production)
 
       // 채팅방 목록 가져오기 - 간단한 쿼리로 변경
       const { data: participantData, error: participantError } = await supabase
@@ -107,25 +107,25 @@ export default function ChatPage() {
         .eq('is_active', true)
       
       if (participantError) {
-        console.error('Error fetching participants:', {
-          message: participantError.message || 'Unknown error',
-          details: participantError.details || 'No details',
-          hint: participantError.hint || 'No hint',
-          code: participantError.code || 'No code',
-          fullError: JSON.stringify(participantError)
-        })
+        // Secure logging: Only log errors in development
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Error fetching participants:', {
+            message: participantError.message || 'Unknown error',
+            code: participantError.code || 'No code'
+          })
+        }
         setError(`채팅방 목록을 불러오는데 실패했습니다: ${participantError.message || '알 수 없는 오류'}`)
         return
       }
       
       if (!participantData || participantData.length === 0) {
-        console.log('No chat rooms found - showing empty state')
+        // Secure logging: production-safe (no console output in production)
         setChatRooms([])
         setLoading(false)
         return
       }
       
-      console.log('Found participant data:', participantData)
+      // Secure logging: production-safe (no console output in production)
       
       // 각 room_id로 채팅방 정보 가져오기
       const roomIds = participantData.map(p => p.room_id).filter(id => id != null)
@@ -151,7 +151,7 @@ export default function ChatPage() {
         return
       }
 
-      console.log('Fetched rooms:', rooms)
+      // Secure logging: production-safe (no console output in production)
 
       if (rooms && rooms.length > 0) {
         // 각 채팅방의 참가자 정보와 안읽은 메시지 수 가져오기

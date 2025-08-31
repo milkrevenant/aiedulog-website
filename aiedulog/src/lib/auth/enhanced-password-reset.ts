@@ -477,6 +477,76 @@ export function getClientIP(): string | undefined {
   return undefined
 }
 
+/**
+ * Check if email is valid format
+ */
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+/**
+ * Format time remaining for rate limit
+ */
+export function formatRateLimitTime(seconds: number): string {
+  if (seconds <= 0) return '지금 다시 시도할 수 있습니다.'
+  if (seconds < 60) return `${seconds}초 후에 다시 시도해주세요.`
+  
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  
+  if (remainingSeconds === 0) {
+    return `${minutes}분 후에 다시 시도해주세요.`
+  }
+  return `${minutes}분 ${remainingSeconds}초 후에 다시 시도해주세요.`
+}
+
+/**
+ * Simple client-side rate limiter (for UI feedback)
+ */
+export class RateLimiter {
+  private attempts: Map<string, number[]> = new Map()
+  private readonly maxAttempts: number
+  private readonly windowMs: number
+
+  constructor(maxAttempts = 3, windowMs = 60000) {
+    this.maxAttempts = maxAttempts
+    this.windowMs = windowMs
+  }
+
+  isAllowed(key: string): boolean {
+    const now = Date.now()
+    const attempts = this.attempts.get(key) || []
+    
+    // Remove old attempts outside the window
+    const validAttempts = attempts.filter(time => now - time < this.windowMs)
+    
+    if (validAttempts.length >= this.maxAttempts) {
+      this.attempts.set(key, validAttempts)
+      return false
+    }
+    
+    validAttempts.push(now)
+    this.attempts.set(key, validAttempts)
+    return true
+  }
+
+  getRemainingTime(key: string): number {
+    const attempts = this.attempts.get(key) || []
+    if (attempts.length === 0) return 0
+    
+    const oldestAttempt = Math.min(...attempts)
+    const timeElapsed = Date.now() - oldestAttempt
+    const remainingTime = Math.max(0, this.windowMs - timeElapsed)
+    
+    return Math.ceil(remainingTime / 1000) // Return seconds
+  }
+
+  reset(key: string): void {
+    this.attempts.delete(key)
+  }
+}
+
 // ============================================
 // EXPORT
 // ============================================

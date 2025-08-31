@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Box, Container, Typography, Button, Paper, Stack, Alert } from '@mui/material'
 import { CheckCircleOutline, EmailOutlined, LoginOutlined, RefreshOutlined } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
+import { SecureStorage } from '@/lib/utils/secure-storage'
 
 export default function SignupSuccessPage() {
   const router = useRouter()
@@ -15,8 +16,8 @@ export default function SignupSuccessPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // 저장된 이메일 가져오기
-    const email = localStorage.getItem('signupEmail')
+    // 저장된 이메일 가져오기 (암호화된 저장소에서)
+    const email = SecureStorage.getItem('signupEmail')
     if (email) {
       setUserEmail(email)
     }

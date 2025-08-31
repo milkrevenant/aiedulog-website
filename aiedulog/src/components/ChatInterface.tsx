@@ -417,8 +417,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
         insertCollaborationTool('poll')
         break
       case 'table':
-        // TODO: Implement table embed
-        alert('Table embed coming soon!')
+        insertCollaborationTool('table')
         break
       case 'file':
         // Trigger file upload
@@ -429,14 +428,14 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
     }
   }
 
-  const insertCollaborationTool = async (toolType: 'kanban' | 'whiteboard' | 'todo' | 'poll') => {
+  const insertCollaborationTool = async (toolType: 'kanban' | 'whiteboard' | 'todo' | 'poll' | 'table') => {
     if (!chatUser) {
       console.error('Chat user not available')
       return
     }
 
     // 현재 roomId 사용
-    let actualRoomId = roomId
+    const actualRoomId = roomId
     if (roomId === 'new' || !roomId) {
       alert('채팅방을 먼저 생성해주세요.')
       return
@@ -451,6 +450,8 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
         ? '📋 칸반보드를 생성했습니다'
         : toolType === 'whiteboard'
         ? '🎨 화이트보드를 생성했습니다'
+        : toolType === 'table'
+        ? '📝 테이블을 생성했습니다'
         : '✅ 할 일 목록을 생성했습니다',
       type: toolType === 'whiteboard' ? 'excalidraw' : toolType,
       attachments: {
@@ -941,9 +942,10 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
             className="slash-menu-header"
             sx={{ 
               p: 2, 
-              color: 'primary.contrastText',
+              color: 'text.primary',
               borderBottom: 1, 
-              borderColor: 'divider'
+              borderColor: 'divider',
+              bgcolor: 'background.paper'
             }}
           >
             <Box sx={{ 
@@ -952,11 +954,11 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
               gap: 1
             }}>
               <Typography sx={{ fontSize: '1.2em' }}>⚡</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
                 Insert content
               </Typography>
             </Box>
-            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+            <Typography variant="caption" sx={{ opacity: 0.7, color: 'text.secondary' }}>
               Choose what to add to your message
             </Typography>
           </Box>
@@ -1185,8 +1187,11 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
         <MenuItem onClick={() => insertCollaborationTool('poll')}>
           <Poll sx={{ mr: 1 }} /> 투표
         </MenuItem>
+        <MenuItem onClick={() => insertCollaborationTool('table')}>
+          <TableChart sx={{ mr: 1 }} /> 테이블
+        </MenuItem>
         <Divider />
-        <MenuItem>
+        <MenuItem onClick={() => handleSlashCommand('file')}>
           <AttachFile sx={{ mr: 1 }} /> 파일 첨부
         </MenuItem>
         <MenuItem>

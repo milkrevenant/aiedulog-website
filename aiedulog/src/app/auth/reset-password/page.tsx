@@ -6,11 +6,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { translateAuthError } from '@/lib/utils/errorTranslator'
 import { 
-  checkPasswordStrength, 
-  isValidEmail, 
-  RateLimiter, 
-  formatRateLimitTime 
-} from '@/lib/auth/password-reset-utils'
+  validatePasswordStrength,
+  requestPasswordReset,
+  updatePassword,
+  getClientIP,
+  isValidEmail,
+  formatRateLimitTime
+} from '@/lib/auth/enhanced-password-reset'
 import {
   Box,
   Container,
@@ -33,7 +35,6 @@ import {
   VisibilityOff,
   CheckCircleOutline,
   ArrowBack,
-  Info,
 } from '@mui/icons-material'
 
 function ResetPasswordContent() {
@@ -46,18 +47,14 @@ function ResetPasswordContent() {
   const [mode, setMode] = useState<'request' | 'update'>('request')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isValidSession, setIsValidSession] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
-  const [passwordStrength, setPasswordStrength] = useState<ReturnType<typeof checkPasswordStrength> | null>(null)
-  const [rateLimitRemaining, setRateLimitRemaining] = useState<number>(0)
+  const [passwordStrength, setPasswordStrength] = useState<ReturnType<typeof validatePasswordStrength> | null>(null)
   
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
   const theme = useTheme()
   
-  // Initialize rate limiter (persists across component re-renders)
-  const [rateLimiter] = useState(() => new RateLimiter(3, 60000))
 
   useEffect(() => {
     const checkMode = async () => {
@@ -70,7 +67,6 @@ function ResetPasswordContent() {
         
         if (session) {
           setMode('update')
-          setIsValidSession(true)
         } else {
           // No valid session for password update
           setError('세션이 만료되었습니다. 다시 비밀번호 재설정을 요청해주세요.')
@@ -97,23 +93,26 @@ function ResetPasswordContent() {
       return
     }
 
-    // Rate limiting check
-    if (!rateLimiter.isAllowed(email)) {
-      const remainingTime = rateLimiter.getRemainingTime(email)
-      setRateLimitRemaining(remainingTime)
-      setError(formatRateLimitTime(remainingTime))
-      setLoading(false)
-      return
-    }
+    // Note: Rate limiting is now handled server-side in requestPasswordReset
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback`,
+      const result = await requestPasswordReset({
+        email,
+        ipAddress: getClientIP(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined
       })
 
-      if (error) throw error
+      if (!result.allowed) {
+        if (result.remainingTime) {
+          setError(formatRateLimitTime(result.remainingTime / 1000))
+        } else {
+          setError(result.message)
+        }
+        setLoading(false)
+        return
+      }
 
-      setSuccess('비밀번호 재설정 링크를 이메일로 전송했습니다. 이메일을 확인해주세요.')
+      setSuccess(result.message || '비밀번호 재설정 링크를 이메일로 전송했습니다. 이메일을 확인해주세요.')
       setEmail('')
     } catch (error: any) {
       setError(translateAuthError(error))
@@ -128,40 +127,24 @@ function ResetPasswordContent() {
     setError(null)
     setSuccess(null)
 
-    // Validate passwords
-    if (password !== confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.')
-      setLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      setError('비밀번호는 최소 6자 이상이어야 합니다.')
-      setLoading(false)
-      return
-    }
-
     try {
-      // Check session before updating
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session) {
-        setError('세션이 만료되었습니다. 다시 비밀번호 재설정을 요청해주세요.')
-        setMode('request')
+      const result = await updatePassword({
+        password,
+        confirmPassword,
+        ipAddress: getClientIP()
+      })
+
+      if (!result.allowed) {
+        setError(result.message)
+        if (result.requiresMFA) {
+          // Handle MFA requirement if needed
+          setError(result.message + ' (2단계 인증이 필요합니다)')
+        }
         setLoading(false)
         return
       }
 
-      const { data, error } = await supabase.auth.updateUser({
-        password: password,
-      })
-
-      if (error) throw error
-
-      setSuccess('비밀번호가 성공적으로 변경되었습니다.')
-      
-      // Sign out to clear the recovery session
-      await supabase.auth.signOut()
+      setSuccess(result.message || '비밀번호가 성공적으로 변경되었습니다.')
       
       // Redirect to login after 2 seconds
       setTimeout(() => {
@@ -327,7 +310,7 @@ function ResetPasswordContent() {
                   onChange={(e) => {
                     setPassword(e.target.value)
                     if (e.target.value) {
-                      setPasswordStrength(checkPasswordStrength(e.target.value))
+                      setPasswordStrength(validatePasswordStrength(e.target.value))
                     } else {
                       setPasswordStrength(null)
                     }
@@ -352,7 +335,7 @@ function ResetPasswordContent() {
                       </InputAdornment>
                     ),
                   }}
-                  helperText={passwordStrength ? passwordStrength.feedback : "최소 6자 이상 입력해주세요"}
+                  helperText={passwordStrength ? passwordStrength.feedback.join(' ') : "최소 8자 이상 입력해주세요"}
                 />
 
                 {passwordStrength && password && (

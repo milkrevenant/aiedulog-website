@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import {
   Box,
   Paper,
@@ -58,6 +59,79 @@ interface InlineExpandableMessageProps {
   onEdit?: (messageId: string) => void
   onReact?: (messageId: string, emoji: string) => void
 }
+
+// Dynamic import for embed components
+const ExcalidrawWrapper = dynamic(
+  () => import('@/components/ExcalidrawWrapper'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <CircularProgress />
+      </Box>
+    ),
+  }
+)
+
+const KanbanEmbed = dynamic(
+  () => import('@/components/embeds/KanbanEmbed'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <CircularProgress />
+      </Box>
+    ),
+  }
+)
+
+const TodoEmbed = dynamic(
+  () => import('@/components/embeds/TodoEmbed'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+        <CircularProgress />
+      </Box>
+    ),
+  }
+)
+
+const PollEmbed = dynamic(
+  () => import('@/components/embeds/PollEmbed'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+        <CircularProgress />
+      </Box>
+    ),
+  }
+)
+
+const TableEmbed = dynamic(
+  () => import('@/components/embeds/TableEmbed'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <CircularProgress />
+      </Box>
+    ),
+  }
+)
+
+const FileEmbed = dynamic(
+  () => import('@/components/embeds/FileEmbed'),
+  {
+    ssr: false,
+    loading: () => (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+        <CircularProgress />
+      </Box>
+    ),
+  }
+)
 
 export default function InlineExpandableMessage({
   message,
@@ -186,8 +260,89 @@ export default function InlineExpandableMessage({
     return { editing, viewing, total: collaborationUsers.length }
   }
 
+  const renderEmbedContent = () => {
+    if (!message.type) return null
+
+    switch (message.type) {
+      case 'excalidraw':
+        return (
+          <ExcalidrawWrapper 
+            height="500px"
+            onChange={(elements, appState) => {
+              // TODO: Save changes to backend
+              console.log('Excalidraw changed:', elements?.length, 'elements')
+            }}
+          />
+        )
+      case 'kanban':
+        return (
+          <KanbanEmbed
+            data={{ columns: [] }}
+            onChange={(data) => {
+              // TODO: Save changes to backend
+              console.log('Kanban changed:', data)
+            }}
+          />
+        )
+      case 'todo':
+        return (
+          <TodoEmbed
+            data={{ items: [], categories: [] }}
+            onChange={(data) => {
+              // TODO: Save changes to backend
+              console.log('Todo changed:', data)
+            }}
+          />
+        )
+      case 'poll':
+        return (
+          <PollEmbed
+            data={{
+              question: 'Sample Poll Question',
+              options: [],
+              allowMultiple: false,
+              anonymous: false,
+              createdAt: new Date().toISOString()
+            }}
+            onChange={(data) => {
+              // TODO: Save changes to backend
+              console.log('Poll changed:', data)
+            }}
+          />
+        )
+      case 'table':
+        return (
+          <TableEmbed
+            tableId={message.id}
+            roomId={message.roomId}
+            onChange={(data) => {
+              // TODO: Save changes to backend
+              console.log('Table changed:', data)
+            }}
+          />
+        )
+      case 'file':
+        return (
+          <FileEmbed
+            fileId={message.id}
+            roomId={message.roomId}
+            onChange={(files) => {
+              // TODO: Save changes to backend
+              console.log('Files changed:', files.length, 'files')
+            }}
+          />
+        )
+      default:
+        return (
+          <Box sx={{ p: 2, height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography color="text.secondary">Unknown embed type</Typography>
+          </Box>
+        )
+    }
+  }
+
   const renderMessageContent = () => {
-    const hasEmbedType = message.type && ['excalidraw', 'kanban', 'todo', 'poll'].includes(message.type)
+    const hasEmbedType = message.type && ['excalidraw', 'kanban', 'todo', 'poll', 'table', 'file'].includes(message.type)
     
     if (hasEmbedType) {
       return (
@@ -217,6 +372,8 @@ export default function InlineExpandableMessage({
                     {message.type === 'kanban' && '📋 Kanban Board'}
                     {message.type === 'todo' && '✅ Todo List'}
                     {message.type === 'poll' && '📊 Poll'}
+                    {message.type === 'table' && '📝 Table'}
+                    {message.type === 'file' && '📁 Files'}
                   </Typography>
                   
                   {/* Collaboration status */}
@@ -246,12 +403,10 @@ export default function InlineExpandableMessage({
             </Paper>
           )}
           
-          {/* Full embed when expanded - placeholder for future implementation */}
+          {/* Full embed when expanded */}
           <Collapse in={isExpanded}>
-            <Box sx={{ mt: 1, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Embed preview not available
-              </Typography>
+            <Box sx={{ mt: 1, p: 0, bgcolor: 'background.paper', borderRadius: 1, overflow: 'hidden' }}>
+              {renderEmbedContent()}
             </Box>
           </Collapse>
         </Box>

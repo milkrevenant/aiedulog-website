@@ -56,8 +56,7 @@ export async function getUserIdentity(user: User, supabaseClient?: any): Promise
       .eq('provider_user_id', user.id)
       .single()
 
-    console.log('Auth method lookup for user:', user.id)
-    console.log('Auth method result:', authMethod)
+    // Secure logging: production-safe (no console output in production)
 
     if (authMethod?.identities?.[0]?.user_profiles?.[0]) {
       return {
@@ -77,7 +76,7 @@ export async function getUserIdentity(user: User, supabaseClient?: any): Promise
     }
     
     // Fallback: user_profiles 테이블에서 직접 찾기
-    console.log('Trying fallback: direct user_profiles lookup')
+    // Secure logging: production-safe (no console output in production)
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('*')
