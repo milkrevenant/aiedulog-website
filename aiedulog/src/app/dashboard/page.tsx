@@ -23,7 +23,7 @@ import {
   LinearProgress,
   useTheme,
   alpha,
-  Grid,
+  GridLegacy as Grid,
 } from '@mui/material'
 import {
   Dashboard,
@@ -162,7 +162,7 @@ function DashboardContent() {
           <Skeleton variant="rectangular" height={200} />
           <Grid container spacing={3}>
             {[1, 2, 3, 4].map((i) => (
-              <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid key={i} item xs={12} sm={6} md={3}>
                 <Skeleton variant="rectangular" height={150} />
               </Grid>
             ))}
@@ -270,7 +270,7 @@ function DashboardContent() {
 
         {/* 통계 카드 */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -289,7 +289,7 @@ function DashboardContent() {
           </Grid>
 
           {(role === 'admin' || role === 'moderator') && (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -309,7 +309,7 @@ function DashboardContent() {
           )}
 
           {role === 'verified' && (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -328,7 +328,7 @@ function DashboardContent() {
             </Grid>
           )}
 
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -346,7 +346,7 @@ function DashboardContent() {
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -372,7 +372,7 @@ function DashboardContent() {
 
         <Grid container spacing={3}>
           {/* 모든 사용자 공통 메뉴 */}
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Stack spacing={2}>
@@ -394,7 +394,7 @@ function DashboardContent() {
           {/* Admin 전용 메뉴 */}
           {role === 'admin' && (
             <>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -413,7 +413,7 @@ function DashboardContent() {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -432,7 +432,7 @@ function DashboardContent() {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -456,7 +456,7 @@ function DashboardContent() {
           {/* Moderator 전용 메뉴 */}
           {role === 'moderator' && (
             <>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -475,7 +475,7 @@ function DashboardContent() {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -499,7 +499,7 @@ function DashboardContent() {
           {/* Verified 전용 메뉴 */}
           {role === 'verified' && (
             <>
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -518,7 +518,7 @@ function DashboardContent() {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
                     <Stack spacing={2}>
@@ -541,7 +541,7 @@ function DashboardContent() {
 
           {/* Member 추가 메뉴 */}
           {role === 'member' && (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Stack spacing={2}>

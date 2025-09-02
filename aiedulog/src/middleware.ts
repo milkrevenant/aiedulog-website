@@ -279,10 +279,12 @@ export const config = {
     /*
      * Match all request paths except:
      * - _next/static (static files)
-     * - _next/image (image optimization files)
+     * - _next/image (image optimization files) 
+     * - _next/webpack-hmr (hot reload)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-     * - images (public images)
+     * - public assets (images, fonts, etc.)
+     * - API routes for static assets
      */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$).*)',
   ],
 }

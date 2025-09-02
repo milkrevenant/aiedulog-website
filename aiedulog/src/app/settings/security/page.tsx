@@ -31,7 +31,7 @@ import {
   Chip,
   IconButton,
   Collapse,
-  Grid,
+  GridLegacy as Grid,
   useTheme,
   alpha,
   Snackbar,
@@ -378,7 +378,7 @@ export default function SecuritySettingsPage() {
 
                 {/* Add New Methods */}
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid item xs={12} md={6}>
                     <Card variant="outlined">
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -403,7 +403,7 @@ export default function SecuritySettingsPage() {
                     </Card>
                   </Grid>
 
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid item xs={12} md={6}>
                     <Card variant="outlined">
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -558,7 +558,7 @@ export default function SecuritySettingsPage() {
             <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Grid container spacing={1}>
                 {backupCodes.map((code, index) => (
-                  <Grid size={{ xs: 6 }} key={index}>
+                  <Grid item xs={6} key={index}>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                       {index + 1}. {code}
                     </Typography>

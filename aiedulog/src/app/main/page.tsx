@@ -19,7 +19,7 @@ import {
   Grow,
   Collapse,
   Divider,
-  Grid,
+  GridLegacy as Grid,
   Fab,
   Menu as MuiMenu,
   List,
@@ -54,6 +54,7 @@ import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import NotificationIcon from '@/components/NotificationIcon'
 import FeedSidebar from '@/components/FeedSidebar'
+import DynamicFooter from '@/components/DynamicFooter'
 import { createClient } from '@/lib/supabase/client'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import { User } from '@supabase/supabase-js'
@@ -139,22 +140,22 @@ export default function Home() {
         sections: [
           {
             items: [
-              { label: '연구회 소개', href: '#' },
-              { label: '조직도', href: '#' },
-              { label: '연혁', href: '#' },
+              { label: '연구회 소개', href: '/introduction' },
+              { label: '조직도', href: '/organization' },
+              { label: '연혁', href: '/organization#history' },
             ],
           },
           {
             items: [
-              { label: '정기 모임', href: '#' },
-              { label: '연수 프로그램', href: '#' },
+              { label: '정기 모임', href: '/regular-meetings' },
+              { label: '연수 프로그램', href: '/annual-lecture' },
             ],
           },
         ],
         featured: {
           label: '공지사항',
           title: '2025년 상반기 연수 일정',
-          href: '#',
+          href: '/notice',
         },
       },
     },
@@ -165,22 +166,22 @@ export default function Home() {
         sections: [
           {
             items: [
-              { label: 'AI 도구 활용', href: '#' },
-              { label: '수업 지도안', href: '#' },
-              { label: '평가 자료', href: '#' },
+              { label: 'AI 도구 활용', href: '/tools' },
+              { label: '수업 지도안', href: '/curriculum' },
+              { label: '평가 자료', href: '/evaluation' },
             ],
           },
           {
             items: [
-              { label: '논문 및 보고서', href: '#' },
-              { label: '세미나 자료', href: '#' },
+              { label: '논문 및 보고서', href: '/board/education' },
+              { label: '세미나 자료', href: '/board/lectures' },
             ],
           },
         ],
         featured: {
           label: '인기 자료',
           title: 'AI 활용 수업 사례집',
-          href: '#',
+          href: '/board/education',
         },
       },
     },
@@ -188,11 +189,13 @@ export default function Home() {
       label: '비전',
       key: 'vision',
       dropdown: null,
+      href: '/vision',
     },
     {
       label: '뉴스',
       key: 'news',
       dropdown: null,
+      href: '/news',
     },
   ]
 
@@ -251,11 +254,12 @@ export default function Home() {
                   onMouseLeave={handleMenuClose}
                 >
                   <MuiLink
-                    href="#"
+                    href={item.href || "#"}
                     underline="none"
+                    component={item.href ? Link : 'a'}
                     onClick={(e) => {
-                      e.preventDefault()
                       if (item.dropdown) {
+                        e.preventDefault()
                         handleMenuClick(e, item.key)
                       }
                     }}
@@ -345,7 +349,7 @@ export default function Home() {
                             onMouseLeave={handleMenuClose}
                           >
                             <Grid container>
-                              <Grid size={{ xs: 12, md: 5 }}>
+                              <Grid item xs={12} md={5}>
                                 <Box sx={{ p: 3 }}>
                                   {item.dropdown.sections.map((section, idx) => (
                                     <Box
@@ -382,7 +386,7 @@ export default function Home() {
                                 </Box>
                               </Grid>
                               {item.dropdown.featured && (
-                                <Grid size={{ xs: 12, md: 7 }}>
+                                <Grid item xs={12} md={7}>
                                   <Box
                                     sx={{
                                       bgcolor: '#FFFFFF', // 흰색 배경
@@ -597,7 +601,12 @@ export default function Home() {
           <Collapse in={mobileAboutOpen} timeout="auto" unmountOnExit>
             <List component="div" disablePadding sx={{ py: 0 }}>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/introduction"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="연구회 소개"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -605,17 +614,32 @@ export default function Home() {
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/organization"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText primary="조직도" primaryTypographyProps={{ fontSize: '0.9rem' }} />
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/organization#history"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText primary="연혁" primaryTypographyProps={{ fontSize: '0.9rem' }} />
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/regular-meetings"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="정기 모임"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -623,7 +647,12 @@ export default function Home() {
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/annual-lecture"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="연수 프로그램"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -654,7 +683,12 @@ export default function Home() {
           <Collapse in={mobileShareOpen} timeout="auto" unmountOnExit>
             <List component="div" disablePadding sx={{ py: 0 }}>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/tools"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="AI 도구 활용"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -662,7 +696,12 @@ export default function Home() {
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/curriculum"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="수업 지도안"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -670,7 +709,12 @@ export default function Home() {
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/evaluation"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="평가 자료"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -678,7 +722,12 @@ export default function Home() {
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/board/education"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="논문 및 보고서"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -686,7 +735,12 @@ export default function Home() {
                 </ListItemButton>
               </ListItem>
               <ListItem sx={{ pl: 4, py: 0 }}>
-                <ListItemButton onClick={() => setMobileMenuAnchor(null)} sx={{ py: 1 }}>
+                <ListItemButton 
+                  component={Link}
+                  href="/board/lectures"
+                  onClick={() => setMobileMenuAnchor(null)} 
+                  sx={{ py: 1 }}
+                >
                   <ListItemText
                     primary="세미나 자료"
                     primaryTypographyProps={{ fontSize: '0.9rem' }}
@@ -701,10 +755,9 @@ export default function Home() {
           {/* 비전 */}
           <ListItem disablePadding>
             <ListItemButton
-              onClick={() => {
-                setMobileMenuAnchor(null)
-                // Navigate to 비전
-              }}
+              component={Link}
+              href="/vision"
+              onClick={() => setMobileMenuAnchor(null)}
             >
               <ListItemIcon>
                 <RemoveRedEye sx={{ color: '#2E86AB' }} />
@@ -724,10 +777,9 @@ export default function Home() {
           {/* 뉴스 */}
           <ListItem disablePadding>
             <ListItemButton
-              onClick={() => {
-                setMobileMenuAnchor(null)
-                // Navigate to 뉴스
-              }}
+              component={Link}
+              href="/news"
+              onClick={() => setMobileMenuAnchor(null)}
             >
               <ListItemIcon>
                 <Newspaper sx={{ color: '#2E86AB' }} />
@@ -1323,343 +1375,8 @@ export default function Home() {
         </Stack>
       </Container>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          bgcolor: '#1a1a1a',
-          color: '#fff',
-          pt: 8,
-          pb: 4,
-        }}
-      >
-        <Container maxWidth="xl">
-          <Grid container spacing={6} justifyContent="center">
-            {/* Footer columns */}
-            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  mb: 2,
-                  fontSize: '0.875rem',
-                }}
-              >
-                연구회
-              </Typography>
-              <Stack spacing={1.5}>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  연구회 소개
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  조직도
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  연혁
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  정기 모임
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  연수 프로그램
-                </MuiLink>
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  mb: 2,
-                  fontSize: '0.875rem',
-                }}
-              >
-                자료 & 사례
-              </Typography>
-              <Stack spacing={1.5}>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  AI 도구 활용
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  수업 지도안
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  평가 자료
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  논문 및 보고서
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  수업 사례
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  연구 사례
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  우수 실천 사례
-                </MuiLink>
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  mb: 2,
-                  fontSize: '0.875rem',
-                }}
-              >
-                비전
-              </Typography>
-              <Stack spacing={1.5}>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  미래 교육
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  AI 교육 정책
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  교육 혁신
-                </MuiLink>
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 6, sm: 6, md: 3, lg: 3 }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  mb: 2,
-                  fontSize: '0.875rem',
-                }}
-              >
-                뉴스
-              </Typography>
-              <Stack spacing={1.5}>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  공지사항
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  연구회 소식
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  행사 안내
-                </MuiLink>
-                <MuiLink
-                  href="#"
-                  underline="none"
-                  sx={{
-                    color: '#888',
-                    fontSize: '0.875rem',
-                    '&:hover': { color: '#fff' },
-                  }}
-                >
-                  교육 뉴스
-                </MuiLink>
-              </Stack>
-            </Grid>
-          </Grid>
-
-          {/* Bottom bar */}
-          <Divider sx={{ borderColor: '#333', my: 4 }} />
-
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 2,
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                color: '#888',
-                fontSize: '0.75rem',
-              }}
-            >
-              © 2025 AIedulog
-            </Typography>
-
-            {/* Social links */}
-            <Stack direction="row" spacing={2}>
-              <IconButton
-                size="small"
-                sx={{
-                  color: '#888',
-                  '&:hover': { color: '#fff' },
-                }}
-              >
-                <YouTube fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                sx={{
-                  color: '#888',
-                  '&:hover': { color: '#fff' },
-                }}
-              >
-                <LinkedIn fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                sx={{
-                  color: '#888',
-                  '&:hover': { color: '#fff' },
-                }}
-              >
-                <Twitter fontSize="small" />
-              </IconButton>
-            </Stack>
-          </Box>
-        </Container>
-      </Box>
+      {/* Dynamic Footer */}
+      <DynamicFooter language="ko" />
 
       {/* 모바일 플로팅 메뉴 버튼 - 로그인한 경우에만 표시 */}
       {user && (

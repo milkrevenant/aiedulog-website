@@ -602,7 +602,7 @@ export {
   M3Stack,
   M3Box,
   M3Typography,
-  M3Grid,
+  M3Grid as Grid,
   M3Menu,
   M3MenuItem,
   M3Alert,

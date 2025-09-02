@@ -1,8 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { useForm, Controller } from 'react-hook-form'
 import AuthGuard from '@/components/AuthGuard'
 import AppHeader from '@/components/AppHeader'
 import {
@@ -18,7 +37,7 @@ import {
   TextField,
   Switch,
   FormControlLabel,
-  Grid,
+  GridLegacy as Grid,
   Card,
   CardContent,
   CardActions,
@@ -34,6 +53,25 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Divider,
+  Drawer,
+  AppBar,
+  Toolbar,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Breadcrumbs,
+  Link,
+  Badge,
+  Skeleton,
+  Fab,
+  SpeedDial,
+  SpeedDialIcon,
+  SpeedDialAction,
+  Snackbar,
 } from '@mui/material'
 import {
   Edit,
@@ -51,7 +89,91 @@ import {
   Article,
   Campaign,
   Newspaper,
+  Dashboard,
+  ViewModule,
+  Preview,
+  History,
+  Translate,
+  Schedule,
+  Palette,
+  Animation,
+  Code,
+  Image,
+  VideoCall,
+  TextFields,
+  GridOn,
+  BarChart,
+  Timeline as TimelineIcon,
+  QuestionAnswer,
+  Star,
+  CloudUpload,
+  FileCopy,
+  ExpandMore,
+  FilterList,
+  Search,
+  Close,
+  Check,
+  Warning,
+  Info,
+  Error,
+  Refresh,
+  Help,
+  SmartToy,
+  Assessment,
+  Language,
+  Autorenew,
 } from '@mui/icons-material'
+
+// Types for content management
+interface ContentSection {
+  id: string
+  section_key: string
+  title: any
+  slug: any
+  description: any
+  status: 'draft' | 'published' | 'archived' | 'scheduled'
+  published_at?: string
+  sort_order: number
+  is_featured: boolean
+  visibility: 'public' | 'members_only' | 'admin_only'
+  settings: any
+  template: string
+  version_number: number
+  last_published_version: number
+  blocks?: ContentBlock[]
+  created_at: string
+  updated_at: string
+}
+
+interface ContentBlock {
+  id: string
+  section_id: string
+  parent_block_id?: string
+  block_type: 'hero' | 'feature_grid' | 'stats' | 'timeline' | 'text_rich' | 'image_gallery' | 'video_embed' | 'cta' | 'testimonial' | 'faq'
+  block_key?: string
+  content: any
+  metadata: any
+  layout_config: any
+  animation_config: any
+  sort_order: number
+  is_active: boolean
+  visibility: 'public' | 'members_only' | 'admin_only'
+  created_at: string
+  updated_at: string
+}
+
+interface ContentTemplate {
+  id: string
+  template_key: string
+  name: any
+  description: any
+  template_type: 'section' | 'block' | 'page'
+  category: string
+  template_data: any
+  preview_image_url?: string
+  is_public: boolean
+  usage_count: number
+}
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -63,136 +185,469 @@ function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props
   return (
     <div role="tabpanel" hidden={value !== index} {...other}>
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+      <AnimatePresence mode="wait">
+        {value === index && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            {...other}
+          >
+            <Box sx={{ py: 3 }}>{children}</Box>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
+// Block Type Configurations
+const BLOCK_TYPES = {
+  hero: { icon: <Campaign />, name: '히어로 섹션', color: '#1976d2' },
+  feature_grid: { icon: <GridOn />, name: '특징 그리드', color: '#7c4dff' },
+  stats: { icon: <BarChart />, name: '통계 카운터', color: '#00c853' },
+  timeline: { icon: <TimelineIcon />, name: '타임라인', color: '#ff6f00' },
+  text_rich: { icon: <TextFields />, name: '리치 텍스트', color: '#546e7a' },
+  image_gallery: { icon: <Image />, name: '이미지 갤러리', color: '#e91e63' },
+  video_embed: { icon: <VideoCall />, name: '비디오 임베드', color: '#f44336' },
+  cta: { icon: <Star />, name: '콜투액션', color: '#ff9800' },
+  testimonial: { icon: <QuestionAnswer />, name: '고객 후기', color: '#9c27b0' },
+  faq: { icon: <Help />, name: 'FAQ', color: '#607d8b' },
+}
+
+// Animation presets
+const ANIMATION_PRESETS = {
+  fadeIn: { name: '페이드 인', config: { initial: { opacity: 0 }, animate: { opacity: 1 } } },
+  slideUp: { name: '슬라이드 업', config: { initial: { opacity: 0, y: 50 }, animate: { opacity: 1, y: 0 } } },
+  slideLeft: { name: '슬라이드 왼쪽', config: { initial: { opacity: 0, x: 50 }, animate: { opacity: 1, x: 0 } } },
+  scaleIn: { name: '스케일 인', config: { initial: { opacity: 0, scale: 0.8 }, animate: { opacity: 1, scale: 1 } } },
+  rotateIn: { name: '로테이트 인', config: { initial: { opacity: 0, rotate: 10 }, animate: { opacity: 1, rotate: 0 } } },
+}
+
 function MainContentManagement() {
+  // Main state
   const [tabValue, setTabValue] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [navigationItems, setNavigationItems] = useState<any[]>([])
-  const [heroContent, setHeroContent] = useState<any>(null)
-  const [featureCards, setFeatureCards] = useState<any[]>([])
-  const [editDialog, setEditDialog] = useState(false)
-  const [editingItem, setEditingItem] = useState<any>(null)
+  const [sections, setSections] = useState<ContentSection[]>([])
+  const [selectedSection, setSelectedSection] = useState<ContentSection | null>(null)
+  const [blocks, setBlocks] = useState<ContentBlock[]>([])
+  const [templates, setTemplates] = useState<ContentTemplate[]>([])
+  
+  // Dialog states
+  const [sectionDialog, setSectionDialog] = useState(false)
+  const [blockDialog, setBlockDialog] = useState(false)
+  const [previewDialog, setPreviewDialog] = useState(false)
+  const [historyDialog, setHistoryDialog] = useState(false)
+  const [templateDialog, setTemplateDialog] = useState(false)
+  
+  // Editing states
+  const [editingSection, setEditingSection] = useState<ContentSection | null>(null)
+  const [editingBlock, setEditingBlock] = useState<ContentBlock | null>(null)
+  const [draggedBlock, setDraggedBlock] = useState<ContentBlock | null>(null)
+  
+  // UI states
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterType, setFilterType] = useState('all')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' })
+  
   const supabase = createClient()
   const router = useRouter()
+  
+  // Form hooks
+  const sectionForm = useForm()
+  const blockForm = useForm()
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
-  // 데이터 로드
+  // Data loading
   useEffect(() => {
-    loadData()
+    loadSections()
+    loadTemplates()
   }, [])
+  
+  useEffect(() => {
+    if (selectedSection) {
+      loadBlocks(selectedSection.id)
+    }
+  }, [selectedSection])
 
-  const loadData = async () => {
+  const loadSections = async () => {
     setLoading(true)
     try {
-      // 네비게이션 아이템 로드
-      const { data: navItems } = await supabase
-        .from('navigation_items')
-        .select('*')
-        .order('order_index')
-
-      // 히어로 콘텐츠 로드
-      const { data: hero } = await supabase
-        .from('main_hero_content')
-        .select('*')
-        .eq('is_active', true)
-        .single()
-
-      // 기능 카드 로드
-      const { data: cards } = await supabase
-        .from('main_feature_cards')
-        .select('*')
-        .order('order_index')
-
-      setNavigationItems(navItems || [])
-      setHeroContent(hero)
-      setFeatureCards(cards || [])
+      const response = await fetch('/api/admin/main-content?includeBlocks=false')
+      const data = await response.json()
+      
+      if (response.ok) {
+        setSections(data.sections || [])
+        if (data.sections && data.sections.length > 0 && !selectedSection) {
+          setSelectedSection(data.sections[0])
+        }
+      } else {
+        showSnackbar(data.error || 'Failed to load sections', 'error')
+      }
     } catch (error) {
-      console.error('Error loading data:', error)
+      console.error('Error loading sections:', error)
+      showSnackbar('Failed to load content sections', 'error')
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const loadBlocks = async (sectionId: string) => {
+    try {
+      const response = await fetch(`/api/admin/main-content/blocks?sectionId=${sectionId}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        setBlocks(data.blocks || [])
+      } else {
+        showSnackbar(data.error || 'Failed to load blocks', 'error')
+      }
+    } catch (error) {
+      console.error('Error loading blocks:', error)
+      showSnackbar('Failed to load content blocks', 'error')
+    }
+  }
+  
+  const loadTemplates = async () => {
+    try {
+      const response = await fetch('/api/admin/main-content/templates')
+      const data = await response.json()
+      
+      if (response.ok) {
+        setTemplates(data.templates || [])
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error)
     }
   }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
   }
-
-  // 네비게이션 아이템 편집
-  const handleEditNavItem = (item: any) => {
-    setEditingItem(item)
-    setEditDialog(true)
+  
+  // Utility functions
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'warning' | 'info') => {
+    setSnackbar({ open: true, message, severity })
+  }
+  
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false })
   }
 
-  const handleSaveNavItem = async () => {
+  // Section management
+  const handleCreateSection = () => {
+    setEditingSection(null)
+    sectionForm.reset({
+      section_key: '',
+      title: { ko: '', en: '' },
+      slug: { ko: '', en: '' },
+      description: { ko: '', en: '' },
+      status: 'draft',
+      visibility: 'public',
+      template: 'default',
+      sort_order: sections.length,
+      is_featured: false,
+      settings: {}
+    })
+    setSectionDialog(true)
+  }
+  
+  const handleEditSection = (section: ContentSection) => {
+    setEditingSection(section)
+    sectionForm.reset(section)
+    setSectionDialog(true)
+  }
+  
+  const handleSaveSection = async (data: any) => {
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('navigation_items')
-        .update(editingItem)
-        .eq('id', editingItem.id)
-
-      if (!error) {
-        await loadData()
-        setEditDialog(false)
-        setEditingItem(null)
-      }
-    } catch (error) {
-      console.error('Error saving navigation item:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // 히어로 콘텐츠 저장
-  const handleSaveHero = async () => {
-    setSaving(true)
-    try {
-      if (heroContent?.id) {
-        await supabase.from('main_hero_content').update(heroContent).eq('id', heroContent.id)
-      } else {
-        await supabase.from('main_hero_content').insert(heroContent)
-      }
-      alert('히어로 섹션이 저장되었습니다.')
-    } catch (error) {
-      console.error('Error saving hero content:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // 기능 카드 순서 변경
-  const handleMoveCard = async (index: number, direction: 'up' | 'down') => {
-    const newCards = [...featureCards]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
-
-    if (targetIndex >= 0 && targetIndex < newCards.length) {
-      ;[newCards[index], newCards[targetIndex]] = [newCards[targetIndex], newCards[index]]
-
-      // 순서 업데이트
-      newCards.forEach((card, i) => {
-        card.order_index = i
+      const url = '/api/admin/main-content'
+      const method = editingSection ? 'PUT' : 'POST'
+      const payload = editingSection ? { type: 'section', id: editingSection.id, data } : { type: 'section', data }
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
-
-      setFeatureCards(newCards)
-
-      // DB 업데이트
-      for (const card of newCards) {
-        await supabase
-          .from('main_feature_cards')
-          .update({ order_index: card.order_index })
-          .eq('id', card.id)
+      
+      const result = await response.json()
+      
+      if (response.ok) {
+        showSnackbar(
+          editingSection ? 'Section updated successfully' : 'Section created successfully',
+          'success'
+        )
+        setSectionDialog(false)
+        await loadSections()
+      } else {
+        showSnackbar(result.error || 'Failed to save section', 'error')
       }
+    } catch (error) {
+      console.error('Error saving section:', error)
+      showSnackbar('Failed to save section', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+  
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!window.confirm('Are you sure you want to delete this section? This will also delete all its content blocks.')) {
+      return
+    }
+    
+    setSaving(true)
+    try {
+      const response = await fetch(`/api/admin/main-content?id=${sectionId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        showSnackbar('Section deleted successfully', 'success')
+        if (selectedSection?.id === sectionId) {
+          setSelectedSection(null)
+          setBlocks([])
+        }
+        await loadSections()
+      } else {
+        const result = await response.json()
+        showSnackbar(result.error || 'Failed to delete section', 'error')
+      }
+    } catch (error) {
+      console.error('Error deleting section:', error)
+      showSnackbar('Failed to delete section', 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
+  // Block management
+  const handleCreateBlock = (blockType: string) => {
+    if (!selectedSection) {
+      showSnackbar('Please select a section first', 'warning')
+      return
+    }
+    
+    setEditingBlock(null)
+    blockForm.reset({
+      section_id: selectedSection.id,
+      block_type: blockType,
+      content: getDefaultBlockContent(blockType),
+      metadata: {},
+      layout_config: {},
+      animation_config: {},
+      sort_order: blocks.length,
+      is_active: true,
+      visibility: 'public'
+    })
+    setBlockDialog(true)
+  }
+  
+  const handleEditBlock = (block: ContentBlock) => {
+    setEditingBlock(block)
+    blockForm.reset(block)
+    setBlockDialog(true)
+  }
+  
+  const handleSaveBlock = async (data: any) => {
+    setSaving(true)
+    try {
+      const url = '/api/admin/main-content/blocks'
+      const method = editingBlock ? 'PUT' : 'POST'
+      const payload = editingBlock ? { id: editingBlock.id, ...data } : data
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok) {
+        showSnackbar(
+          editingBlock ? 'Block updated successfully' : 'Block created successfully',
+          'success'
+        )
+        setBlockDialog(false)
+        if (selectedSection) {
+          await loadBlocks(selectedSection.id)
+        }
+      } else {
+        showSnackbar(result.error || 'Failed to save block', 'error')
+      }
+    } catch (error) {
+      console.error('Error saving block:', error)
+      showSnackbar('Failed to save block', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+  
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!window.confirm('Are you sure you want to delete this block?')) {
+      return
+    }
+    
+    setSaving(true)
+    try {
+      const response = await fetch(`/api/admin/main-content/blocks?id=${blockId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        showSnackbar('Block deleted successfully', 'success')
+        if (selectedSection) {
+          await loadBlocks(selectedSection.id)
+        }
+      } else {
+        const result = await response.json()
+        showSnackbar(result.error || 'Failed to delete block', 'error')
+      }
+    } catch (error) {
+      console.error('Error deleting block:', error)
+      showSnackbar('Failed to delete block', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+  
+  // Get default content for block types
+  const getDefaultBlockContent = (blockType: string): any => {
+    const defaults: Record<string, any> = {
+      hero: {
+        title: { ko: '', en: '' },
+        subtitle: { ko: '', en: '' },
+        description: { ko: '', en: '' },
+        backgroundType: 'gradient',
+        ctaButton: { text: { ko: '자세히 보기', en: 'Learn More' }, href: '#' }
+      },
+      feature_grid: {
+        title: { ko: '', en: '' },
+        columns: 3,
+        items: []
+      },
+      stats: {
+        title: { ko: '', en: '' },
+        items: []
+      },
+      timeline: {
+        title: { ko: '', en: '' },
+        orientation: 'vertical',
+        items: []
+      },
+      text_rich: {
+        content: { ko: '', en: '' }
+      },
+      image_gallery: {
+        title: { ko: '', en: '' },
+        layout: 'grid',
+        images: []
+      },
+      video_embed: {
+        title: { ko: '', en: '' },
+        videoUrl: '',
+        thumbnail: ''
+      },
+      cta: {
+        title: { ko: '', en: '' },
+        description: { ko: '', en: '' },
+        button: { text: { ko: '시작하기', en: 'Get Started' }, href: '#' }
+      },
+      testimonial: {
+        title: { ko: '', en: '' },
+        testimonials: []
+      },
+      faq: {
+        title: { ko: '', en: '' },
+        items: []
+      }
+    }
+    
+    return defaults[blockType] || {}
+  }
+
+  // Drag and drop handling
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (!over || active.id === over.id) {
+      return
+    }
+    
+    const oldIndex = blocks.findIndex(block => block.id === active.id)
+    const newIndex = blocks.findIndex(block => block.id === over.id)
+    
+    if (oldIndex === -1 || newIndex === -1) {
+      return
+    }
+    
+    const newBlocks = arrayMove(blocks, oldIndex, newIndex)
+    
+    // Update sort_order for all blocks
+    const updatedBlocks = newBlocks.map((block, index) => ({
+      ...block,
+      sort_order: index
+    }))
+    
+    setBlocks(updatedBlocks)
+    
+    // Update in backend
+    try {
+      for (const block of updatedBlocks) {
+        await fetch('/api/admin/main-content/blocks', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: block.id,
+            sort_order: block.sort_order
+          })
+        })
+      }
+      showSnackbar('Block order updated successfully', 'success')
+    } catch (error) {
+      console.error('Error updating block order:', error)
+      showSnackbar('Failed to update block order', 'error')
+      // Revert on error
+      setBlocks(blocks)
+    }
+  }, [blocks])
+
+  // Filter functions
+  const filteredSections = sections.filter(section => {
+    const matchesSearch = searchTerm === '' || 
+      (section.title.ko && section.title.ko.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (section.title.en && section.title.en.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      section.section_key.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesStatus = filterStatus === 'all' || section.status === filterStatus
+    
+    return matchesSearch && matchesStatus
+  })
+  
+  const filteredBlocks = blocks.filter(block => {
+    const matchesType = filterType === 'all' || block.block_type === filterType
+    return matchesType
+  })
+  
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ ml: 2, alignSelf: 'center' }}>
+          Loading content management system...
+        </Typography>
       </Box>
     )
   }
@@ -201,313 +656,1403 @@ function MainContentManagement() {
     <>
       <AppHeader />
       <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold" sx={{ mb: 3 }}>
-          메인 페이지 콘텐츠 관리
-        </Typography>
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box sx={{ mb: 4 }}>
+            <Breadcrumbs sx={{ mb: 2 }}>
+              <Link href="/admin" underline="hover" color="inherit">
+                <Dashboard sx={{ mr: 0.5 }} fontSize="inherit" />
+                Admin
+              </Link>
+              <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+                <ViewModule sx={{ mr: 0.5 }} fontSize="inherit" />
+                Main Content
+              </Typography>
+            </Breadcrumbs>
+            
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+              <Box>
+                <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
+                  메인 콘텐츠 관리 시스템
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Enterprise-grade content management for dynamic sections and blocks
+                </Typography>
+              </Box>
+              
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="outlined"
+                  startIcon={<History />}
+                  onClick={() => setHistoryDialog(true)}
+                >
+                  Version History
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<Preview />}
+                  onClick={() => setPreviewDialog(true)}
+                  disabled={!selectedSection}
+                >
+                  Preview
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleCreateSection}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
+                    boxShadow: '0 3px 5px 2px rgba(25, 118, 210, .3)',
+                  }}
+                >
+                  Create Section
+                </Button>
+              </Stack>
+            </Stack>
+            
+            {/* Quick Stats */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+                    {sections.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>
+                    Total Sections
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+                    {blocks.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>
+                    Active Blocks
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+                    {sections.filter(s => s.status === 'published').length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>
+                    Published
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+                    {templates.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>
+                    Templates
+                  </Typography>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </motion.div>
 
-        <Paper sx={{ width: '100%' }}>
+        {/* Main Content Area */}
+        <Paper sx={{ width: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
           <Tabs
             value={tabValue}
             onChange={handleTabChange}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              '& .MuiTab-root': {
+                minHeight: '72px',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+              },
+              '& .Mui-selected': {
+                background: 'linear-gradient(45deg, rgba(25, 118, 210, 0.1) 0%, rgba(66, 165, 245, 0.1) 100%)',
+              }
+            }}
+            variant="scrollable"
+            scrollButtons="auto"
           >
-            <Tab icon={<MenuIcon />} label="네비게이션" />
-            <Tab icon={<Campaign />} label="히어로 섹션" />
-            <Tab icon={<Article />} label="기능 카드" />
-            <Tab icon={<Newspaper />} label="페이지 콘텐츠" />
+            <Tab 
+              icon={<Dashboard />} 
+              label="Overview" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+            />
+            <Tab 
+              icon={<ViewModule />} 
+              label="Sections" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+            />
+            <Tab 
+              icon={<GridOn />} 
+              label="Content Blocks" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+              disabled={!selectedSection}
+            />
+            <Tab 
+              icon={<Palette />} 
+              label="Design & Animation" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+              disabled={!selectedSection}
+            />
+            <Tab 
+              icon={<FileCopy />} 
+              label="Templates" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+              onClick={() => router.push('/admin/templates')}
+            />
+            <Tab 
+              icon={<BarChart />} 
+              label="Analytics" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+              onClick={() => router.push('/admin/analytics')}
+            />
+            <Tab 
+              icon={<Schedule />} 
+              label="Scheduling" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+              onClick={() => router.push('/admin/scheduler')}
+            />
+            <Tab 
+              icon={<Translate />} 
+              label="Translations" 
+              iconPosition="start"
+              sx={{ flexDirection: 'row', gap: 1 }}
+              onClick={() => router.push('/admin/translations')}
+            />
           </Tabs>
 
-          {/* 네비게이션 관리 */}
+          {/* Overview Tab */}
           <TabPanel value={tabValue} index={0}>
             <Box sx={{ p: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 3 }}
-              >
-                <Typography variant="h6">네비게이션 메뉴 관리</Typography>
-                <Button variant="contained" startIcon={<Add />}>
-                  메뉴 추가
-                </Button>
-              </Stack>
-
-              <List>
-                {navigationItems
-                  .filter((item) => !item.parent_key)
-                  .map((item) => (
-                    <Box key={item.id}>
-                      <ListItem>
-                        <ListItemText
-                          primary={item.label}
-                          secondary={
-                            item.is_dropdown ? '드롭다운 메뉴' : `링크: ${item.href || '없음'}`
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <IconButton onClick={() => handleEditNavItem(item)}>
-                            <Edit />
-                          </IconButton>
-                          <IconButton>
-                            <Delete />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-
-                      {/* 하위 메뉴 */}
-                      {item.is_dropdown && (
-                        <Box sx={{ pl: 4 }}>
-                          {navigationItems
-                            .filter((subItem) => subItem.parent_key === item.key)
-                            .map((subItem) => (
-                              <ListItem key={subItem.id}>
-                                <ListItemText
-                                  primary={subItem.label}
-                                  secondary={`링크: ${subItem.href}`}
-                                />
-                                <ListItemSecondaryAction>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleEditNavItem(subItem)}
-                                  >
-                                    <Edit fontSize="small" />
-                                  </IconButton>
-                                </ListItemSecondaryAction>
-                              </ListItem>
-                            ))}
-                        </Box>
-                      )}
-                      <Divider />
-                    </Box>
-                  ))}
-              </List>
+              <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Dashboard color="primary" />
+                Content Overview
+              </Typography>
+              
+              {/* Section Selection */}
+              <Card sx={{ mb: 3, p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Current Section
+                </Typography>
+                {selectedSection ? (
+                  <Box>
+                    <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                      <Chip 
+                        label={selectedSection.status} 
+                        color={selectedSection.status === 'published' ? 'success' : selectedSection.status === 'draft' ? 'warning' : 'default'}
+                        size="small"
+                      />
+                      <Chip 
+                        label={selectedSection.visibility} 
+                        variant="outlined"
+                        size="small"
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        Version {selectedSection.version_number}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="h6">{selectedSection.title.ko}</Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      {selectedSection.description?.ko}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Last updated: {new Date(selectedSection.updated_at).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    No section selected. Create a new section or select one from the sections tab.
+                  </Alert>
+                )}
+              </Card>
+              
+              {/* Recent Activity */}
+              <Card sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Recent Activity
+                </Typography>
+                <List dense>
+                  <ListItem>
+                    <Chip 
+                      icon={<Add />} 
+                      label="Content management system initialized" 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined" 
+                    />
+                  </ListItem>
+                  {selectedSection && (
+                    <ListItem>
+                      <Chip 
+                        icon={<Edit />} 
+                        label={`Section "${selectedSection.title.ko}" selected - ${blocks.length} blocks`}
+                        size="small" 
+                        color="success" 
+                        variant="outlined" 
+                      />
+                    </ListItem>
+                  )}
+                </List>
+              </Card>
             </Box>
           </TabPanel>
 
-          {/* 히어로 섹션 */}
+          {/* Sections Tab */}
           <TabPanel value={tabValue} index={1}>
             <Box sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3 }}>
-                히어로 섹션 편집
-              </Typography>
-
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ViewModule color="primary" />
+                  Content Sections
+                </Typography>
+                
+                <Stack direction="row" spacing={2}>
                   <TextField
-                    fullWidth
-                    label="제목"
-                    value={heroContent?.title || ''}
-                    onChange={(e) => setHeroContent({ ...heroContent, title: e.target.value })}
-                    sx={{ mb: 2 }}
+                    size="small"
+                    placeholder="Search sections..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
+                    }}
                   />
-                  <TextField
-                    fullWidth
-                    label="부제목"
-                    value={heroContent?.subtitle || ''}
-                    onChange={(e) => setHeroContent({ ...heroContent, subtitle: e.target.value })}
-                    sx={{ mb: 2 }}
-                  />
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="설명"
-                    value={heroContent?.description || ''}
-                    onChange={(e) =>
-                      setHeroContent({ ...heroContent, description: e.target.value })
-                    }
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="메인 버튼 텍스트"
-                    value={heroContent?.primary_button_text || ''}
-                    onChange={(e) =>
-                      setHeroContent({ ...heroContent, primary_button_text: e.target.value })
-                    }
-                    sx={{ mb: 2 }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="메인 버튼 링크"
-                    value={heroContent?.primary_button_href || ''}
-                    onChange={(e) =>
-                      setHeroContent({ ...heroContent, primary_button_href: e.target.value })
-                    }
-                    sx={{ mb: 2 }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="보조 버튼 텍스트"
-                    value={heroContent?.secondary_button_text || ''}
-                    onChange={(e) =>
-                      setHeroContent({ ...heroContent, secondary_button_text: e.target.value })
-                    }
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-              </Grid>
-
-              <Button
-                variant="contained"
-                startIcon={<Save />}
-                onClick={handleSaveHero}
-                disabled={saving}
-              >
-                저장하기
-              </Button>
-            </Box>
-          </TabPanel>
-
-          {/* 기능 카드 */}
-          <TabPanel value={tabValue} index={2}>
-            <Box sx={{ p: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 3 }}
-              >
-                <Typography variant="h6">기능 카드 관리</Typography>
-                <Button variant="contained" startIcon={<Add />}>
-                  카드 추가
-                </Button>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={filterStatus}
+                      label="Status"
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                    >
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="draft">Draft</MenuItem>
+                      <MenuItem value="published">Published</MenuItem>
+                      <MenuItem value="archived">Archived</MenuItem>
+                      <MenuItem value="scheduled">Scheduled</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={handleCreateSection}
+                  >
+                    Create Section
+                  </Button>
+                </Stack>
               </Stack>
-
-              <Grid container spacing={2}>
-                {featureCards.map((card, index) => (
-                  <Grid size={{ xs: 12, md: 6, lg: 4 }} key={card.id}>
-                    <Card>
-                      <CardContent>
-                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-                          <Typography variant="h6">{card.title}</Typography>
-                          <Chip
-                            label={card.is_active ? '활성' : '비활성'}
+              
+              {/* Sections Grid */}
+              <Grid container spacing={3}>
+                {filteredSections.map((section) => (
+                  <Grid item xs={12} md={6} lg={4} key={section.id}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <Card 
+                        sx={{ 
+                          height: '100%',
+                          cursor: 'pointer',
+                          border: selectedSection?.id === section.id ? 2 : 0,
+                          borderColor: 'primary.main',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                          }
+                        }}
+                        onClick={() => setSelectedSection(section)}
+                      >
+                        <CardContent>
+                          <Stack direction="row" alignItems="flex-start" spacing={1} sx={{ mb: 2 }}>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="h6" gutterBottom>
+                                {section.title.ko || section.section_key}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {section.description?.ko || 'No description'}
+                              </Typography>
+                            </Box>
+                            {section.is_featured && (
+                              <Star sx={{ color: 'warning.main' }} />
+                            )}
+                          </Stack>
+                          
+                          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                            <Chip 
+                              label={section.status} 
+                              size="small"
+                              color={section.status === 'published' ? 'success' : section.status === 'draft' ? 'warning' : 'default'}
+                            />
+                            <Chip 
+                              label={section.visibility} 
+                              size="small"
+                              variant="outlined"
+                            />
+                            <Chip 
+                              label={`v${section.version_number}`} 
+                              size="small"
+                              color="info"
+                              variant="outlined"
+                            />
+                          </Stack>
+                          
+                          <Typography variant="caption" color="text.secondary">
+                            Updated: {new Date(section.updated_at).toLocaleDateString()}
+                          </Typography>
+                        </CardContent>
+                        
+                        <CardActions>
+                          <IconButton
                             size="small"
-                            color={card.is_active ? 'success' : 'default'}
-                          />
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          {card.description}
-                        </Typography>
-                        <Typography variant="caption" color="primary">
-                          버튼: {card.button_text} → {card.button_href}
-                        </Typography>
-                      </CardContent>
-                      <CardActions>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleMoveCard(index, 'up')}
-                          disabled={index === 0}
-                        >
-                          <ArrowUpward />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleMoveCard(index, 'down')}
-                          disabled={index === featureCards.length - 1}
-                        >
-                          <ArrowDownward />
-                        </IconButton>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                        <IconButton size="small">
-                          <Delete />
-                        </IconButton>
-                      </CardActions>
-                    </Card>
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditSection(section)
+                            }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteSection(section.id)
+                            }}
+                            color="error"
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                          <Box sx={{ flexGrow: 1 }} />
+                          <Typography variant="body2" color="text.secondary">
+                            {section.blocks?.length || 0} blocks
+                          </Typography>
+                        </CardActions>
+                      </Card>
+                    </motion.div>
                   </Grid>
                 ))}
               </Grid>
+              
+              {filteredSections.length === 0 && (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <ViewModule sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No sections found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    {searchTerm || filterStatus !== 'all' ? 'Try adjusting your filters' : 'Get started by creating your first content section'}
+                  </Typography>
+                  {!searchTerm && filterStatus === 'all' && (
+                    <Button
+                      variant="contained"
+                      startIcon={<Add />}
+                      onClick={handleCreateSection}
+                    >
+                      Create First Section
+                    </Button>
+                  )}
+                </Box>
+              )}
             </Box>
           </TabPanel>
 
-          {/* 페이지 콘텐츠 */}
+          {/* Content Blocks Tab */}
+          <TabPanel value={tabValue} index={2}>
+            <Box sx={{ p: 3 }}>
+              {selectedSection ? (
+                <>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                    <Box>
+                      <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <GridOn color="primary" />
+                        Content Blocks
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Managing blocks for: {selectedSection.title.ko}
+                      </Typography>
+                    </Box>
+                    
+                    <Stack direction="row" spacing={2}>
+                      <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>Block Type</InputLabel>
+                        <Select
+                          value={filterType}
+                          label="Block Type"
+                          onChange={(e) => setFilterType(e.target.value)}
+                        >
+                          <MenuItem value="all">All Types</MenuItem>
+                          {Object.entries(BLOCK_TYPES).map(([key, config]) => (
+                            <MenuItem key={key} value={key}>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                {config.icon}
+                                <span>{config.name}</span>
+                              </Stack>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Stack>
+                  </Stack>
+                  
+                  {/* Block Creation Palette */}
+                  <Card sx={{ mb: 3, p: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                    <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
+                      Add New Block
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {Object.entries(BLOCK_TYPES).map(([key, config]) => (
+                        <Grid item key={key}>
+                          <Button
+                            variant="outlined"
+                            onClick={() => handleCreateBlock(key)}
+                            sx={{
+                              color: 'white',
+                              borderColor: 'white',
+                              minWidth: 120,
+                              '&:hover': {
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                borderColor: 'white',
+                              }
+                            }}
+                            startIcon={config.icon}
+                          >
+                            {config.name}
+                          </Button>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Card>
+                  
+                  {/* Blocks List with Drag and Drop */}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext items={filteredBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                      <Stack spacing={2}>
+                        {filteredBlocks.map((block, index) => (
+                          <SortableBlockCard
+                            key={block.id}
+                            block={block}
+                            index={index}
+                            onEdit={handleEditBlock}
+                            onDelete={handleDeleteBlock}
+                          />
+                        ))}
+                      </Stack>
+                    </SortableContext>
+                  </DndContext>
+                  
+                  {filteredBlocks.length === 0 && (
+                    <Box sx={{ textAlign: 'center', py: 8 }}>
+                      <GridOn sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        No content blocks yet
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Start building your section by adding content blocks
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              ) : (
+                <Alert severity="info" sx={{ mt: 4 }}>
+                  Please select a section from the Sections tab to manage its content blocks.
+                </Alert>
+              )}
+            </Box>
+          </TabPanel>
+
+          {/* Design & Animation Tab */}
           <TabPanel value={tabValue} index={3}>
             <Box sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 3 }}>
-                페이지 콘텐츠 관리
-              </Typography>
-
-              <List>
-                <ListItem>
-                  <ListItemText
-                    primary="소개 페이지"
-                    secondary="연구회 소개, 회원 안내, 활동 내역"
-                  />
-                  <Button variant="outlined" onClick={() => router.push('/admin/pages/intro')}>
-                    편집
-                  </Button>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="자료공유 페이지"
-                    secondary="AI 도구, 수업 지도안, 평가 자료 등"
-                  />
-                  <Button variant="outlined" onClick={() => router.push('/admin/pages/share')}>
-                    편집
-                  </Button>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText primary="비전 페이지" secondary="연구회의 비전과 목표" />
-                  <Button variant="outlined" onClick={() => router.push('/admin/pages/vision')}>
-                    편집
-                  </Button>
-                </ListItem>
-                <Divider />
-                <ListItem>
-                  <ListItemText primary="뉴스 페이지" secondary="공지사항 및 최신 소식" />
-                  <Button variant="outlined" onClick={() => router.push('/admin/pages/news')}>
-                    편집
-                  </Button>
-                </ListItem>
-              </List>
+              {selectedSection ? (
+                <>
+                  <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Palette color="primary" />
+                    Design & Animation
+                  </Typography>
+                  
+                  <Alert severity="info" sx={{ mb: 3 }}>
+                    Advanced design and animation configuration system will be implemented here.
+                  </Alert>
+                  
+                  <Grid container spacing={3}>
+                    {/* Animation Settings */}
+                    <Grid item xs={12} md={6}>
+                      <Card sx={{ p: 3 }}>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Animation />
+                          Animation Presets
+                        </Typography>
+                        
+                        <Stack spacing={2}>
+                          {Object.entries(ANIMATION_PRESETS).map(([key, preset]) => (
+                            <Box key={key} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Typography variant="subtitle2">{preset.name}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {key}
+                                  </Typography>
+                                </Box>
+                                <Button size="small" variant="outlined">
+                                  Preview
+                                </Button>
+                              </Stack>
+                            </Box>
+                          ))}
+                        </Stack>
+                      </Card>
+                    </Grid>
+                    
+                    {/* Theme Settings */}
+                    <Grid item xs={12} md={6}>
+                      <Card sx={{ p: 3 }}>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Palette />
+                          Theme Settings
+                        </Typography>
+                        
+                        <Stack spacing={3}>
+                          <FormControl fullWidth>
+                            <InputLabel>Template</InputLabel>
+                            <Select
+                              value={selectedSection.template}
+                              label="Template"
+                            >
+                              <MenuItem value="default">Default</MenuItem>
+                              <MenuItem value="modern">Modern</MenuItem>
+                              <MenuItem value="classic">Classic</MenuItem>
+                              <MenuItem value="minimal">Minimal</MenuItem>
+                            </Select>
+                          </FormControl>
+                          
+                          <Box>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Background Style
+                            </Typography>
+                            <Grid container spacing={2}>
+                              <Grid item xs={6}>
+                                <Card sx={{ p: 2, textAlign: 'center', cursor: 'pointer', background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)' }}>
+                                  <Typography variant="body2" sx={{ color: 'white' }}>Gradient</Typography>
+                                </Card>
+                              </Grid>
+                              <Grid item xs={6}>
+                                <Card sx={{ p: 2, textAlign: 'center', cursor: 'pointer', backgroundColor: 'background.paper' }}>
+                                  <Typography variant="body2">Solid</Typography>
+                                </Card>
+                              </Grid>
+                            </Grid>
+                          </Box>
+                        </Stack>
+                      </Card>
+                    </Grid>
+                  </Grid>
+                </>
+              ) : (
+                <Alert severity="info">
+                  Please select a section to configure design and animations.
+                </Alert>
+              )}
+            </Box>
+          </TabPanel>
+          
+          {/* Templates Tab - Redirect */}
+          <TabPanel value={tabValue} index={4}>
+            <Box sx={{ p: 3 }}>
+              <Alert severity="info" action={
+                <Button 
+                  color="primary" 
+                  size="small" 
+                  onClick={() => router.push('/admin/templates')}
+                >
+                  Go to Template Library
+                </Button>
+              }>
+                <Typography variant="h6" gutterBottom>Advanced Template Library</Typography>
+                Access the enterprise template library with industry templates, AI-powered suggestions, and advanced customization options.
+              </Alert>
+              
+              <Grid container spacing={3} sx={{ mt: 3 }}>
+                <Grid item xs={12} md={4}>
+                  <Card sx={{ textAlign: 'center', p: 3 }}>
+                    <FileCopy sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Enterprise Templates</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Professional templates for education, business, technology, and healthcare industries.
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Card sx={{ textAlign: 'center', p: 3 }}>
+                    <Preview sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Live Preview</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Preview templates with real-time rendering before applying to your content.
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Card sx={{ textAlign: 'center', p: 3 }}>
+                    <Star sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Template Ratings</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Community ratings and usage statistics to help you choose the best templates.
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          </TabPanel>
+          
+          {/* Analytics Tab - Redirect */}
+          <TabPanel value={tabValue} index={5}>
+            <Box sx={{ p: 3 }}>
+              <Alert severity="info" action={
+                <Button 
+                  color="primary" 
+                  size="small" 
+                  onClick={() => router.push('/admin/analytics')}
+                >
+                  Open Analytics Dashboard
+                </Button>
+              }>
+                <Typography variant="h6" gutterBottom>Advanced Content Analytics</Typography>
+                Access comprehensive analytics with real-time data, user behavior insights, and performance metrics.
+              </Alert>
+              
+              <Grid container spacing={3} sx={{ mt: 3 }}>
+                <Grid item xs={12} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                    <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>Real-time</Typography>
+                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>Live Analytics</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+                    <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>A/B Testing</Typography>
+                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>Content Optimization</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+                    <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>Heatmaps</Typography>
+                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>User Behavior</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
+                    <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>Export</Typography>
+                    <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>PDF Reports</Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          </TabPanel>
+          
+          {/* Scheduling Tab - Redirect */}
+          <TabPanel value={tabValue} index={6}>
+            <Box sx={{ p: 3 }}>
+              <Alert severity="info" action={
+                <Button 
+                  color="primary" 
+                  size="small" 
+                  onClick={() => router.push('/admin/scheduler')}
+                >
+                  Open Content Scheduler
+                </Button>
+              }>
+                <Typography variant="h6" gutterBottom>Advanced Content Scheduler</Typography>
+                Automate content publishing, updates, and lifecycle management with enterprise-grade scheduling features.
+              </Alert>
+              
+              <Grid container spacing={3} sx={{ mt: 3 }}>
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ p: 3 }}>
+                    <Schedule sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Automated Publishing</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Schedule content to be published, unpublished, or archived automatically at specific times.
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ p: 3 }}>
+                    <Autorenew sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Recurring Schedules</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Set up recurring patterns for regular content updates and maintenance tasks.
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          </TabPanel>
+          
+          {/* Translations Tab - Redirect */}
+          <TabPanel value={tabValue} index={7}>
+            <Box sx={{ p: 3 }}>
+              <Alert severity="info" action={
+                <Button 
+                  color="primary" 
+                  size="small" 
+                  onClick={() => router.push('/admin/translations')}
+                >
+                  Open Translation Management
+                </Button>
+              }>
+                <Typography variant="h6" gutterBottom>Enhanced Multilingual System</Typography>
+                Professional translation workflow with AI assistance, quality control, and project management.
+              </Alert>
+              
+              <Grid container spacing={3} sx={{ mt: 3 }}>
+                <Grid item xs={12} md={4}>
+                  <Card sx={{ p: 3, textAlign: 'center' }}>
+                    <SmartToy sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>AI Translation</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Automated translation with multiple AI engines and quality scoring.
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Card sx={{ p: 3, textAlign: 'center' }}>
+                    <Assessment sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Quality Control</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Professional review workflow with quality metrics and approval process.
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Card sx={{ p: 3, textAlign: 'center' }}>
+                    <Language sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>Multi-Language</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Support for multiple languages with RTL layout and cultural adaptation.
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
             </Box>
           </TabPanel>
         </Paper>
-
-        {/* 편집 다이얼로그 */}
-        <Dialog open={editDialog} onClose={() => setEditDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>메뉴 편집</DialogTitle>
-          <DialogContent>
-            <TextField
-              fullWidth
-              label="메뉴 이름"
-              value={editingItem?.label || ''}
-              onChange={(e) => setEditingItem({ ...editingItem, label: e.target.value })}
-              sx={{ mb: 2, mt: 2 }}
-            />
-            <TextField
-              fullWidth
-              label="링크 URL"
-              value={editingItem?.href || ''}
-              onChange={(e) => setEditingItem({ ...editingItem, href: e.target.value })}
-              sx={{ mb: 2 }}
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={editingItem?.is_active || false}
-                  onChange={(e) => setEditingItem({ ...editingItem, is_active: e.target.checked })}
-                />
-              }
-              label="활성화"
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEditDialog(false)}>취소</Button>
-            <Button onClick={handleSaveNavItem} variant="contained" disabled={saving}>
-              저장
-            </Button>
-          </DialogActions>
-        </Dialog>
+        
+        {/* Section Dialog */}
+        <SectionDialog
+          open={sectionDialog}
+          onClose={() => setSectionDialog(false)}
+          section={editingSection}
+          onSave={handleSaveSection}
+          saving={saving}
+          form={sectionForm}
+        />
+        
+        {/* Block Dialog */}
+        <BlockDialog
+          open={blockDialog}
+          onClose={() => setBlockDialog(false)}
+          block={editingBlock}
+          onSave={handleSaveBlock}
+          saving={saving}
+          form={blockForm}
+        />
+        
+        {/* Preview Dialog */}
+        <PreviewDialog
+          open={previewDialog}
+          onClose={() => setPreviewDialog(false)}
+          section={selectedSection}
+          blocks={blocks}
+        />
+        
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+        
+        {/* Floating Action Button for quick actions */}
+        <SpeedDial
+          ariaLabel="Quick Actions"
+          sx={{ position: 'fixed', bottom: 16, right: 16 }}
+          icon={<SpeedDialIcon />}
+        >
+          <SpeedDialAction
+            icon={<Add />}
+            tooltipTitle="Create Section"
+            onClick={handleCreateSection}
+          />
+          <SpeedDialAction
+            icon={<Preview />}
+            tooltipTitle="Preview"
+            onClick={() => setPreviewDialog(true)}
+          />
+          <SpeedDialAction
+            icon={<Refresh />}
+            tooltipTitle="Refresh Data"
+            onClick={loadSections}
+          />
+        </SpeedDial>
       </Container>
     </>
+  )
+}
+
+// Sortable Block Card Component
+interface SortableBlockCardProps {
+  block: ContentBlock
+  index: number
+  onEdit: (block: ContentBlock) => void
+  onDelete: (blockId: string) => void
+}
+
+function SortableBlockCard({ block, index, onEdit, onDelete }: SortableBlockCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: block.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const blockConfig = BLOCK_TYPES[block.block_type] || { icon: <Article />, name: 'Unknown', color: '#666' }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <Card sx={{ 
+        border: 1, 
+        borderColor: 'divider',
+        '&:hover': { 
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          borderColor: 'primary.main' 
+        }
+      }}>
+        <CardContent sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Box
+              {...listeners}
+              sx={{
+                cursor: 'grab',
+                color: 'text.secondary',
+                '&:active': { cursor: 'grabbing' }
+              }}
+            >
+              <DragIndicator />
+            </Box>
+            
+            <Box sx={{ 
+              p: 1,
+              borderRadius: 1,
+              backgroundColor: blockConfig.color + '20',
+              color: blockConfig.color,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              {blockConfig.icon}
+            </Box>
+            
+            <Box sx={{ flex: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography variant="h6">
+                  {block.block_key || blockConfig.name}
+                </Typography>
+                <Chip
+                  label={block.block_type}
+                  size="small"
+                  sx={{ 
+                    backgroundColor: blockConfig.color + '20',
+                    color: blockConfig.color,
+                    fontWeight: 500
+                  }}
+                />
+                <Chip
+                  label={block.visibility}
+                  size="small"
+                  variant="outlined"
+                />
+                {!block.is_active && (
+                  <Chip label="Inactive" size="small" color="error" variant="outlined" />
+                )}
+              </Stack>
+              
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Sort: {block.sort_order} | Updated: {new Date(block.updated_at).toLocaleDateString()}
+              </Typography>
+            </Box>
+            
+            <Stack direction="row" spacing={1}>
+              <IconButton
+                size="small"
+                onClick={() => onEdit(block)}
+                sx={{ color: 'primary.main' }}
+              >
+                <Edit fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => onDelete(block.id)}
+                sx={{ color: 'error.main' }}
+              >
+                <Delete fontSize="small" />
+              </IconButton>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Section Dialog Component
+interface SectionDialogProps {
+  open: boolean
+  onClose: () => void
+  section: ContentSection | null
+  onSave: (data: any) => void
+  saving: boolean
+  form: any
+}
+
+function SectionDialog({ open, onClose, section, onSave, saving, form }: SectionDialogProps) {
+  const { control, handleSubmit, reset } = form
+  
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        {section ? 'Edit Section' : 'Create New Section'}
+      </DialogTitle>
+      <form onSubmit={handleSubmit(onSave)}>
+        <DialogContent>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="section_key"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Section Key"
+                    required
+                    disabled={!!section}
+                    helperText="Unique identifier for this section"
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select {...field} label="Status">
+                      <MenuItem value="draft">Draft</MenuItem>
+                      <MenuItem value="published">Published</MenuItem>
+                      <MenuItem value="archived">Archived</MenuItem>
+                      <MenuItem value="scheduled">Scheduled</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>Korean Content</Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="title.ko"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Title (Korean)"
+                    required
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="slug.ko"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Slug (Korean)"
+                    helperText="URL-friendly identifier"
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Controller
+                name="description.ko"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Description (Korean)"
+                    multiline
+                    rows={3}
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>English Content</Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="title.en"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Title (English)"
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="slug.en"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Slug (English)"
+                    helperText="URL-friendly identifier"
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Controller
+                name="description.en"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Description (English)"
+                    multiline
+                    rows={3}
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>Settings</Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Controller
+                name="visibility"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Visibility</InputLabel>
+                    <Select {...field} label="Visibility">
+                      <MenuItem value="public">Public</MenuItem>
+                      <MenuItem value="members_only">Members Only</MenuItem>
+                      <MenuItem value="admin_only">Admin Only</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Controller
+                name="template"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Template</InputLabel>
+                    <Select {...field} label="Template">
+                      <MenuItem value="default">Default</MenuItem>
+                      <MenuItem value="modern">Modern</MenuItem>
+                      <MenuItem value="classic">Classic</MenuItem>
+                      <MenuItem value="minimal">Minimal</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Controller
+                name="sort_order"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Sort Order"
+                    type="number"
+                    helperText="Display order (0 = first)"
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Controller
+                name="is_featured"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={<Switch {...field} checked={field.value} />}
+                    label="Featured Section"
+                  />
+                )}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={20} /> : <Save />}
+          >
+            {saving ? 'Saving...' : 'Save Section'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  )
+}
+
+// Block Dialog Component
+interface BlockDialogProps {
+  open: boolean
+  onClose: () => void
+  block: ContentBlock | null
+  onSave: (data: any) => void
+  saving: boolean
+  form: any
+}
+
+function BlockDialog({ open, onClose, block, onSave, saving, form }: BlockDialogProps) {
+  const { control, handleSubmit, watch } = form
+  const blockType = watch('block_type')
+  const blockConfig = blockType ? BLOCK_TYPES[blockType as keyof typeof BLOCK_TYPES] : null
+  
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ pb: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          {blockConfig && (
+            <Box sx={{ 
+              p: 1,
+              borderRadius: 1,
+              backgroundColor: blockConfig.color + '20',
+              color: blockConfig.color,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              {blockConfig.icon}
+            </Box>
+          )}
+          <Box>
+            <Typography variant="h6">
+              {block ? 'Edit Block' : 'Create New Block'}
+            </Typography>
+            {blockConfig && (
+              <Typography variant="body2" color="text.secondary">
+                {blockConfig.name}
+              </Typography>
+            )}
+          </Box>
+        </Stack>
+      </DialogTitle>
+      
+      <form onSubmit={handleSubmit(onSave)}>
+        <DialogContent>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Alert severity="info">
+                Block content editor will be implemented with a rich content editor (TipTap) for dynamic content management.
+              </Alert>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="block_key"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Block Key (Optional)"
+                    helperText="Unique identifier for this block"
+                  />
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name="visibility"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Visibility</InputLabel>
+                    <Select {...field} label="Visibility">
+                      <MenuItem value="public">Public</MenuItem>
+                      <MenuItem value="members_only">Members Only</MenuItem>
+                      <MenuItem value="admin_only">Admin Only</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Controller
+                name="is_active"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel
+                    control={<Switch {...field} checked={field.value} />}
+                    label="Active Block"
+                  />
+                )}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={20} /> : <Save />}
+          >
+            {saving ? 'Saving...' : 'Save Block'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  )
+}
+
+// Preview Dialog Component
+interface PreviewDialogProps {
+  open: boolean
+  onClose: () => void
+  section: ContentSection | null
+  blocks: ContentBlock[]
+}
+
+function PreviewDialog({ open, onClose, section, blocks }: PreviewDialogProps) {
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+      <AppBar sx={{ position: 'relative' }}>
+        <Toolbar>
+          <IconButton edge="start" color="inherit" onClick={onClose}>
+            <Close />
+          </IconButton>
+          <Typography sx={{ ml: 2, flex: 1 }} variant="h6">
+            Preview: {section?.title.ko}
+          </Typography>
+          <Button color="inherit" startIcon={<Preview />}>
+            Open in New Tab
+          </Button>
+        </Toolbar>
+      </AppBar>
+      
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ p: 4, backgroundColor: 'background.default', minHeight: '60vh' }}>
+          {section ? (
+            <>
+              <Typography variant="h3" gutterBottom>
+                {section.title.ko}
+              </Typography>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {section.description?.ko}
+              </Typography>
+              
+              {blocks.map((block, index) => (
+                <Card key={block.id} sx={{ mt: 3, p: 3 }}>
+                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                    {BLOCK_TYPES[block.block_type] && BLOCK_TYPES[block.block_type].icon}
+                    <Typography variant="h6">
+                      {BLOCK_TYPES[block.block_type]?.name || block.block_type}
+                    </Typography>
+                    <Chip label={`Block ${index + 1}`} size="small" variant="outlined" />
+                  </Stack>
+                  
+                  <Typography variant="body2" color="text.secondary">
+                    Block content will be rendered here based on the block type and configuration.
+                  </Typography>
+                </Card>
+              ))}
+              
+              {blocks.length === 0 && (
+                <Alert severity="info" sx={{ mt: 3 }}>
+                  No content blocks have been added to this section yet.
+                </Alert>
+              )}
+            </>
+          ) : (
+            <Alert severity="warning">
+              No section selected for preview.
+            </Alert>
+          )}
+        </Box>
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -33,7 +33,7 @@ import {
   Autocomplete,
   useMediaQuery,
   useTheme,
-  Grid,
+  GridLegacy as Grid,
 } from '@mui/material'
 import { Chat, Search, Add, Person, Group, MoreVert, Circle, Create, PersonAdd, Notes } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'

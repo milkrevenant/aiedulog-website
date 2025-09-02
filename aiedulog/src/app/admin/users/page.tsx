@@ -52,11 +52,13 @@ import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import FilterListIcon from '@mui/icons-material/FilterList'
+import DeleteIcon from '@mui/icons-material/Delete'
+import UserDeletionDialog from '@/components/admin/UserDeletionDialog'
 
 type UserRole = 'admin' | 'moderator' | 'verified' | 'member'
 type UserStatus = 'active' | 'suspended' | 'all'
 
-interface User {
+interface AdminUser {
   id: string
   identity_id: string
   email: string
@@ -99,17 +101,18 @@ function UsersManagementContent() {
   const { can, user: currentUser } = usePermission()
   const currentUserRole = currentUser?.role
 
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<UserRole | 'all'>('all')
   const [filterStatus, setFilterStatus] = useState<UserStatus>('all')
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
   const [roleDialogOpen, setRoleDialogOpen] = useState(false)
   const [newRole, setNewRole] = useState<UserRole>('member')
   const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+  const [deletionDialogOpen, setDeletionDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -126,88 +129,94 @@ function UsersManagementContent() {
     setError(null)
 
     try {
-      // 통합 identity 시스템을 통한 모든 사용자 프로필 가져오기
-      const query = supabase
-        .from('identities')
-        .select(`
-          id,
-          status,
-          created_at,
-          user_profiles!identities_user_profiles_identity_id_fkey (
-            identity_id,
-            email,
-            username,
-            full_name,
-            nickname,
-            avatar_url,
-            role,
-            school,
-            subject,
-            is_active,
-            created_at,
-            updated_at
-          ),
-          auth_methods!auth_methods_identity_id_fkey (
-            provider,
-            last_sign_in_at,
-            email_confirmed_at
-          )
-        `)
-        .eq('status', 'active')
+      // 단순화된 접근: 각 테이블을 별도로 조회하여 데이터 병합
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('*')
         .order('created_at', { ascending: false })
 
-      const { data: identityData, error } = await query
-
-      if (error) {
-        console.error('Error fetching users via identity system:', error)
-        throw error
+      if (profilesError) {
+        console.error('Error fetching user profiles:', profilesError)
+        throw profilesError
       }
 
-      // Transform identity data to expected User format
-      let usersData = identityData?.map((identity: any) => {
-        const profile = identity.user_profiles?.[0]
-        const authMethod = identity.auth_methods?.[0]
+      // Get identities data
+      const identityIds = profilesData?.map(profile => profile.identity_id) || []
+      const { data: identitiesData } = identityIds.length > 0 ? await supabase
+        .from('identities')
+        .select('id, status, created_at')
+        .in('id', identityIds)
+        .eq('status', 'active') : { data: [] }
+
+      // Get auth methods data
+      const { data: authMethodsData } = identityIds.length > 0 ? await supabase
+        .from('auth_methods')
+        .select('identity_id, provider, last_sign_in_at, email_confirmed_at')
+        .in('identity_id', identityIds) : { data: [] }
+
+      // Create lookup maps
+      const identitiesMap = new Map()
+      identitiesData?.forEach(identity => {
+        identitiesMap.set(identity.id, identity)
+      })
+
+      const authMethodsMap = new Map()
+      authMethodsData?.forEach(auth => {
+        authMethodsMap.set(auth.identity_id, auth)
+      })
+
+      // Transform and merge data
+      let usersData = profilesData?.map((profile: any) => {
+        const identity = identitiesMap.get(profile.identity_id)
+        const authMethod = authMethodsMap.get(profile.identity_id)
+        
+        // Only include users with active identities
+        if (!identity || identity.status !== 'active') {
+          return null
+        }
         
         return {
-          id: identity.id,
-          identity_id: identity.id,
-          email: profile?.email || '',
-          username: profile?.username || profile?.email?.split('@')[0] || '',
-          nickname: profile?.nickname,
-          full_name: profile?.full_name,
-          avatar_url: profile?.avatar_url,
-          role: profile?.role || 'member',
-          school: profile?.school,
-          subject: profile?.subject,
-          is_active: profile?.is_active ?? true,
+          id: profile.identity_id,
+          identity_id: profile.identity_id,
+          email: profile.email || '',
+          username: profile.username || profile.email?.split('@')[0] || '',
+          nickname: profile.nickname,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          role: profile.role || 'member',
+          school: profile.school,
+          subject: profile.subject,
+          is_active: profile.is_active ?? true,
           created_at: identity.created_at,
-          updated_at: profile?.updated_at,
+          updated_at: profile.updated_at,
           last_sign_in_at: authMethod?.last_sign_in_at,
           email_confirmed_at: authMethod?.email_confirmed_at,
           status: identity.status
         }
-      }).filter(user => user.email) || [] // Only include users with profiles
+      }).filter(Boolean) || [] // Filter out null values
 
       // Apply client-side filtering (more efficient than complex DB queries)
       if (filterRole !== 'all') {
-        usersData = usersData.filter(user => user.role === filterRole)
+        usersData = usersData.filter(user => user && user.role === filterRole)
       }
 
       if (filterStatus !== 'all') {
-        usersData = usersData.filter(user => user.is_active === (filterStatus === 'active'))
+        usersData = usersData.filter(user => user && user.is_active === (filterStatus === 'active'))
       }
 
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
         usersData = usersData.filter(user => 
-          user.username?.toLowerCase().includes(searchLower) ||
-          user.email?.toLowerCase().includes(searchLower) ||
-          user.full_name?.toLowerCase().includes(searchLower) ||
-          user.nickname?.toLowerCase().includes(searchLower)
+          user && (
+            user.username?.toLowerCase().includes(searchLower) ||
+            user.email?.toLowerCase().includes(searchLower) ||
+            user.full_name?.toLowerCase().includes(searchLower) ||
+            user.nickname?.toLowerCase().includes(searchLower)
+          )
         )
       }
 
-      setUsers(usersData)
+      setUsers(usersData.filter(user => user !== null))
     } catch (err: any) {
       console.error('Failed to fetch users:', err)
       setError(`사용자 목록을 불러오는데 실패했습니다: ${err.message}`)
@@ -513,6 +522,19 @@ function UsersManagementContent() {
                                 )}
                               </IconButton>
                             </Tooltip>
+                            <Tooltip title="사용자 삭제">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setSelectedUser(user)
+                                  setDeletionDialogOpen(true)
+                                }}
+                                disabled={user.role === 'admin' && currentUserRole !== 'admin'}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -597,6 +619,20 @@ function UsersManagementContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 사용자 삭제 다이얼로그 */}
+      <UserDeletionDialog
+        open={deletionDialogOpen}
+        user={selectedUser}
+        onClose={() => {
+          setDeletionDialogOpen(false)
+          setSelectedUser(null)
+        }}
+        onDeleted={() => {
+          fetchUsers()
+          setSuccess('사용자가 성공적으로 삭제되었습니다.')
+        }}
+      />
     </>
   )
 }

@@ -14,8 +14,26 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import { Twitter, GitHub, LinkedIn } from '@mui/icons-material'
+import { CMSContent } from '@/components/CMSContent'
 
 export default function AboutUs() {
+  // Fallback content (original static version)
+  const fallbackContent = <OriginalAboutUsContent />
+
+  return (
+    <CMSContent
+      sectionKey="about-us"
+      language="ko"
+      fallbackContent={fallbackContent}
+      containerProps={{
+        sx: { minHeight: '100vh', bgcolor: 'background.default' }
+      }}
+    />
+  )
+}
+
+// Original static content as fallback
+function OriginalAboutUsContent() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 

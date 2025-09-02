@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+const { getHeadersConfig } = require('./scripts/dev-headers');
 
 // Security headers to protect against XSS, clickjacking, and other attacks
 const securityHeaders = [
@@ -62,12 +63,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Enable security headers
+  // Enable security headers and asset-specific headers
   async headers() {
+    const assetHeaders = getHeadersConfig();
     return [
+      // Asset-specific headers (development cache control or production optimization)
+      ...assetHeaders,
       {
-        // Apply security headers to all routes
-        source: '/(.*)',
+        // Apply security headers to all routes except static assets
+        source: '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
         headers: securityHeaders,
       },
     ];
@@ -77,13 +81,76 @@ const nextConfig: NextConfig = {
   poweredByHeader: false, // Remove X-Powered-By header
   compress: true, // Enable gzip compression
   
+  // Development server configuration
+  devIndicators: {
+    buildActivity: true,
+    buildActivityPosition: 'bottom-right',
+  },
+  
   // Environment variables validation
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   
+  // Development optimizations
+  experimental: {
+    optimizePackageImports: ['@mui/material', '@mui/icons-material'],
+  },
+
+  // Asset optimization and cache management
+  generateBuildId: async () => {
+    // Use timestamp-based build ID for cache busting in development
+    return process.env.NODE_ENV === 'development' 
+      ? `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      : null
+  },
+
+  // Development cache control
+  assetPrefix: process.env.NODE_ENV === 'development' ? '' : undefined,
+  
+  // Disable caching in development to prevent manifest issues
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+
+  // Force asset regeneration in development
+  distDir: '.next',
+
   // Webpack configuration to fix Excalidraw readonly property issues
-  webpack: (config: any, { isServer }: { isServer: boolean }) => {
+  webpack: (config: any, { isServer, dev }: { isServer: boolean; dev: boolean }) => {
+    // Development optimizations and cache management
+    if (dev && !isServer) {
+      // Disable caching in development to prevent manifest issues
+      config.cache = false;
+      
+      // Force fresh builds with timestamped chunks
+      const timestamp = Date.now().toString().slice(-8);
+      
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              priority: 10,
+            },
+          },
+        },
+      };
+      
+      // Ensure fresh assets without versioning conflicts
+      config.output = {
+        ...config.output,
+        filename: 'static/chunks/[name].js',
+        chunkFilename: 'static/chunks/[name].js',
+      };
+    }
+
     // Handle Excalidraw's ESM modules
     if (!isServer) {
       config.resolve.fallback = {

@@ -9,7 +9,7 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
+  GridLegacy as Grid,
   Card,
   CardContent,
   CardMedia,
@@ -508,7 +508,7 @@ export default function LecturesBoardPage() {
             <Grid container spacing={3} justifyContent="center">
               {loading ? (
                 [...Array(6)].map((_, i) => (
-                  <Grid size={{ xs: 12, md: 6, lg: 4 }} key={i}>
+                  <Grid item xs={12} md={6} lg={4} key={i}>
                     <Skeleton variant="rectangular" height={400} />
                   </Grid>
                 ))
@@ -522,7 +522,7 @@ export default function LecturesBoardPage() {
                 </Grid>
               ) : (
                 filteredLectures.map((lecture) => (
-                  <Grid size={{ xs: 12, md: 6, lg: 4 }} key={lecture.id}>
+                  <Grid item xs={12} md={6} lg={4} key={lecture.id}>
                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                       {lecture.thumbnail_image && (
                         <CardMedia
@@ -832,7 +832,7 @@ export default function LecturesBoardPage() {
                         강의 정보
                       </Typography>
                       <Grid container spacing={2}>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="text.secondary">
                             카테고리
                           </Typography>
@@ -840,7 +840,7 @@ export default function LecturesBoardPage() {
                             {getCategoryLabel(selectedLecture.category)}
                           </Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="text.secondary">
                             난이도
                           </Typography>
@@ -848,13 +848,13 @@ export default function LecturesBoardPage() {
                             {getLevelLabel(selectedLecture.level)}
                           </Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="text.secondary">
                             기간
                           </Typography>
                           <Typography variant="body1">{selectedLecture.duration}</Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="text.secondary">
                             수강료
                           </Typography>
@@ -864,7 +864,7 @@ export default function LecturesBoardPage() {
                               : '무료'}
                           </Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="text.secondary">
                             일정
                           </Typography>
@@ -874,7 +874,7 @@ export default function LecturesBoardPage() {
                               new Date(selectedLecture.end_date).toLocaleDateString()}
                           </Typography>
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item xs={6}>
                           <Typography variant="body2" color="text.secondary">
                             시간
                           </Typography>
@@ -882,7 +882,7 @@ export default function LecturesBoardPage() {
                             {selectedLecture.start_time} ~ {selectedLecture.end_time}
                           </Typography>
                         </Grid>
-                        <Grid size={12}>
+                        <Grid item xs={12}>
                           <Typography variant="body2" color="text.secondary">
                             일정 상세
                           </Typography>
@@ -890,7 +890,7 @@ export default function LecturesBoardPage() {
                             {selectedLecture.schedule_details}
                           </Typography>
                         </Grid>
-                        <Grid size={12}>
+                        <Grid item xs={12}>
                           <Typography variant="body2" color="text.secondary">
                             장소
                           </Typography>

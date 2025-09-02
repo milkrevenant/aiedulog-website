@@ -6,7 +6,7 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
+  GridLegacy as Grid,
   Card,
   CardContent,
   CardMedia,
@@ -301,7 +301,7 @@ export default function NewsManagementPage() {
         {/* 뉴스 그리드 */}
         <Grid container spacing={3}>
           {filteredPosts.map((post) => (
-            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={post.id}>
+            <Grid item xs={12} md={6} lg={4} key={post.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {post.thumbnail_image && (
                   <CardMedia
@@ -419,7 +419,7 @@ export default function NewsManagementPage() {
           ))}
 
           {filteredPosts.length === 0 && !loading && (
-            <Grid size={12}>
+            <Grid item xs={12}>
               <Alert severity="info">
                 {currentTab === 0
                   ? '등록된 뉴스가 없습니다'

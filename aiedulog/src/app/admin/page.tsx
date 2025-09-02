@@ -13,7 +13,7 @@ import {
   Container,
   Typography,
   Paper,
-  Grid,
+  GridLegacy as Grid,
   Card,
   CircularProgress,
   CardContent,
@@ -185,10 +185,10 @@ function AdminDashboardContent() {
       permission: 'manage_users',
     },
     {
-      title: '콘텐츠 관리',
-      description: '게시글 및 댓글 관리',
+      title: '게시글 관리',
+      description: '모든 게시판의 게시글 관리',
       icon: <Article fontSize="large" />,
-      path: '/admin/content',
+      path: '/admin/posts',
       color: '#4ECDC4',
       permission: 'manage_content',
     },
@@ -300,7 +300,7 @@ function AdminDashboardContent() {
         {/* 통계 카드 */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {statsCards.map((stat, index) => (
-            <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid key={index} item xs={12} sm={6} md={3}>
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -342,7 +342,7 @@ function AdminDashboardContent() {
           {adminMenus.map((menu, index) => {
             const hasPermission = can(menu.permission as Permission)
             return (
-              <Grid key={index} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid key={index} item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -396,12 +396,12 @@ function AdminDashboardContent() {
 
         <Grid container spacing={3}>
           {/* 시스템 성능 모니터링 */}
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <Typography>Performance monitoring will be added later</Typography>
           </Grid>
 
           {/* 최근 활동 */}
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 최근 게시글
@@ -430,7 +430,7 @@ function AdminDashboardContent() {
           </Grid>
 
           {/* 빠른 작업 */}
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 빠른 작업

@@ -6,7 +6,7 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
+  GridLegacy as Grid,
   Card,
   CardContent,
   CardActions,
@@ -409,7 +409,7 @@ export default function AnnouncementsManagementPage() {
         </Typography>
         <Grid container spacing={2}>
           {normalAnnouncements.map((announcement) => (
-            <Grid size={{ xs: 12, md: 6 }} key={announcement.id}>
+            <Grid item xs={12} md={6} key={announcement.id}>
               <Card>
                 <CardContent>
                   <Box
@@ -504,7 +504,7 @@ export default function AnnouncementsManagementPage() {
           ))}
 
           {normalAnnouncements.length === 0 && !loading && (
-            <Grid size={12}>
+            <Grid item xs={12}>
               <Alert severity="info">등록된 일반 공지사항이 없습니다</Alert>
             </Grid>
           )}
@@ -538,7 +538,7 @@ export default function AnnouncementsManagementPage() {
               />
 
               <Grid container spacing={2}>
-                <Grid size={6}>
+                <Grid item xs={6}>
                   <FormControl fullWidth>
                     <InputLabel>카테고리</InputLabel>
                     <Select
@@ -559,7 +559,7 @@ export default function AnnouncementsManagementPage() {
                   </FormControl>
                 </Grid>
 
-                <Grid size={6}>
+                <Grid item xs={6}>
                   <FormControl fullWidth>
                     <InputLabel>우선순위</InputLabel>
                     <Select

@@ -20,7 +20,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  Grid,
+  GridLegacy as Grid,
   Alert,
   LinearProgress,
   Badge,
@@ -680,7 +680,7 @@ export default function PostEditor({
         <DialogTitle>구인/구직 상세 정보</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <TextField
                 label={jobFields.jobType === 'hiring' ? '회사명' : '희망 회사'}
                 fullWidth
@@ -688,7 +688,7 @@ export default function PostEditor({
                 onChange={(e) => setJobFields({ ...jobFields, company: e.target.value })}
               />
             </Grid>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <TextField
                 label={jobFields.jobType === 'hiring' ? '채용 포지션' : '희망 포지션'}
                 fullWidth
@@ -696,7 +696,7 @@ export default function PostEditor({
                 onChange={(e) => setJobFields({ ...jobFields, position: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="급여"
                 fullWidth
@@ -707,7 +707,7 @@ export default function PostEditor({
                 }}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="경력"
                 fullWidth
@@ -716,7 +716,7 @@ export default function PostEditor({
                 placeholder="예: 3년 이상"
               />
             </Grid>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <TextField
                 label="근무지"
                 fullWidth
@@ -817,7 +817,7 @@ export default function PostEditor({
         <DialogTitle>강의 정보</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <TextField
                 label="강의명"
                 fullWidth
@@ -827,7 +827,7 @@ export default function PostEditor({
                 }
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="강사명"
                 fullWidth
@@ -835,7 +835,7 @@ export default function PostEditor({
                 onChange={(e) => setLectureFields({ ...lectureFields, instructor: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>난이도</InputLabel>
                 <Select
@@ -854,7 +854,7 @@ export default function PostEditor({
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="수강료"
                 fullWidth
@@ -868,7 +868,7 @@ export default function PostEditor({
                 }}
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="최대 인원"
                 fullWidth
@@ -879,7 +879,7 @@ export default function PostEditor({
                 }
               />
             </Grid>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <TextField
                 label="장소"
                 fullWidth
