@@ -10,10 +10,32 @@
  * - Rate limiting for database operations
  */
 
-// Dynamic import of server client to avoid build issues
-import { secureLogger, SecurityEventType } from '@/lib/security/secure-logger'
-import { rateLimiter } from '@/lib/security/rateLimiter'
+// Import runtime-safe components
+import { getSecurityLogger, getSecurityRateLimiter } from './runtime-safe-factory'
 import type { SupabaseClient } from '@supabase/supabase-js'
+
+// Get runtime-appropriate components
+const secureLogger = getSecurityLogger()
+const rateLimiter = getSecurityRateLimiter()
+
+// Security event types (inline to avoid import chains)
+export enum SecurityEventType {
+  AUTHENTICATION_FAILURE = 'auth_failure',
+  AUTHORIZATION_FAILURE = 'authz_failure',
+  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
+  SUSPICIOUS_ACTIVITY = 'suspicious_activity',
+  DATA_ACCESS_VIOLATION = 'data_access_violation',
+  INPUT_VALIDATION_FAILED = 'input_validation_failed',
+  CSRF_ATTACK_DETECTED = 'csrf_attack_detected',
+  SQL_INJECTION_ATTEMPT = 'sql_injection_attempt',
+  XSS_ATTEMPT = 'xss_attempt',
+  FILE_UPLOAD_VIOLATION = 'file_upload_violation',
+  SESSION_HIJACK_ATTEMPT = 'session_hijack_attempt',
+  BRUTE_FORCE_DETECTED = 'brute_force_detected',
+  ACCOUNT_LOCKOUT = 'account_lockout',
+  PRIVILEGE_ESCALATION = 'privilege_escalation',
+  DATA_EXFILTRATION_ATTEMPT = 'data_exfiltration_attempt'
+}
 
 // Database operation types
 export type DatabaseOperation = 'select' | 'insert' | 'update' | 'delete' | 'upsert' | 'rpc'
@@ -268,8 +290,7 @@ export class SecureSupabaseClient {
         )
         
         if (!rateLimitResult.allowed) {
-          secureLogger.logSecurityEvent(SecurityEventType.RATE_LIMIT_EXCEEDED, {
-            severity: 'HIGH',
+          secureLogger.security(`Rate limit exceeded: ${this.context.userId} - ${table}:select`, {
             context: { ...this.context, table, operation: 'select' }
           })
           throw new Error('Rate limit exceeded for database operation')
@@ -309,7 +330,8 @@ export class SecureSupabaseClient {
       const { data, error } = await query
 
       if (error) {
-        secureLogger.error('Database query error', error, {
+        secureLogger.error('Database query error', {
+          error,
           requestId: this.context.requestId,
           table,
           operation: 'select'
@@ -328,7 +350,7 @@ export class SecureSupabaseClient {
 
       // Audit logging
       if (config?.auditOperations.includes('select')) {
-        secureLogger.logAuditEvent('database_select', table, 'SUCCESS', {
+        secureLogger.info(`[AUDIT] database_select on ${table} - SUCCESS`, {
           requestId: this.context.requestId,
           recordCount: data?.length || 0,
           masked,
@@ -339,8 +361,7 @@ export class SecureSupabaseClient {
       return { data: processedData, error: null, masked }
 
     } catch (error) {
-      secureLogger.logSecurityEvent(SecurityEventType.DATA_ACCESS_VIOLATION, {
-        severity: 'HIGH',
+      secureLogger.security(`Data access violation: ${table}:select`, {
         context: {
           ...this.context,
           table,
@@ -405,7 +426,7 @@ export class SecureSupabaseClient {
 
       // Audit logging
       if (config?.auditOperations.includes('insert')) {
-        secureLogger.logAuditEvent('database_insert', table, result.error ? 'FAILURE' : 'SUCCESS', {
+        secureLogger.info(`[AUDIT] database_insert on ${table} - ${result.error ? 'FAILURE' : 'SUCCESS'}`, {
           requestId: this.context.requestId,
           recordCount,
           duration: Date.now() - startTime
@@ -415,8 +436,7 @@ export class SecureSupabaseClient {
       return result
 
     } catch (error) {
-      secureLogger.logSecurityEvent(SecurityEventType.DATA_ACCESS_VIOLATION, {
-        severity: 'MEDIUM',
+      secureLogger.security(`Data access violation: ${table}:insert`, {
         context: {
           ...this.context,
           table,
@@ -480,7 +500,7 @@ export class SecureSupabaseClient {
 
       // Audit logging
       if (config?.auditOperations.includes('update')) {
-        secureLogger.logAuditEvent('database_update', table, result.error ? 'FAILURE' : 'SUCCESS', {
+        secureLogger.info(`[AUDIT] database_update on ${table} - ${result.error ? 'FAILURE' : 'SUCCESS'}`, {
           requestId: this.context.requestId,
           affectedRecords: result.data?.length || 0,
           duration: Date.now() - startTime
@@ -490,8 +510,7 @@ export class SecureSupabaseClient {
       return { ...result, count: result.data?.length || 0 }
 
     } catch (error) {
-      secureLogger.logSecurityEvent(SecurityEventType.DATA_ACCESS_VIOLATION, {
-        severity: 'HIGH',
+      secureLogger.security(`Data access violation: ${table}:update`, {
         context: {
           ...this.context,
           table,
@@ -554,7 +573,7 @@ export class SecureSupabaseClient {
       const result = await query
 
       // Audit logging (always log deletes)
-      secureLogger.logAuditEvent('database_delete', table, result.error ? 'FAILURE' : 'SUCCESS', {
+      secureLogger.info(`[AUDIT] database_delete on ${table} - ${result.error ? 'FAILURE' : 'SUCCESS'}`, {
         requestId: this.context.requestId,
         deletedRecords: result.data?.length || 0,
         filters,
@@ -564,8 +583,7 @@ export class SecureSupabaseClient {
       return { ...result, count: result.data?.length || 0 }
 
     } catch (error) {
-      secureLogger.logSecurityEvent(SecurityEventType.DATA_ACCESS_VIOLATION, {
-        severity: 'CRITICAL',
+      secureLogger.security(`CRITICAL: Data access violation: ${table}:delete`, {
         context: {
           ...this.context,
           table,

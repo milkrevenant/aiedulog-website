@@ -4,6 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+
+// Force Node.js runtime for Stripe operations
+export const runtime = 'nodejs'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
