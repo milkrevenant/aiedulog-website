@@ -23,6 +23,12 @@ import {
   Divider,
 } from '@mui/material'
 import {
+  Assignment,
+  Rocket,
+  Visibility,
+  CheckCircle
+} from '@mui/icons-material'
+import {
   Add,
   MoreVert,
   Edit,
@@ -56,13 +62,14 @@ interface Column {
   id: string
   title: string
   color: string
+  icon: React.ReactNode
 }
 
 const COLUMNS: Column[] = [
-  { id: 'todo', title: 'To Do 📝', color: '#9e9e9e' },
-  { id: 'in_progress', title: 'In Progress 🚀', color: '#2196f3' },
-  { id: 'review', title: 'Review 👀', color: '#ff9800' },
-  { id: 'done', title: 'Done ✅', color: '#4caf50' },
+  { id: 'todo', title: 'To Do', color: '#9e9e9e', icon: <Assignment /> },
+  { id: 'in_progress', title: 'In Progress', color: '#2196f3', icon: <Rocket /> },
+  { id: 'review', title: 'Review', color: '#ff9800', icon: <Visibility /> },
+  { id: 'done', title: 'Done', color: '#4caf50', icon: <CheckCircle /> },
 ]
 
 const PRIORITY_COLORS = {
@@ -344,6 +351,7 @@ export default function KanbanBoard({ boardId }: { boardId: string }) {
             <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Stack direction="row" alignItems="center" spacing={1}>
+                  {column.icon}
                   <Typography variant="subtitle1" fontWeight="bold">
                     {column.title}
                   </Typography>

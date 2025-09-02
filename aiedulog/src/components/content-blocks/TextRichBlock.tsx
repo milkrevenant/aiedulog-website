@@ -1,11 +1,12 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   Box,
   Container,
   useTheme,
 } from '@mui/material'
+import DOMPurify from 'dompurify'
 import { getLocalizedText } from '@/lib/content-client'
 import type { LanguageCode, TextRichContent } from '@/types/content-management'
 
@@ -25,6 +26,33 @@ export function TextRichBlock({
   const theme = useTheme()
 
   const textContent = getLocalizedText(content.content, language, '<p>Rich text content goes here...</p>')
+  
+  // Sanitize HTML content to prevent XSS attacks
+  const sanitizedContent = useMemo(() => {
+    if (content.format === 'html' || content.format === 'markdown') {
+      return DOMPurify.sanitize(textContent, {
+        // Allow common HTML elements for rich text
+        ALLOWED_TAGS: [
+          'p', 'div', 'span', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 
+          'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+          'ul', 'ol', 'li', 
+          'a', 'blockquote', 'pre', 'code',
+          'table', 'thead', 'tbody', 'tr', 'th', 'td',
+          'img', 'hr'
+        ],
+        // Allow safe attributes
+        ALLOWED_ATTR: [
+          'href', 'title', 'alt', 'src', 'width', 'height', 
+          'class', 'id', 'style', 'target', 'rel'
+        ],
+        // Ensure links open safely (handled by ALLOWED_ATTR)
+        // Remove potentially dangerous content
+        FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
+        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
+      })
+    }
+    return textContent
+  }, [textContent, content.format])
 
   // Handle link clicks for analytics
   const handleContentClick = (event: React.MouseEvent) => {
@@ -190,11 +218,8 @@ export function TextRichBlock({
           },
         }}
       >
-        {content.format === 'html' ? (
-          <div dangerouslySetInnerHTML={{ __html: textContent }} />
-        ) : content.format === 'markdown' ? (
-          // For now, treat markdown as HTML - you can add a markdown parser later
-          <div dangerouslySetInnerHTML={{ __html: textContent }} />
+        {content.format === 'html' || content.format === 'markdown' ? (
+          <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
         ) : (
           // Plain text
           <div style={{ whiteSpace: 'pre-wrap' }}>
@@ -203,5 +228,5 @@ export function TextRichBlock({
         )}
       </Box>
     </Container>
-  )
+  );
 }

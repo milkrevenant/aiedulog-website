@@ -176,13 +176,11 @@ export default function IdentityHealthDashboard() {
           )}
         </Stack>
       </Box>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-
       {healthResult && (
         <>
           {/* Overall Status Card */}
@@ -368,7 +366,6 @@ export default function IdentityHealthDashboard() {
           </Card>
         </>
       )}
-
       {/* Report Dialog */}
       <Dialog
         open={reportDialog}
@@ -401,5 +398,5 @@ export default function IdentityHealthDashboard() {
         </DialogActions>
       </Dialog>
     </Box>
-  )
+  );
 }

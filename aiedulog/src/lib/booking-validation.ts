@@ -211,7 +211,7 @@ export function sanitizeInput(input: string): string {
     .replace(/[<>]/g, '') // Remove angle brackets
     .replace(/javascript:/gi, '') // Remove javascript: protocol
     .replace(/on\w+=/gi, '') // Remove event handlers
-    .trim()
+    .trim();
 }
 
 /**

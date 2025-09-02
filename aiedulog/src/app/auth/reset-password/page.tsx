@@ -219,7 +219,7 @@ function ResetPasswordContent() {
 
           {mode === 'request' ? (
             // Password Reset Request Form
-            <Box component="form" onSubmit={handlePasswordResetRequest} sx={{ width: '100%' }}>
+            (<Box component="form" onSubmit={handlePasswordResetRequest} sx={{ width: '100%' }}>
               <Stack spacing={3}>
                 <TextField
                   fullWidth
@@ -297,10 +297,10 @@ function ResetPasswordContent() {
                   </Link>
                 </Typography>
               </Stack>
-            </Box>
+            </Box>)
           ) : (
             // Password Update Form
-            <Box component="form" onSubmit={handlePasswordUpdate} sx={{ width: '100%' }}>
+            (<Box component="form" onSubmit={handlePasswordUpdate} sx={{ width: '100%' }}>
               <Stack spacing={3}>
                 <TextField
                   fullWidth
@@ -449,12 +449,12 @@ function ResetPasswordContent() {
                   )}
                 </Button>
               </Stack>
-            </Box>
+            </Box>)
           )}
         </Paper>
       </Container>
     </Box>
-  )
+  );
 }
 
 export default function ResetPasswordPage() {

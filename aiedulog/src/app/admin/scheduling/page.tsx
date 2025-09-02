@@ -82,7 +82,7 @@ import {
   DateRange
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
-import { AuthGuard } from '@/components/auth/AuthGuard'
+import AuthGuard from '@/components/AuthGuard'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
@@ -585,7 +585,11 @@ function CalendarTab() {
                 <DatePicker
                   value={selectedDate}
                   onChange={(newValue) => setSelectedDate(newValue || new Date())}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true
+                    }
+                  }}
                 />
               </LocalizationProvider>
               
@@ -820,7 +824,7 @@ function AdminSchedulingContent() {
 
 export default function AdminSchedulingPage() {
   return (
-    <AuthGuard requiredRole="admin">
+    <AuthGuard requireAdmin={true}>
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
         <AdminSchedulingContent />
       </LocalizationProvider>

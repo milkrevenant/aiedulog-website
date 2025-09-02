@@ -61,6 +61,9 @@ export interface Appointment {
   notes?: string;
   cancellation_reason?: string;
   reminder_sent: boolean;
+  user_rating?: number;
+  instructor_rating?: number;
+  review_comment?: string;
   created_at: string;
   updated_at: string;
   cancelled_at?: string;

@@ -511,7 +511,7 @@ export default function Home() {
                 </>
               ) : (
                 /* Login and Signup Buttons */
-                <>
+                (<>
                   <Button
                     component={Link}
                     href="/auth/login"
@@ -556,13 +556,12 @@ export default function Home() {
                   >
                     회원가입
                   </Button>
-                </>
+                </>)
               )}
             </Box>
           </Toolbar>
         </Container>
       </AppBar>
-
       {/* Mobile Menu - Menu 컴포넌트로 변경 */}
       <MuiMenu
         anchorEl={mobileMenuAnchor}
@@ -870,7 +869,6 @@ export default function Home() {
           )}
         </List>
       </MuiMenu>
-
       {/* Hero Section - Grid Layout */}
       <Container maxWidth="xl" sx={{ pt: 8, pb: 8 }}>
         {/* Grid Container */}
@@ -1125,7 +1123,6 @@ export default function Home() {
           </Card>
         </Box>
       </Container>
-
       {/* Announcement Section */}
       <Box
         sx={{
@@ -1345,7 +1342,6 @@ export default function Home() {
           </Card>
         </Container>
       </Box>
-
       {/* Bottom CTA */}
       <Container maxWidth="md" sx={{ pt: 8, pb: 8 }}>
         <Stack spacing={3} alignItems="center" textAlign="center">
@@ -1403,10 +1399,8 @@ export default function Home() {
           </Stack>
         </Stack>
       </Container>
-
       {/* Dynamic Footer */}
       <DynamicFooter language="ko" />
-
       {/* 모바일 플로팅 메뉴 버튼 - 로그인한 경우에만 표시 */}
       {user && (
         <Box
@@ -1433,7 +1427,6 @@ export default function Home() {
           </Fab>
         </Box>
       )}
-
       {/* FeedSidebar (모바일 Drawer) */}
       <FeedSidebar
         user={user}
@@ -1442,5 +1435,5 @@ export default function Home() {
         onMobileToggle={() => setMobileDrawerOpen(false)}
       />
     </Box>
-  )
+  );
 }

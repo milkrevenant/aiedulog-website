@@ -30,6 +30,14 @@ import {
   Popover,
 } from '@mui/material'
 import {
+  Palette,
+  Assignment,
+  CheckBox,
+  BarChart,
+  TableChart,
+  Folder
+} from '@mui/icons-material'
+import {
   Send,
   AttachFile,
   EmojiEmotions,
@@ -40,7 +48,6 @@ import {
   PersonAdd,
   Info,
   Add,
-  TableChart,
   Poll,
   Image,
   VideoLibrary,
@@ -78,12 +85,12 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
   
   // Microsoft Loop style slash commands
   const slashCommands = [
-    { id: 'whiteboard', icon: '🎨', label: 'Whiteboard', description: 'Create a collaborative whiteboard' },
-    { id: 'kanban', icon: '📋', label: 'Kanban Board', description: 'Task management board' },
-    { id: 'todo', icon: '✅', label: 'Todo List', description: 'Shared task list' },
-    { id: 'poll', icon: '📊', label: 'Poll', description: 'Create a poll or survey' },
-    { id: 'table', icon: '📝', label: 'Table', description: 'Structured data table' },
-    { id: 'file', icon: '📁', label: 'File', description: 'Attach or embed file' }
+    { id: 'whiteboard', icon: <Palette />, label: 'Whiteboard', description: 'Create a collaborative whiteboard' },
+    { id: 'kanban', icon: <Assignment />, label: 'Kanban Board', description: 'Task management board' },
+    { id: 'todo', icon: <CheckBox />, label: 'Todo List', description: 'Shared task list' },
+    { id: 'poll', icon: <BarChart />, label: 'Poll', description: 'Create a poll or survey' },
+    { id: 'table', icon: <TableChart />, label: 'Table', description: 'Structured data table' },
+    { id: 'file', icon: <Folder />, label: 'File', description: 'Attach or embed file' }
   ]
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -142,13 +149,13 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
       
       // DEBUG: Identity 시스템 상태 확인
       if (chatUserData) {
-        console.log('✅ Identity System Connected:', {
+        console.log('Identity System Connected:', {
           authUserId: chatUserData.authUserId,
           identityId: chatUserData.identityId,
           email: chatUserData.email
         })
       } else {
-        console.error('❌ Identity System Failed')
+        console.error('Identity System Failed')
       }
       
       setChatUser(chatUserData)
@@ -447,12 +454,12 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
       roomId: actualRoomId,
       senderId: chatUser.identityId,
       message: toolType === 'kanban' 
-        ? '📋 칸반보드를 생성했습니다'
+        ? '칸반보드를 생성했습니다'
         : toolType === 'whiteboard'
-        ? '🎨 화이트보드를 생성했습니다'
+        ? '화이트보드를 생성했습니다'
         : toolType === 'table'
-        ? '📝 테이블을 생성했습니다'
-        : '✅ 할 일 목록을 생성했습니다',
+        ? '테이블을 생성했습니다'
+        : '할 일 목록을 생성했습니다',
       type: toolType === 'whiteboard' ? 'excalidraw' : toolType,
       attachments: {
         toolType: toolType === 'whiteboard' ? 'excalidraw' : toolType,
@@ -1320,9 +1327,12 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
             <Divider />
             
             <Box>
-              <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                🎨 화이트보드(Excalidraw) 크기
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Palette fontSize="small" />
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  화이트보드(Excalidraw) 크기
+                </Typography>
+              </Stack>
             </Box>
             
             <Box>

@@ -88,7 +88,6 @@ export function VideoEmbedBlock({
           {getLocalizedText(content.title, language)}
         </Typography>
       )}
-
       <Box
         sx={{
           position: 'relative',
@@ -101,40 +100,36 @@ export function VideoEmbedBlock({
       >
         {isPlaying && embedUrl ? (
           // Show actual video iframe
-          content.video_type === 'direct' ? (
-            <Box
-              component="video"
-              src={embedUrl}
-              controls={content.controls !== false}
-              autoPlay={content.autoplay}
-              loop={content.loop}
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-              }}
-            />
-          ) : (
-            <Box
-              component="iframe"
-              src={embedUrl}
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          )
+          (content.video_type === 'direct' ? (<Box
+            component="video"
+            src={embedUrl}
+            controls={content.controls !== false}
+            autoPlay={content.autoplay}
+            loop={content.loop}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+            }}
+          />) : (<Box
+            component="iframe"
+            src={embedUrl}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: 'none',
+            }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />))
         ) : (
           // Show thumbnail/preview
-          <Box
+          (<Box
             sx={{
               position: 'absolute',
               top: 0,
@@ -168,7 +163,6 @@ export function VideoEmbedBlock({
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
               }}
             />
-            
             {/* Play button */}
             <IconButton
               className="play-button"
@@ -186,10 +180,9 @@ export function VideoEmbedBlock({
             >
               <PlayArrow sx={{ fontSize: 48 }} />
             </IconButton>
-          </Box>
+          </Box>)
         )}
       </Box>
-
       {!content.video_url && (
         <Box
           sx={{
@@ -204,5 +197,5 @@ export function VideoEmbedBlock({
         </Box>
       )}
     </Container>
-  )
+  );
 }

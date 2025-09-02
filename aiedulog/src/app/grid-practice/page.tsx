@@ -20,6 +20,18 @@ import {
   Chip,
   TextField,
 } from '@mui/material'
+import {
+  Settings,
+  Inventory,
+  PhoneAndroid,
+  Computer,
+  DesktopWindows,
+  Palette,
+  Bolt,
+  FiberManualRecord,
+  Description,
+  StraightenOutlined
+} from '@mui/icons-material'
 
 export default function GridPractice() {
   // Grid 설정 상태
@@ -97,13 +109,19 @@ export default function GridPractice() {
           {/* Control Panel - Left */}
           <Box sx={{ flex: { xs: '1 1 100%', lg: '0 0 400px' } }}>
             <Paper sx={{ p: 3, position: { lg: 'sticky' }, top: 20 }}>
-              <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-                ⚙️ Grid Controls
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
+                <Settings color="primary" />
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  Grid Controls
+                </Typography>
+              </Stack>
 
               {/* 아이템 개수 */}
               <Box sx={{ mb: 3 }}>
-                <FormLabel>📦 아이템 개수: {numItems}</FormLabel>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <Inventory fontSize="small" />
+                  <FormLabel>아이템 개수: {numItems}</FormLabel>
+                </Stack>
                 <Slider
                   value={numItems}
                   onChange={(e, val) => setNumItems(val as number)}
@@ -117,15 +135,21 @@ export default function GridPractice() {
               <Divider sx={{ my: 3 }} />
 
               {/* 반응형 컬럼 설정 */}
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                📱 Responsive Columns
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                <PhoneAndroid fontSize="small" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Responsive Columns
+                </Typography>
+              </Stack>
 
               {/* Mobile Columns */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  📱 Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''}
-                </FormLabel>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <PhoneAndroid fontSize="small" />
+                  <FormLabel>
+                    Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''}
+                  </FormLabel>
+                </Stack>
                 <ButtonGroup size="small" fullWidth>
                   {[1, 2, 3, 4].map((col) => (
                     <Button
@@ -141,10 +165,13 @@ export default function GridPractice() {
 
               {/* Small Tablet Columns */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  📱 Small Tablet (sm: 600-899px): {smallTabletColumns} column
-                  {smallTabletColumns > 1 ? 's' : ''}
-                </FormLabel>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <PhoneAndroid fontSize="small" />
+                  <FormLabel>
+                    Small Tablet (sm: 600-899px): {smallTabletColumns} column
+                    {smallTabletColumns > 1 ? 's' : ''}
+                  </FormLabel>
+                </Stack>
                 <ButtonGroup size="small" fullWidth>
                   {[1, 2, 3, 4].map((col) => (
                     <Button
@@ -160,10 +187,13 @@ export default function GridPractice() {
 
               {/* Large Tablet Columns */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  📱 Large Tablet (md: 900-1199px): {largeTabletColumns} column
-                  {largeTabletColumns > 1 ? 's' : ''}
-                </FormLabel>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <PhoneAndroid fontSize="small" />
+                  <FormLabel>
+                    Large Tablet (md: 900-1199px): {largeTabletColumns} column
+                    {largeTabletColumns > 1 ? 's' : ''}
+                  </FormLabel>
+                </Stack>
                 <ButtonGroup size="small" fullWidth>
                   {[2, 3, 4, 6].map((col) => (
                     <Button
@@ -179,10 +209,13 @@ export default function GridPractice() {
 
               {/* Desktop Columns */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  💻 Desktop (lg: 1200-1535px): {desktopColumns} column
-                  {desktopColumns > 1 ? 's' : ''}
-                </FormLabel>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <Computer fontSize="small" />
+                  <FormLabel>
+                    Desktop (lg: 1200-1535px): {desktopColumns} column
+                    {desktopColumns > 1 ? 's' : ''}
+                  </FormLabel>
+                </Stack>
                 <ButtonGroup size="small" fullWidth>
                   {[2, 3, 4, 6].map((col) => (
                     <Button
@@ -198,10 +231,13 @@ export default function GridPractice() {
 
               {/* Large Desktop Columns */}
               <Box sx={{ mb: 2 }}>
-                <FormLabel>
-                  🖥️ Large Desktop (xl: 1536px+): {largeDesktopColumns} column
-                  {largeDesktopColumns > 1 ? 's' : ''}
-                </FormLabel>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                  <DesktopWindows fontSize="small" />
+                  <FormLabel>
+                    Large Desktop (xl: 1536px+): {largeDesktopColumns} column
+                    {largeDesktopColumns > 1 ? 's' : ''}
+                  </FormLabel>
+                </Stack>
                 <ButtonGroup size="small" fullWidth>
                   {[3, 4, 6, 8, 12].map((col) => (
                     <Button
@@ -218,9 +254,12 @@ export default function GridPractice() {
               <Divider sx={{ my: 3 }} />
 
               {/* 스타일 설정 */}
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                🎨 Style Settings
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                <Palette fontSize="small" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Style Settings
+                </Typography>
+              </Stack>
 
               {/* Gap */}
               <Box sx={{ mb: 2 }}>
@@ -313,9 +352,12 @@ export default function GridPractice() {
               <Divider sx={{ my: 3 }} />
 
               {/* Preset Templates */}
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                ⚡ Quick Presets
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                <Bolt fontSize="small" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Quick Presets
+                </Typography>
+              </Stack>
               <Stack spacing={1}>
                 <Button
                   variant="outlined"
@@ -392,23 +434,23 @@ export default function GridPractice() {
               <Typography variant="body2" component="div">
                 <strong>Current Viewport Layout:</strong>
                 <br />
-                📱 Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''} ×{' '}
+                Mobile (xs: 0-599px): {mobileColumns} column{mobileColumns > 1 ? 's' : ''} ×{' '}
                 {Math.ceil(numItems / mobileColumns)} row
                 {Math.ceil(numItems / mobileColumns) > 1 ? 's' : ''}
                 <br />
-                📱 Small Tablet (sm: 600-899px): {smallTabletColumns} column
+                Small Tablet (sm: 600-899px): {smallTabletColumns} column
                 {smallTabletColumns > 1 ? 's' : ''} × {Math.ceil(numItems / smallTabletColumns)} row
                 {Math.ceil(numItems / smallTabletColumns) > 1 ? 's' : ''}
                 <br />
-                📱 Large Tablet (md: 900-1199px): {largeTabletColumns} column
+                Large Tablet (md: 900-1199px): {largeTabletColumns} column
                 {largeTabletColumns > 1 ? 's' : ''} × {Math.ceil(numItems / largeTabletColumns)} row
                 {Math.ceil(numItems / largeTabletColumns) > 1 ? 's' : ''}
                 <br />
-                💻 Desktop (lg: 1200-1535px): {desktopColumns} column{desktopColumns > 1 ? 's' : ''}{' '}
+                Desktop (lg: 1200-1535px): {desktopColumns} column{desktopColumns > 1 ? 's' : ''}{' '}
                 × {Math.ceil(numItems / desktopColumns)} row
                 {Math.ceil(numItems / desktopColumns) > 1 ? 's' : ''}
                 <br />
-                🖥️ Large Desktop (xl: 1536px+): {largeDesktopColumns} column
+                Large Desktop (xl: 1536px+): {largeDesktopColumns} column
                 {largeDesktopColumns > 1 ? 's' : ''} × {Math.ceil(numItems / largeDesktopColumns)}{' '}
                 row{Math.ceil(numItems / largeDesktopColumns) > 1 ? 's' : ''}
               </Typography>
@@ -416,9 +458,12 @@ export default function GridPractice() {
 
             {/* Live Preview */}
             <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-                🔴 Live Preview
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
+                <FiberManualRecord color="error" />
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  Live Preview
+                </Typography>
+              </Stack>
 
               <Box
                 sx={{
@@ -497,9 +542,12 @@ export default function GridPractice() {
                   alignItems="center"
                   sx={{ mb: 2 }}
                 >
-                  <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
-                    📝 Generated Code
-                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Description sx={{ color: 'white' }} />
+                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+                      Generated Code
+                    </Typography>
+                  </Stack>
                   <Button
                     variant="contained"
                     size="small"
@@ -525,9 +573,12 @@ export default function GridPractice() {
 
             {/* Breakpoints Reference */}
             <Paper sx={{ p: 3, mt: 4 }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                📏 Breakpoint Reference
-              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                <StraightenOutlined fontSize="small" />
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Breakpoint Reference
+                </Typography>
+              </Stack>
               <Stack direction="row" spacing={2} flexWrap="wrap">
                 <Chip label="xs: 0-599px" color="primary" />
                 <Chip label="sm: 600-899px" color="secondary" />

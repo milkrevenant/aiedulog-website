@@ -311,7 +311,7 @@ export function sanitizeForTransmission(data: any): any {
   
   if (typeof data === 'string') {
     // Remove potential XSS and limit length
-    return data.replace(/<[^>]*>/g, '').substring(0, 1000)
+    return data.replace(/<[^>]*>/g, '').substring(0, 1000);
   }
   
   if (typeof data === 'number' || typeof data === 'boolean') {

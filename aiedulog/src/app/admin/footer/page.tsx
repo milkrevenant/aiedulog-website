@@ -1299,5 +1299,5 @@ export default function FooterManagementPage() {
         </Dialog>
       </Container>
     </AuthGuard>
-  )
+  );
 }

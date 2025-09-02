@@ -222,7 +222,6 @@ export default function TrendingPage() {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 4 }}>
       <AppHeader user={user} profile={profile} />
-
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <Stack direction="row" alignItems="center" spacing={2} mb={2}>
@@ -244,7 +243,7 @@ export default function TrendingPage() {
 
         {tabValue === 0 ? (
           // 인기 게시글
-          <Stack spacing={2}>
+          (<Stack spacing={2}>
             {trendingPosts.map((post, index) => (
               <Card
                 key={post.id}
@@ -331,7 +330,6 @@ export default function TrendingPage() {
                 </CardContent>
               </Card>
             ))}
-
             {trendingPosts.length === 0 && (
               <Card>
                 <CardContent>
@@ -341,10 +339,10 @@ export default function TrendingPage() {
                 </CardContent>
               </Card>
             )}
-          </Stack>
+          </Stack>)
         ) : (
           // 인기 댓글
-          <Stack spacing={2}>
+          (<Stack spacing={2}>
             {trendingComments.map((comment, index) => (
               <Card
                 key={comment.id}
@@ -418,7 +416,6 @@ export default function TrendingPage() {
                 </CardContent>
               </Card>
             ))}
-
             {trendingComments.length === 0 && (
               <Card>
                 <CardContent>
@@ -428,9 +425,9 @@ export default function TrendingPage() {
                 </CardContent>
               </Card>
             )}
-          </Stack>
+          </Stack>)
         )}
       </Container>
     </Box>
-  )
+  );
 }

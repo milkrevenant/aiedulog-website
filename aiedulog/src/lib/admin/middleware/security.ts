@@ -490,7 +490,7 @@ export class SecurityMiddleware {
         }
 
         // Validate confirmation token (implement your own token validation)
-        if (!await this.validateConfirmationToken(confirmationToken, context.adminId || '', operation)) {
+        if (!(await this.validateConfirmationToken(confirmationToken, context.adminId || '', operation))) {
           return {
             allowed: false,
             reason: 'Invalid confirmation token'
