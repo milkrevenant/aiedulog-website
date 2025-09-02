@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_KR, IBM_Plex_Sans_KR } from 'next/font/google'
-import DOMPurify from 'dompurify'
 import { Providers } from './providers'
 import './globals.css'
 
@@ -33,11 +32,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(`window.EXCALIDRAW_ASSET_PATH = "/";`, {
-              ALLOWED_TAGS: [],
-              ALLOWED_ATTR: [],
-              KEEP_CONTENT: true
-            })
+            __html: `window.EXCALIDRAW_ASSET_PATH = "/";`
           }}
         />
       </head>
