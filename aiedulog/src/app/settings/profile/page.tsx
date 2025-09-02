@@ -262,7 +262,6 @@ export default function ProfileSettingsPage() {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>
       <AppHeader user={user} profile={profile} />
-
       <Container maxWidth="md" sx={{ py: 3 }}>
         {/* 헤더 */}
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
@@ -325,7 +324,7 @@ export default function ProfileSettingsPage() {
 
                 {previewUrl ? (
                   // 미리보기 상태
-                  <Stack spacing={2}>
+                  (<Stack spacing={2}>
                     <Alert severity="info">
                       새 프로필 사진이 선택되었습니다. 업로드 버튼을 클릭하세요.
                     </Alert>
@@ -342,10 +341,10 @@ export default function ProfileSettingsPage() {
                         취소
                       </Button>
                     </Stack>
-                  </Stack>
+                  </Stack>)
                 ) : (
                   // 기본 상태
-                  <Stack spacing={2}>
+                  (<Stack spacing={2}>
                     <Typography variant="body2" color="text.secondary">
                       JPG, PNG, GIF 형식 (최대 5MB)
                     </Typography>
@@ -369,7 +368,7 @@ export default function ProfileSettingsPage() {
                         </Button>
                       )}
                     </Stack>
-                  </Stack>
+                  </Stack>)
                 )}
               </Box>
             </Stack>
@@ -510,7 +509,6 @@ export default function ProfileSettingsPage() {
           </CardContent>
         </Card>
       </Container>
-
       {/* 성공 메시지 */}
       <Snackbar
         open={success}
@@ -522,7 +520,6 @@ export default function ProfileSettingsPage() {
           프로필이 업데이트되었습니다!
         </Alert>
       </Snackbar>
-
       {/* 에러 메시지 */}
       <Snackbar
         open={!!error}
@@ -535,5 +532,5 @@ export default function ProfileSettingsPage() {
         </Alert>
       </Snackbar>
     </Box>
-  )
+  );
 }

@@ -226,7 +226,7 @@ export default function MessagesPage() {
         {
           id: '4',
           subject: '[시스템] 새로운 기능 업데이트 알림',
-          content: 'AIedulog 플랫폼에 새로운 기능이 추가되었습니다.\n\n✨ 새로운 기능:\n- 메시지 시스템 개선\n- 파일 첨부 기능 강화\n- 알림 설정 세분화\n\n업데이트된 기능들을 확인해보세요!',
+          content: 'AIedulog 플랫폼에 새로운 기능이 추가되었습니다.\n\n기능 업데이트:\n- 메시지 시스템 개선\n- 파일 첨부 기능 강화\n- 알림 설정 세분화\n\n업데이트된 기능들을 확인해보세요!',
           sender: {
             id: 'system',
             name: 'AIedulog System',

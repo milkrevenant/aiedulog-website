@@ -83,8 +83,7 @@ const nextConfig: NextConfig = {
   
   // Development server configuration
   devIndicators: {
-    buildActivity: true,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-left',
   },
   
   // Environment variables validation

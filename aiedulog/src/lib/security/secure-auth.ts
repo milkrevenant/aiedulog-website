@@ -568,7 +568,7 @@ export class SecureAuthService {
   private async validateMFA(userId: string, code: string): Promise<boolean> {
     // TODO: Implement actual MFA validation (TOTP, SMS, etc.)
     // For now, simulate validation
-    return code.length === 6 && /^\d{6}$/.test(code)
+    return code.length === 6 && /^\d{6}$/.test(code);
   }
 
   private async assessLoginRisk(

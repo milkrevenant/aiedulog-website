@@ -21,12 +21,17 @@ import {
 } from '@/types/appointment-system';
 
 // 🔒 SECURITY: Custom validators with sanitization
-const sanitizedString = (maxLength: number = 1000) => 
-  z.string()
-    .transform((val) => InputSanitizer.sanitizeString(val, { maxLength }).sanitizedValue)
+const sanitizedString = (minLength?: number, maxLength: number = 1000) => {
+  let schema = z.string();
+  if (minLength !== undefined) {
+    schema = schema.min(minLength);
+  }
+  schema = schema.max(maxLength);
+  return schema.transform((val) => InputSanitizer.sanitizeString(val, { maxLength }).sanitizedValue)
     .refine((val) => val.length <= maxLength, {
       message: `String must not exceed ${maxLength} characters after sanitization`
     });
+};
 
 const sanitizedEmail = () => 
   z.string()
@@ -97,9 +102,7 @@ const appointmentTime = () =>
  * User Details Validation
  */
 export const UserDetailsSchema = z.object({
-  full_name: sanitizedString(100)
-    .min(2, 'Full name must be at least 2 characters')
-    .max(100, 'Full name cannot exceed 100 characters'),
+  full_name: sanitizedString(2, 100),
   
   email: sanitizedEmail(),
   
@@ -140,16 +143,12 @@ export const CreateAppointmentSchema = z.object({
   meeting_link: sanitizedUrl()
     .optional(),
   
-  title: sanitizedString(255)
-    .min(1, 'Title is required')
-    .max(255, 'Title cannot exceed 255 characters'),
+  title: sanitizedString(1, 255),
   
-  description: sanitizedString(2000)
-    .max(2000, 'Description cannot exceed 2000 characters')
+  description: sanitizedString(0, 2000)
     .optional(),
   
-  notes: sanitizedString(1000)
-    .max(1000, 'Notes cannot exceed 1000 characters')
+  notes: sanitizedString(0, 1000)
     .optional(),
   
   user_details: UserDetailsSchema
@@ -203,9 +202,7 @@ export const UpdateAppointmentSchema = z.object({
  * Appointment Cancellation Schema
  */
 export const CancelAppointmentSchema = z.object({
-  reason: sanitizedString(500)
-    .min(1, 'Cancellation reason is required')
-    .max(500, 'Cancellation reason cannot exceed 500 characters'),
+  reason: sanitizedString(1, 500),
   
   notify_instructor: z.boolean()
     .default(true)
@@ -219,8 +216,7 @@ export const RescheduleAppointmentSchema = z.object({
   
   new_start_time: appointmentTime(),
   
-  reason: sanitizedString(500)
-    .max(500, 'Reschedule reason cannot exceed 500 characters')
+  reason: sanitizedString(0, 500)
     .optional()
 });
 
@@ -237,7 +233,7 @@ export const CreateBookingSessionSchema = z.object({
   
   preferred_date: appointmentDate().optional(),
   
-  metadata: z.record(z.unknown())
+  metadata: z.record(z.string(), z.unknown())
     .transform((val) => InputSanitizer.sanitizeObject(val).sanitized)
     .optional()
 });
@@ -339,12 +335,9 @@ export const AppointmentFilterSchema = z.object({
 export const CreateAppointmentTypeSchema = z.object({
   instructor_id: sanitizedUUID(),
   
-  type_name: sanitizedString(150)
-    .min(1, 'Type name is required')
-    .max(150, 'Type name cannot exceed 150 characters'),
+  type_name: sanitizedString(1, 150),
   
-  description: sanitizedString(2000)
-    .max(2000, 'Description cannot exceed 2000 characters')
+  description: sanitizedString(0, 2000)
     .optional(),
   
   duration_minutes: z.number()
@@ -455,8 +448,7 @@ export const TimeBlockSchema = z.object({
   
   is_blocked: z.boolean().default(true),
   
-  block_reason: sanitizedString(500)
-    .max(500, 'Block reason cannot exceed 500 characters')
+  block_reason: sanitizedString(0, 500)
     .optional()
 }).refine((data) => {
   // Business rule: start_time should be before end_time

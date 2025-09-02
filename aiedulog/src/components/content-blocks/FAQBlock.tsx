@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   Box,
   Typography,
@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExpandMore } from '@mui/icons-material'
+import DOMPurify from 'dompurify'
 import { getLocalizedText } from '@/lib/content-client'
 import type { LanguageCode, FAQContent } from '@/types/content-management'
 import { staggerContainer, fadeVariants, performanceProps } from '@/lib/animations'
@@ -150,7 +151,13 @@ export function FAQBlock({
                     },
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: getLocalizedText(item.answer, language, 'Answer goes here...')
+                    __html: DOMPurify.sanitize(
+                      getLocalizedText(item.answer, language, 'Answer goes here...'),
+                      {
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a', 'ul', 'ol', 'li'],
+                        ALLOWED_ATTR: ['href', 'title', 'target', 'rel']
+                      }
+                    )
                   }}
                 />
               </AccordionDetails>

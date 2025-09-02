@@ -617,7 +617,7 @@ export class SecureSupabaseClient {
 
     if (typeof data === 'string') {
       // Basic string sanitization
-      return data.replace(/[<>'"`;]/g, '').trim().substring(0, 10000)
+      return data.replace(/[<>'"`;]/g, '').trim().substring(0, 10000);
     }
 
     if (Array.isArray(data)) {

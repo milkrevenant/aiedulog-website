@@ -601,7 +601,7 @@ function DashboardContent() {
                 <Typography variant="body2">• 자신의 콘텐츠 수정 및 삭제</Typography>
                 <Typography variant="body2">• 커뮤니티 활동 참여</Typography>
                 <Typography variant="body2" color="primary">
-                  💡 회원가입을 하시면 더 많은 기능을 사용할 수 있습니다!
+                  회원가입을 하시면 더 많은 기능을 사용할 수 있습니다!
                 </Typography>
               </Stack>
             )}

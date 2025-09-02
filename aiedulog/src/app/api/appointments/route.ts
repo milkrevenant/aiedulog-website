@@ -64,7 +64,7 @@ const getHandler = async (
       return NextResponse.json(
         { 
           error: 'Invalid filter parameters',
-          details: filterValidation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+          details: filterValidation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`)
         } as ApiResponse,
         { status: 400 }
       );
@@ -78,7 +78,7 @@ const getHandler = async (
       userRole: context.userRole || 'user',
       userStatus: 'active', // Should be validated by security wrapper
       timestamp: new Date(),
-      sessionId: context.sessionId,
+      sessionId: (context as any).sessionId || 'unknown',
       ipAddress: context.ipAddress,
       userAgent: context.userAgent
     };
@@ -113,13 +113,14 @@ const getHandler = async (
       `);
 
     // 🔒 ACCESS CONTROL: Filter by user access rights
-    if (context.userRole === 'user') {
+    const userRole = context.userRole as any;
+    if (userRole === 'user') {
       // Regular users can only see their own appointments
       query = query.eq('user_id', context.userId!);
-    } else if (context.userRole === 'instructor') {
+    } else if (userRole === 'instructor') {
       // Instructors can see appointments they're teaching or their own bookings
       query = query.or(`user_id.eq.${context.userId!},instructor_id.eq.${context.userId!}`);
-    } else if (['admin', 'super_admin', 'support'].includes(context.userRole || '')) {
+    } else if (['admin', 'super_admin', 'support'].includes(userRole || '')) {
       // Admin roles can see all appointments (will be further filtered by authorization)
       // No additional filtering needed
     } else {
@@ -139,7 +140,7 @@ const getHandler = async (
       query = query.eq('instructor_id', filters.instructor_id);
     }
     
-    if (filters.user_id && ['admin', 'super_admin', 'support'].includes(context.userRole || '')) {
+    if (filters.user_id && ['admin', 'super_admin', 'support'].includes(userRole || '')) {
       query = query.eq('user_id', filters.user_id);
     }
     
@@ -206,9 +207,9 @@ const getHandler = async (
       .select('*', { count: 'exact', head: true });
 
     // Apply same access control filters for count
-    if (context.userRole === 'user') {
+    if (userRole === 'user') {
       countQuery = countQuery.eq('user_id', context.userId!);
-    } else if (context.userRole === 'instructor') {
+    } else if (userRole === 'instructor') {
       countQuery = countQuery.or(`user_id.eq.${context.userId!},instructor_id.eq.${context.userId!}`);
     }
 
@@ -219,7 +220,7 @@ const getHandler = async (
     if (filters.instructor_id) {
       countQuery = countQuery.eq('instructor_id', filters.instructor_id);
     }
-    if (filters.user_id && ['admin', 'super_admin', 'support'].includes(context.userRole || '')) {
+    if (filters.user_id && ['admin', 'super_admin', 'support'].includes(userRole || '')) {
       countQuery = countQuery.eq('user_id', filters.user_id);
     }
 
@@ -265,7 +266,7 @@ const postHandler = async (
       return NextResponse.json(
         { 
           error: 'Invalid appointment data',
-          details: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+          details: validation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`)
         } as ApiResponse,
         { status: 400 }
       );
@@ -279,7 +280,7 @@ const postHandler = async (
       userRole: context.userRole || 'user',
       userStatus: 'active',
       timestamp: new Date(),
-      sessionId: context.sessionId,
+      sessionId: (context as any).sessionId || 'unknown',
       ipAddress: context.ipAddress,
       userAgent: context.userAgent
     };

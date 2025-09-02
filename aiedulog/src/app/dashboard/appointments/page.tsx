@@ -335,7 +335,7 @@ function AppointmentCard({ appointment }: { appointment: AppointmentWithDetails 
           상세 정보
         </MenuItem>
         {appointment.instructor?.email && (
-          <MenuItem onClick={() => window.open(`mailto:${appointment.instructor.email}`)}>
+          <MenuItem onClick={() => window.open(`mailto:${appointment.instructor?.email}`)}>
             <Email sx={{ mr: 1 }} fontSize="small" />
             강사에게 연락
           </MenuItem>
@@ -429,10 +429,10 @@ function AppointmentsPageContent() {
 
   // Tab-specific filters
   const tabFilters: Record<number, Partial<AppointmentFilters>> = {
-    0: { status: ['pending', 'confirmed'] }, // Upcoming
-    1: { status: ['completed'] }, // Past
-    2: { status: ['pending'] }, // Pending
-    3: { status: ['cancelled'] }, // Cancelled
+    0: { status: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] }, // Upcoming
+    1: { status: [AppointmentStatus.COMPLETED] }, // Past
+    2: { status: [AppointmentStatus.PENDING] }, // Pending
+    3: { status: [AppointmentStatus.CANCELLED] }, // Cancelled
     4: {} // All
   }
 

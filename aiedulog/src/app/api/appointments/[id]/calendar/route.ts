@@ -95,7 +95,7 @@ function generateIcsFile(appointment: AppointmentWithDetails): string {
   
   // Format dates for ICS (YYYYMMDDTHHMMSSZ)
   const formatIcsDateTime = (date: Date): string => {
-    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   }
 
   const startIcs = formatIcsDateTime(startDateTime)
@@ -132,7 +132,7 @@ function generateIcsFile(appointment: AppointmentWithDetails): string {
       .replace(/,/g, '\\,')
       .replace(/;/g, '\\;')
       .replace(/\n/g, '\\n')
-      .replace(/\r/g, '')
+      .replace(/\r/g, '');
   }
 
   // Build ICS content

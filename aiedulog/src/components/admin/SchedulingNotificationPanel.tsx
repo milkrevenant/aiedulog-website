@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Box,
   Card,
@@ -711,7 +712,12 @@ export default function SchedulingNotificationPanel() {
               p: 2,
               backgroundColor: '#fafafa'
             }}
-            dangerouslySetInnerHTML={{ __html: previewContent }}
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(previewContent, {
+                ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'div', 'strong', 'b', 'em', 'i', 'a', 'br'],
+                ALLOWED_ATTR: ['style', 'href', 'target', 'rel']
+              })
+            }}
           />
         </DialogContent>
         <DialogActions>

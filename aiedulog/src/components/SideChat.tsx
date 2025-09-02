@@ -419,7 +419,7 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
 
       {selectedRoom ? (
           // 채팅방 뷰
-          <>
+          (<>
             {/* 채팅방 헤더 */}
             <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
               <Stack direction="row" alignItems="center" spacing={1}>
@@ -437,7 +437,6 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
                 </Typography>
               </Stack>
             </Box>
-
             {/* 메시지 영역 */}
             <Box
               sx={{
@@ -495,7 +494,6 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
               })}
               <div ref={messagesEndRef} />
             </Box>
-
             {/* 입력 영역 */}
             <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider' }}>
               <Stack direction="row" spacing={1}>
@@ -528,10 +526,10 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
                 </IconButton>
               </Stack>
             </Box>
-          </>
+          </>)
         ) : (
           // 채팅방 목록
-          <>
+          (<>
             <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
               {loading ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -600,7 +598,6 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
                 </List>
               )}
             </Box>
-
             {/* 전체 채팅 보기 버튼 */}
             <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider' }}>
               <Button
@@ -612,7 +609,7 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
                 전체 채팅 보기
               </Button>
             </Box>
-          </>
+          </>)
         )}
     </Box>
   )

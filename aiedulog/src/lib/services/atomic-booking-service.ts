@@ -659,7 +659,12 @@ export class AtomicBookingService {
       }
 
       return {
-        conflictingAppointments: conflicts || [],
+        conflictingAppointments: (conflicts || []).map(conflict => ({
+          id: conflict.id,
+          startTime: conflict.start_time,
+          endTime: conflict.end_time,
+          status: conflict.status
+        })),
         reason: conflicts && conflicts.length > 0 
           ? `${conflicts.length} conflicting appointment(s) found`
           : 'Time slot conflicts with existing appointments'

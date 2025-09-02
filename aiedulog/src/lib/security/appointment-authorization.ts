@@ -565,10 +565,10 @@ export class AppointmentAuthorization {
 
     // Rule 5: Reschedule restrictions
     if (action === AuthorizationAction.RESCHEDULE) {
-      if (appointment.status === AppointmentStatus.IN_PROGRESS) {
+      if (appointment.status === AppointmentStatus.COMPLETED) {
         return {
           authorized: false,
-          reason: 'Cannot reschedule appointments that are in progress'
+          reason: 'Cannot reschedule completed appointments'
         };
       }
     }
@@ -838,7 +838,7 @@ export class AppointmentAuthorization {
         }, {} as Record<string, number>);
 
       Object.entries(failedByUser).forEach(([userId, count]) => {
-        if (count >= 10) { // 10 or more failures
+        if ((count as number) >= 10) { // 10 or more failures
           const lastFailure = logs
             .filter(log => log.user_id === userId && !log.success)
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];

@@ -456,7 +456,7 @@ export default function ChatPage() {
       {/* 데스크탑: 검색바만, 모바일: 헤더 + 검색바 */}
       {isTabletUp ? (
         // 데스크탑: 검색바를 최상단에 배치
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        (<Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <TextField
             fullWidth
             placeholder="채팅방 검색..."
@@ -476,10 +476,10 @@ export default function ChatPage() {
               },
             }}
           />
-        </Box>
+        </Box>)
       ) : (
         // 모바일: 헤더와 검색바 모두 표시
-        <>
+        (<>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Typography variant="h6" fontWeight="bold">
@@ -511,7 +511,7 @@ export default function ChatPage() {
               }}
             />
           </Box>
-        </>
+        </>)
       )}
 
       {/* 채팅방 목록 */}
@@ -613,10 +613,9 @@ export default function ChatPage() {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
       <AppHeader user={user} profile={profile} />
-
       {isTabletUp ? (
         // 태블릿/데스크탑: Split View (Flexbox)
-        <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex' }}>
+        (<Box sx={{ height: 'calc(100vh - 64px)', display: 'flex' }}>
           {/* 사이드바: 채팅 목록 (리사이징 가능) */}
           <ResizableSidebar
             defaultWidth={220}
@@ -634,14 +633,13 @@ export default function ChatPage() {
               isNewChat={!selectedRoom}
             />
           </Box>
-        </Box>
+        </Box>)
       ) : (
         // 모바일: 채팅 목록만 표시
-        <Container maxWidth="md" sx={{ pt: 3 }}>
+        (<Container maxWidth="md" sx={{ pt: 3 }}>
           <ChatRoomList />
-        </Container>
+        </Container>)
       )}
-
       {/* 새 채팅 다이얼로그 */}
       <Dialog open={newChatDialog} onClose={() => setNewChatDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>새 채팅 시작</DialogTitle>
@@ -691,7 +689,6 @@ export default function ChatPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
-  )
+  );
 }
