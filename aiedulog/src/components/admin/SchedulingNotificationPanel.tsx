@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import DOMPurify from 'dompurify';
+import { ClientSanitizedContent } from '@/components/client/ClientSanitizedContent';
 import {
   Box,
   Card,
@@ -705,20 +705,34 @@ export default function SchedulingNotificationPanel() {
       <Dialog open={previewDialog} onClose={() => setPreviewDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>템플릿 미리보기</DialogTitle>
         <DialogContent>
-          <Box
-            sx={{
-              border: '1px solid #e0e0e0',
-              borderRadius: 1,
-              p: 2,
-              backgroundColor: '#fafafa'
-            }}
-            dangerouslySetInnerHTML={{ 
-              __html: DOMPurify.sanitize(previewContent, {
-                ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'div', 'strong', 'b', 'em', 'i', 'a', 'br'],
-                ALLOWED_ATTR: ['style', 'href', 'target', 'rel']
-              })
-            }}
-          />
+          <ClientSanitizedContent
+            html={previewContent}
+            options="NOTIFICATION"
+            fallback={
+              <Box
+                sx={{
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 1,
+                  p: 2,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                {previewContent.replace(/<[^>]*>/g, '')}
+              </Box>
+            }
+          >
+            {(sanitizedHTML) => (
+              <Box
+                sx={{
+                  border: '1px solid #e0e0e0',
+                  borderRadius: 1,
+                  p: 2,
+                  backgroundColor: '#fafafa'
+                }}
+                dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
+              />
+            )}
+          </ClientSanitizedContent>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPreviewDialog(false)}>닫기</Button>

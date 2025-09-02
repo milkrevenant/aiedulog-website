@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExpandMore } from '@mui/icons-material'
-import DOMPurify from 'dompurify'
+import { ClientSanitizedContent } from '@/components/client/ClientSanitizedContent'
 import { getLocalizedText } from '@/lib/content-client'
 import type { LanguageCode, FAQContent } from '@/types/content-management'
 import { staggerContainer, fadeVariants, performanceProps } from '@/lib/animations'
@@ -136,30 +136,34 @@ export function FAQBlock({
                   p: 3,
                 }}
               >
-                <Typography
-                  variant="body1"
-                  sx={{
-                    fontSize: '1.1rem',
-                    lineHeight: 1.7,
-                    color: 'text.primary',
-                    '& a': {
-                      color: theme.palette.primary.main,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        textDecoration: 'underline',
-                      },
-                    },
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(
-                      getLocalizedText(item.answer, language, 'Answer goes here...'),
-                      {
-                        ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a', 'ul', 'ol', 'li'],
-                        ALLOWED_ATTR: ['href', 'title', 'target', 'rel']
-                      }
-                    )
-                  }}
-                />
+                <ClientSanitizedContent
+                  html={getLocalizedText(item.answer, language, 'Answer goes here...')}
+                  options="FAQ"
+                  fallback={
+                    <Typography variant="body1">
+                      {getLocalizedText(item.answer, language, 'Answer goes here...')}
+                    </Typography>
+                  }
+                >
+                  {(sanitizedHTML) => (
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontSize: '1.1rem',
+                        lineHeight: 1.7,
+                        color: 'text.primary',
+                        '& a': {
+                          color: theme.palette.primary.main,
+                          textDecoration: 'none',
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          },
+                        },
+                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
+                    />
+                  )}
+                </ClientSanitizedContent>
               </AccordionDetails>
             </Accordion>
           )
