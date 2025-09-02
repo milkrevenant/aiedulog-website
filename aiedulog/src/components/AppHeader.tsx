@@ -28,6 +28,7 @@ import {
   AdminPanelSettings,
   Logout,
   Close,
+  CalendarToday,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
 import { getUserIdentity } from '@/lib/identity/helpers'
@@ -300,6 +301,18 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
             <Dashboard fontSize="small" />
           </ListItemIcon>
           <ListItemText>마이페이지</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            handleClose()
+            router.push('/scheduling')
+          }}
+        >
+          <ListItemIcon>
+            <CalendarToday fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>강사 예약하기</ListItemText>
         </MenuItem>
 
         <MenuItem

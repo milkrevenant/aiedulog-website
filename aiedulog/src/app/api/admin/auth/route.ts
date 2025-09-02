@@ -3,12 +3,28 @@
  * Handles admin login, session management, and permission checks
  */
 
+import { 
+  withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { AdminService } from '@/lib/admin/services';
 import { cookies } from 'next/headers';
 
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const { action, ...data } = await request.json();
     const supabase = await createClient();
@@ -16,47 +32,36 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'login':
-        return await handleAdminLogin(data, supabase, request);
+        return await handleAdminLogin(data, supabase, request, context);
       
       case 'verify_permissions':
-        return await handlePermissionVerification(data, adminService, supabase);
+        return await handlePermissionVerification(data, adminService, supabase, context);
       
       case 'refresh_session':
-        return await handleSessionRefresh(supabase);
+        return await handleSessionRefresh(supabase, context);
       
       case 'logout':
-        return await handleAdminLogout(supabase);
+        return await handleAdminLogout(supabase, context);
       
       default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        );
+        return createErrorResponse(ErrorType.BAD_REQUEST, context);
     }
   } catch (error) {
     console.error('Admin auth API error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
-      { status: 500 }
-    );
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
 async function handleAdminLogin(
   data: { email: string; password: string },
   supabase: any,
-  request: NextRequest
+  request: NextRequest,
+  context: SecurityContext
 ) {
   const { email, password } = data;
 
   if (!email || !password) {
-    return NextResponse.json(
-      { success: false, error: 'Email and password required' },
-      { status: 400 }
-    );
+    return createErrorResponse(ErrorType.BAD_REQUEST, context);
   }
 
   // Authenticate user
@@ -66,10 +71,7 @@ async function handleAdminLogin(
   });
 
   if (authError) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid credentials' },
-      { status: 401 }
-    );
+    return createErrorResponse(ErrorType.AUTHENTICATION_FAILED, context);
   }
 
   // Check if user has admin permissions
@@ -81,10 +83,7 @@ async function handleAdminLogin(
 
   if (!adminProfile) {
     await supabase.auth.signOut();
-    return NextResponse.json(
-      { success: false, error: 'Admin profile not found' },
-      { status: 403 }
-    );
+    return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
   }
 
   // Check for admin roles
@@ -98,10 +97,7 @@ async function handleAdminLogin(
 
   if (!adminRoles || adminRoles.length === 0) {
     await supabase.auth.signOut();
-    return NextResponse.json(
-      { success: false, error: 'No admin permissions found' },
-      { status: 403 }
-    );
+    return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
   }
 
   // Create admin session record
@@ -155,15 +151,13 @@ async function handleAdminLogin(
 async function handlePermissionVerification(
   data: { permission: string; resource_type?: string; resource_id?: string },
   adminService: AdminService,
-  supabase: any
+  supabase: any,
+  context: SecurityContext
 ) {
   const { data: user } = await supabase.auth.getUser();
 
   if (!user.user) {
-    return NextResponse.json(
-      { success: false, error: 'Not authenticated' },
-      { status: 401 }
-    );
+    return createErrorResponse(ErrorType.AUTHENTICATION_FAILED, context);
   }
 
   const { data: adminProfile } = await supabase
@@ -173,10 +167,7 @@ async function handlePermissionVerification(
     .single();
 
   if (!adminProfile) {
-    return NextResponse.json(
-      { success: false, error: 'Admin profile not found' },
-      { status: 403 }
-    );
+    return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
   }
 
   const hasPermission = await adminService.permissions.userHasPermission(
@@ -189,14 +180,11 @@ async function handlePermissionVerification(
   return NextResponse.json(hasPermission);
 }
 
-async function handleSessionRefresh(supabase: any) {
+async function handleSessionRefresh(supabase: any, context: SecurityContext) {
   const { data: session } = await supabase.auth.getSession();
   
   if (!session.session) {
-    return NextResponse.json(
-      { success: false, error: 'No active session' },
-      { status: 401 }
-    );
+    return createErrorResponse(ErrorType.AUTHENTICATION_FAILED, context);
   }
 
   // Update session activity
@@ -220,7 +208,7 @@ async function handleSessionRefresh(supabase: any) {
   });
 }
 
-async function handleAdminLogout(supabase: any) {
+async function handleAdminLogout(supabase: any, context: SecurityContext) {
   const { data: user } = await supabase.auth.getUser();
   
   if (user.user) {
@@ -256,3 +244,5 @@ async function handleAdminLogout(supabase: any) {
     data: { logged_out: true }
   });
 }
+
+export const POST = withAdminSecurity(postHandler);

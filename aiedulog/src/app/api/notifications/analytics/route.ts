@@ -1,3 +1,19 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getNotificationService } from '@/lib/services/notification-service';
@@ -6,7 +22,7 @@ import { getNotificationService } from '@/lib/services/notification-service';
  * GET /api/notifications/analytics
  * Get notification analytics and metrics (admin only)
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -118,3 +134,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withPublicSecurity(getHandler);

@@ -1,3 +1,19 @@
+import { 
+  withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ContentAnalyticsService } from '@/lib/content-management';
@@ -6,7 +22,7 @@ import { ContentAnalyticsService } from '@/lib/content-management';
  * GET /api/admin/analytics
  * Get content analytics data
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -112,7 +128,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/analytics
  * Track analytics event
  */
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     const body = await request.json();
@@ -459,3 +475,6 @@ async function getBehaviorStats(supabase: any, query: any) {
     return { success: false, data: {} };
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const POST = withAdminSecurity(postHandler);

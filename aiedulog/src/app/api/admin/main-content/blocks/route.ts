@@ -1,8 +1,24 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // GET - Fetch content blocks for a section
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
   const sectionId = searchParams.get('sectionId')
@@ -49,7 +65,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Create new content block
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   const supabase = await createClient()
   
   try {
@@ -100,7 +116,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT - Update content block
-export async function PUT(request: NextRequest) {
+const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   const supabase = await createClient()
   
   try {
@@ -153,7 +169,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE - Delete content block
-export async function DELETE(request: NextRequest) {
+const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
@@ -191,3 +207,8 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const POST = withAdminSecurity(postHandler);
+export const PUT = withAdminSecurity(putHandler);
+export const DELETE = withAdminSecurity(deleteHandler);

@@ -43,6 +43,15 @@ import {
   Badge,
   Tooltip,
   Snackbar,
+  ToggleButton,
+  ToggleButtonGroup,
+  Checkbox,
+  FormControlLabel,
+  Menu,
+  Fade,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
 } from '@mui/material'
 import {
   Dashboard,
@@ -71,6 +80,22 @@ import {
   DateRange,
   Notifications,
   NotificationImportant,
+  ViewList,
+  ViewModule,
+  FilterList,
+  Search,
+  ClearAll,
+  SelectAll,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+  MoreVert,
+  Save,
+  Restore,
+  Speed,
+  CheckBoxOutlineBlank,
+  CheckBox,
+  KeyboardDoubleArrowLeft,
+  KeyboardDoubleArrowRight,
 } from '@mui/icons-material'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -187,6 +212,18 @@ function ContentScheduler() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' | 'info' })
   const [tabValue, setTabValue] = useState(0)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [calendarDate, setCalendarDate] = useState(new Date())
+  const [selectedSchedules, setSelectedSchedules] = useState<string[]>([])
+  const [bulkActionMenu, setBulkActionMenu] = useState<null | HTMLElement>(null)
+  const [templates, setTemplates] = useState<any[]>([])
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [templateData, setTemplateData] = useState({
+    name: '',
+    description: '',
+    template_config: {}
+  })
+  const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
   
   // Filter states
   const [filterStatus, setFilterStatus] = useState('all')
@@ -210,6 +247,182 @@ function ContentScheduler() {
   })
 
   const router = useRouter()
+
+  // Calendar helper functions
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startingDayOfWeek = firstDay.getDay()
+
+    const days: (Date | null)[] = []
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null)
+    }
+    
+    // Add days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day))
+    }
+    
+    return days
+  }
+
+  const getWeekDays = (date: Date) => {
+    const startOfWeek = new Date(date)
+    startOfWeek.setDate(date.getDate() - date.getDay())
+    
+    const days: Date[] = []
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek)
+      day.setDate(startOfWeek.getDate() + i)
+      days.push(day)
+    }
+    
+    return days
+  }
+
+  const getSchedulesForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0]
+    return schedules.filter(schedule => {
+      const scheduleDate = new Date(schedule.scheduled_time).toISOString().split('T')[0]
+      return scheduleDate === dateStr
+    })
+  }
+
+  const goToPreviousPeriod = () => {
+    const newDate = new Date(calendarDate)
+    if (calendarView === 'month') {
+      newDate.setMonth(newDate.getMonth() - 1)
+    } else {
+      newDate.setDate(newDate.getDate() - 7)
+    }
+    setCalendarDate(newDate)
+  }
+
+  const goToNextPeriod = () => {
+    const newDate = new Date(calendarDate)
+    if (calendarView === 'month') {
+      newDate.setMonth(newDate.getMonth() + 1)
+    } else {
+      newDate.setDate(newDate.getDate() + 7)
+    }
+    setCalendarDate(newDate)
+  }
+
+  const goToToday = () => {
+    setCalendarDate(new Date())
+  }
+
+  // Bulk operations
+  const handleSelectAll = () => {
+    if (selectedSchedules.length === filteredSchedules.length) {
+      setSelectedSchedules([])
+    } else {
+      setSelectedSchedules(filteredSchedules.map(s => s.id))
+    }
+  }
+
+  const handleSelectSchedule = (scheduleId: string) => {
+    setSelectedSchedules(prev => 
+      prev.includes(scheduleId) 
+        ? prev.filter(id => id !== scheduleId)
+        : [...prev, scheduleId]
+    )
+  }
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedSchedules.length === 0) return
+
+    const promises = selectedSchedules.map(async (scheduleId) => {
+      switch (action) {
+        case 'execute':
+          return handleExecuteSchedule(scheduleId)
+        case 'pause':
+          return handlePauseSchedule(scheduleId)
+        case 'delete':
+          return handleDeleteSchedule(scheduleId)
+        default:
+          return Promise.resolve()
+      }
+    })
+
+    try {
+      await Promise.all(promises)
+      showSnackbar(`Bulk ${action} completed successfully`)
+      setSelectedSchedules([])
+      setBulkActionMenu(null)
+      fetchSchedules()
+    } catch (error) {
+      showSnackbar(`Bulk ${action} failed`, 'error')
+    }
+  }
+
+  // Template operations
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/scheduler/templates')
+      const data = await response.json()
+      if (data.success) {
+        setTemplates(data.templates)
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error)
+    }
+  }, [])
+
+  const handleSaveTemplate = async () => {
+    if (!templateData.name) {
+      showSnackbar('Template name is required', 'error')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/scheduler/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: templateData.name,
+          description: templateData.description,
+          template_config: {
+            schedule_type: formData.schedule_type,
+            timezone: formData.timezone,
+            recurrence_rule: formData.recurrence_rule,
+            action_data: formData.action_data
+          }
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        showSnackbar('Template saved successfully')
+        setShowTemplateDialog(false)
+        setTemplateData({ name: '', description: '', template_config: {} })
+        fetchTemplates()
+      } else {
+        showSnackbar(data.error || 'Failed to save template', 'error')
+      }
+    } catch (error) {
+      console.error('Error saving template:', error)
+      showSnackbar('Error saving template', 'error')
+    }
+  }
+
+  const handleApplyTemplate = (template: any) => {
+    const config = template.template_config
+    setFormData(prev => ({
+      ...prev,
+      schedule_type: config.schedule_type || 'publish',
+      timezone: config.timezone || 'Asia/Seoul',
+      recurrence_rule: config.recurrence_rule || '',
+      action_data: config.action_data || {}
+    }))
+    showSnackbar('Template applied successfully')
+  }
 
   // API functions
   const fetchSchedules = useCallback(async () => {
@@ -249,7 +462,8 @@ function ContentScheduler() {
 
   useEffect(() => {
     fetchSchedules()
-  }, [fetchSchedules])
+    fetchTemplates()
+  }, [fetchSchedules, fetchTemplates])
 
   // Filter schedules based on criteria
   useEffect(() => {
@@ -505,6 +719,7 @@ function ContentScheduler() {
     const statusConfig = SCHEDULE_STATUS[schedule.status]
     const typeConfig = SCHEDULE_TYPES[schedule.schedule_type]
     const overdue = isOverdue(schedule)
+    const isSelected = selectedSchedules.includes(schedule.id)
 
     return (
       <Card 
@@ -512,7 +727,8 @@ function ContentScheduler() {
         sx={{ 
           mb: 2,
           border: overdue ? 2 : 1,
-          borderColor: overdue ? 'error.main' : 'divider',
+          borderColor: overdue ? 'error.main' : isSelected ? 'primary.main' : 'divider',
+          bgcolor: isSelected ? 'primary.50' : 'background.paper',
           '&:hover': {
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
           }
@@ -520,6 +736,13 @@ function ContentScheduler() {
       >
         <CardContent>
           <Stack direction="row" alignItems="center" spacing={2}>
+            {viewMode === 'list' && (
+              <Checkbox
+                checked={isSelected}
+                onChange={() => handleSelectSchedule(schedule.id)}
+              />
+            )}
+            
             <Avatar 
               sx={{ 
                 backgroundColor: `${typeConfig.color}20`,
@@ -656,6 +879,186 @@ function ContentScheduler() {
     )
   }
 
+  // Calendar view renderers
+  const renderMonthView = () => {
+    const days = getDaysInMonth(calendarDate)
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+    return (
+      <Box>
+        {/* Day headers */}
+        <Grid container sx={{ mb: 1 }}>
+          {dayNames.map(day => (
+            <Grid item xs key={day}>
+              <Typography variant="caption" sx={{ p: 1, textAlign: 'center', display: 'block', fontWeight: 'bold' }}>
+                {day}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+        
+        {/* Calendar grid */}
+        <Grid container sx={{ minHeight: '400px' }}>
+          {days.map((day, index) => (
+            <Grid item xs key={index}>
+              <Paper 
+                variant="outlined" 
+                sx={{ 
+                  minHeight: 80, 
+                  p: 1, 
+                  cursor: day ? 'pointer' : 'default',
+                  bgcolor: day ? 'background.paper' : 'grey.50',
+                  '&:hover': {
+                    bgcolor: day ? 'action.hover' : 'grey.50'
+                  }
+                }}
+                onClick={() => {
+                  if (day) {
+                    const schedules = getSchedulesForDate(day)
+                    if (schedules.length === 0) {
+                      setFormData(prev => ({ ...prev, scheduled_time: day }))
+                      handleCreateSchedule()
+                    }
+                  }
+                }}
+              >
+                {day && (
+                  <>
+                    <Typography variant="caption" sx={{ fontWeight: day.toDateString() === new Date().toDateString() ? 'bold' : 'normal' }}>
+                      {day.getDate()}
+                    </Typography>
+                    
+                    {getSchedulesForDate(day).map((schedule) => {
+                      const typeConfig = SCHEDULE_TYPES[schedule.schedule_type]
+                      return (
+                        <Chip
+                          key={schedule.id}
+                          label={schedule.content_title?.substring(0, 15) || schedule.content_id.substring(0, 15)}
+                          size="small"
+                          sx={{
+                            display: 'block',
+                            mt: 0.5,
+                            maxWidth: '100%',
+                            height: 'auto',
+                            '& .MuiChip-label': {
+                              fontSize: '0.65rem',
+                              lineHeight: 1.2,
+                              whiteSpace: 'normal',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            },
+                            bgcolor: `${typeConfig.color}20`,
+                            color: typeConfig.color,
+                            cursor: 'pointer'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedSchedule(schedule)
+                            setDetailsDialog(true)
+                          }}
+                        />
+                      )
+                    })}
+                  </>
+                )}
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    )
+  }
+
+  const renderWeekView = () => {
+    const days = getWeekDays(calendarDate)
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const hours = Array.from({ length: 24 }, (_, i) => i)
+
+    return (
+      <Box>
+        {/* Week header */}
+        <Grid container sx={{ mb: 2 }}>
+          <Grid item xs={1}></Grid> {/* Time column spacer */}
+          {days.map((day, index) => (
+            <Grid item xs key={day.toISOString()}>
+              <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
+                <Typography variant="caption" color="text.secondary">
+                  {dayNames[index]}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: day.toDateString() === new Date().toDateString() ? 'bold' : 'normal' }}>
+                  {day.getDate()}
+                </Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+        
+        {/* Week grid */}
+        <Box sx={{ maxHeight: 600, overflow: 'auto' }}>
+          {hours.map(hour => (
+            <Grid container key={hour} sx={{ minHeight: 40, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Grid item xs={1}>
+                <Typography variant="caption" sx={{ p: 1 }}>
+                  {hour.toString().padStart(2, '0')}:00
+                </Typography>
+              </Grid>
+              {days.map(day => {
+                const daySchedules = getSchedulesForDate(day).filter(schedule => {
+                  const scheduleHour = new Date(schedule.scheduled_time).getHours()
+                  return scheduleHour === hour
+                })
+                
+                return (
+                  <Grid item xs key={`${day.toISOString()}-${hour}`}>
+                    <Paper 
+                      variant="outlined" 
+                      sx={{ 
+                        minHeight: 38, 
+                        p: 0.5, 
+                        cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: 'action.hover'
+                        }
+                      }}
+                      onClick={() => {
+                        const scheduledTime = new Date(day)
+                        scheduledTime.setHours(hour, 0, 0, 0)
+                        setFormData(prev => ({ ...prev, scheduled_time: scheduledTime }))
+                        handleCreateSchedule()
+                      }}
+                    >
+                      {daySchedules.map(schedule => {
+                        const typeConfig = SCHEDULE_TYPES[schedule.schedule_type]
+                        return (
+                          <Chip
+                            key={schedule.id}
+                            label={schedule.content_title?.substring(0, 10) || schedule.content_id.substring(0, 10)}
+                            size="small"
+                            sx={{
+                              fontSize: '0.6rem',
+                              height: 20,
+                              bgcolor: `${typeConfig.color}20`,
+                              color: typeConfig.color
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedSchedule(schedule)
+                              setDetailsDialog(true)
+                            }}
+                          />
+                        )
+                      })}
+                    </Paper>
+                  </Grid>
+                )
+              })}
+            </Grid>
+          ))}
+        </Box>
+      </Box>
+    )
+  }
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -699,12 +1102,28 @@ function ContentScheduler() {
                 </Typography>
               </Box>
               
-              <Stack direction="row" spacing={2}>
+              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                 {getOverdueSchedules().length > 0 && (
                   <Alert severity="warning" sx={{ mr: 2 }}>
                     {getOverdueSchedules().length} schedule(s) are overdue
                   </Alert>
                 )}
+                
+                {/* View Toggle */}
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={(e, newMode) => newMode && setViewMode(newMode)}
+                  size="small"
+                >
+                  <ToggleButton value="list">
+                    <ViewList />
+                  </ToggleButton>
+                  <ToggleButton value="calendar">
+                    <ViewModule />
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                
                 <Button
                   variant="outlined"
                   startIcon={<History />}
@@ -808,6 +1227,49 @@ function ContentScheduler() {
         <Grid container spacing={3}>
           {/* Main Content */}
           <Grid item xs={12} lg={8}>
+            {/* Bulk Actions Bar */}
+            {selectedSchedules.length > 0 && viewMode === 'list' && (
+              <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Typography variant="body2" color="primary.main">
+                      {selectedSchedules.length} schedule(s) selected
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={() => setSelectedSchedules([])}
+                      startIcon={<ClearAll />}
+                    >
+                      Clear
+                    </Button>
+                  </Stack>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      onClick={(e) => setBulkActionMenu(e.currentTarget)}
+                      startIcon={<MoreVert />}
+                    >
+                      Actions
+                    </Button>
+                    <Menu
+                      anchorEl={bulkActionMenu}
+                      open={Boolean(bulkActionMenu)}
+                      onClose={() => setBulkActionMenu(null)}
+                    >
+                      <MenuItem onClick={() => handleBulkAction('execute')}>
+                        <PlayArrow sx={{ mr: 1 }} /> Execute All
+                      </MenuItem>
+                      <MenuItem onClick={() => handleBulkAction('pause')}>
+                        <Pause sx={{ mr: 1 }} /> Pause All
+                      </MenuItem>
+                      <MenuItem onClick={() => handleBulkAction('delete')}>
+                        <Delete sx={{ mr: 1 }} /> Delete All
+                      </MenuItem>
+                    </Menu>
+                  </Stack>
+                </Stack>
+              </Paper>
+            )}
             {/* Search and Filters */}
             <Paper sx={{ p: 3, mb: 3 }}>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
@@ -815,6 +1277,9 @@ function ContentScheduler() {
                   placeholder="Search schedules..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: <Search sx={{ mr: 1, color: 'action.active' }} />
+                  }}
                   sx={{ flex: 1, minWidth: 200 }}
                 />
                 
@@ -855,21 +1320,76 @@ function ContentScheduler() {
                     ))}
                   </Select>
                 </FormControl>
+                
+                {viewMode === 'list' && (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={selectedSchedules.length === filteredSchedules.length && filteredSchedules.length > 0}
+                        indeterminate={selectedSchedules.length > 0 && selectedSchedules.length < filteredSchedules.length}
+                        onChange={handleSelectAll}
+                      />
+                    }
+                    label="Select All"
+                  />
+                )}
               </Stack>
             </Paper>
 
-            {/* Schedules List */}
+            {/* Schedules Content */}
             <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                All Schedules ({filteredSchedules.length})
-              </Typography>
-              
-              {filteredSchedules.length > 0 ? (
-                filteredSchedules.map(schedule => renderScheduleCard(schedule))
+              {viewMode === 'list' ? (
+                <>
+                  <Typography variant="h6" gutterBottom>
+                    All Schedules ({filteredSchedules.length})
+                  </Typography>
+                  
+                  {filteredSchedules.length > 0 ? (
+                    filteredSchedules.map(schedule => renderScheduleCard(schedule))
+                  ) : (
+                    <Alert severity="info">
+                      No schedules match your current filters.
+                    </Alert>
+                  )}
+                </>
               ) : (
-                <Alert severity="info">
-                  No schedules match your current filters.
-                </Alert>
+                <>
+                  {/* Calendar Header */}
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Typography variant="h6">
+                        {calendarView === 'month' 
+                          ? calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                          : `Week of ${calendarDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                        }
+                      </Typography>
+                      <ToggleButtonGroup
+                        value={calendarView}
+                        exclusive
+                        onChange={(e, newView) => newView && setCalendarView(newView)}
+                        size="small"
+                      >
+                        <ToggleButton value="month">Month</ToggleButton>
+                        <ToggleButton value="week">Week</ToggleButton>
+                      </ToggleButtonGroup>
+                    </Stack>
+                    
+                    <Stack direction="row" spacing={1}>
+                      <IconButton onClick={goToPreviousPeriod}>
+                        <KeyboardArrowLeft />
+                      </IconButton>
+                      <Button onClick={goToToday} size="small">
+                        Today
+                      </Button>
+                      <IconButton onClick={goToNextPeriod}>
+                        <KeyboardArrowRight />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                  
+                  {/* Calendar Grid */}
+                  {calendarView === 'month' ? renderMonthView() : renderWeekView()}
+                </>
               )}
             </Paper>
           </Grid>
@@ -962,12 +1482,61 @@ function ContentScheduler() {
                 </Button>
                 <Button
                   variant="outlined"
-                  startIcon={<CalendarMonth />}
+                  startIcon={<Save />}
                   fullWidth
+                  onClick={() => setShowTemplateDialog(true)}
                   sx={{ borderColor: THEME_COLORS.tertiary, color: THEME_COLORS.tertiary }}
                 >
-                  Calendar View
+                  Save Template
                 </Button>
+                
+                {templates.length > 0 && (
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Quick Templates
+                    </Typography>
+                    <Stack spacing={1}>
+                      {templates.slice(0, 3).map((template) => (
+                        <Button
+                          key={template.id}
+                          variant="text"
+                          size="small"
+                          onClick={() => handleApplyTemplate(template)}
+                          sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
+                        >
+                          {template.name}
+                        </Button>
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
+                
+                {/* Calendar Legend */}
+                {viewMode === 'calendar' && (
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Schedule Types
+                    </Typography>
+                    <Stack spacing={1}>
+                      {Object.entries(SCHEDULE_TYPES).map(([key, config]) => (
+                        <Stack key={key} direction="row" alignItems="center" spacing={1}>
+                          <Box 
+                            sx={{ 
+                              width: 12, 
+                              height: 12, 
+                              borderRadius: 1, 
+                              bgcolor: `${config.color}20`,
+                              border: `1px solid ${config.color}`
+                            }} 
+                          />
+                          <Typography variant="caption">
+                            {config.name}
+                          </Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
               </Stack>
             </Paper>
           </Grid>
@@ -1291,6 +1860,103 @@ function ContentScheduler() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Template Save Dialog */}
+        <Dialog open={showTemplateDialog} onClose={() => setShowTemplateDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Save sx={{ color: THEME_COLORS.tertiary }} />
+              <Typography variant="h6">Save Schedule Template</Typography>
+            </Stack>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Template Name"
+                value={templateData.name}
+                onChange={(e) => setTemplateData(prev => ({ ...prev, name: e.target.value }))}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Description (Optional)"
+                value={templateData.description}
+                onChange={(e) => setTemplateData(prev => ({ ...prev, description: e.target.value }))}
+                multiline
+                rows={3}
+              />
+              <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Template Configuration
+                </Typography>
+                <Stack spacing={1}>
+                  <Typography variant="body2">Schedule Type: {SCHEDULE_TYPES[formData.schedule_type].name}</Typography>
+                  <Typography variant="body2">Timezone: {formData.timezone}</Typography>
+                  {formData.recurrence_rule && (
+                    <Typography variant="body2">Recurrence: {formData.recurrence_rule}</Typography>
+                  )}
+                </Stack>
+              </Paper>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button onClick={() => setShowTemplateDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleSaveTemplate}
+              disabled={!templateData.name}
+              sx={{
+                background: `linear-gradient(45deg, ${THEME_COLORS.tertiary} 30%, ${THEME_COLORS.tertiary}BB 90%)`
+              }}
+            >
+              Save Template
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Speed Dial for Quick Actions */}
+        <SpeedDial
+          ariaLabel="Quick Actions"
+          sx={{ 
+            position: 'fixed', 
+            bottom: 16, 
+            right: 16,
+            '& .MuiFab-primary': {
+              background: `linear-gradient(45deg, ${THEME_COLORS.primary} 30%, ${THEME_COLORS.secondary} 90%)`
+            }
+          }}
+          icon={<SpeedDialIcon />}
+        >
+          <SpeedDialAction
+            icon={<Add />}
+            tooltipTitle="New Schedule"
+            onClick={handleCreateSchedule}
+          />
+          <SpeedDialAction
+            icon={<PlayArrow />}
+            tooltipTitle="Run All Pending"
+            onClick={() => {
+              getPendingSchedules().forEach(schedule => {
+                if (!isOverdue(schedule)) {
+                  handleExecuteSchedule(schedule.id)
+                }
+              })
+            }}
+          />
+          <SpeedDialAction
+            icon={<History />}
+            tooltipTitle="View History"
+            onClick={() => router.push('/admin/scheduler/history')}
+          />
+          <SpeedDialAction
+            icon={<Save />}
+            tooltipTitle="Save Template"
+            onClick={() => setShowTemplateDialog(true)}
+          />
+        </SpeedDial>
 
         {/* Snackbar for notifications */}
         <Snackbar

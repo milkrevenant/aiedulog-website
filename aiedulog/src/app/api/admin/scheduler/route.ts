@@ -1,3 +1,19 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getNotificationService } from '@/lib/services/notification-service';
@@ -6,7 +22,7 @@ import { getNotificationService } from '@/lib/services/notification-service';
  * GET /api/admin/scheduler
  * Get all scheduled content actions
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -81,7 +97,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/scheduler
  * Create new scheduled content action
  */
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -194,7 +210,7 @@ export async function POST(request: NextRequest) {
  * PUT /api/admin/scheduler
  * Update existing schedule
  */
-export async function PUT(request: NextRequest) {
+const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -289,7 +305,7 @@ export async function PUT(request: NextRequest) {
  * DELETE /api/admin/scheduler
  * Delete scheduled action
  */
-export async function DELETE(request: NextRequest) {
+const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -492,3 +508,8 @@ async function executeSchedule(supabase: any, scheduleId: string) {
     };
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const POST = withAdminSecurity(postHandler);
+export const PUT = withAdminSecurity(putHandler);
+export const DELETE = withAdminSecurity(deleteHandler);

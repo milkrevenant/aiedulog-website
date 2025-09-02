@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { 
   getFooterLinks, 
@@ -6,9 +6,11 @@ import {
   validateFooterLinkData 
 } from '@/lib/footer-management'
 import { FooterLinkFormData } from '@/types/footer-management'
+import { withAdminSecurity } from '@/lib/security/api-wrapper'
+import { SecurityContext } from '@/lib/security/core-security'
 
 // GET /api/admin/footer/links - Get all footer links
-export async function GET(request: Request) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -43,7 +45,7 @@ export async function GET(request: Request) {
 }
 
 // POST /api/admin/footer/links - Create new footer link
-export async function POST(request: Request) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -84,3 +86,6 @@ export async function POST(request: Request) {
     )
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const POST = withAdminSecurity(postHandler);

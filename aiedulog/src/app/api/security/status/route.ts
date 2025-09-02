@@ -3,10 +3,26 @@
  * Used by client-side to get overall security health and metrics
  */
 
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
 import { getSecurityHealth, secureConsoleLog } from '@/lib/security'
 
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     // Get comprehensive security status
     const healthData = await getSecurityHealth()
@@ -86,3 +102,5 @@ export async function OPTIONS() {
     },
   })
 }
+
+export const GET = withHighSecurity(getHandler);

@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getCompleteFooterData } from '@/lib/footer-management'
+import { withAdminSecurity } from '@/lib/security/api-wrapper'
+import { SecurityContext } from '@/lib/security/core-security'
 
 // GET /api/admin/footer - Get complete footer data for public use
-export async function GET() {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const footerData = await getCompleteFooterData()
     return NextResponse.json({ data: footerData })
@@ -14,3 +16,5 @@ export async function GET() {
     )
   }
 }
+
+export const GET = withAdminSecurity(getHandler);

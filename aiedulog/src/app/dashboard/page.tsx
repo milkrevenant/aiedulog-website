@@ -560,7 +560,7 @@ function DashboardContent() {
               </Card>
             </Grid>
           )}
-        </Grid>
+          </Grid>
 
         {/* 권한별 안내 메시지 */}
         <Box sx={{ mt: 4 }}>

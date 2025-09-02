@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { 
   updateFooterLink, 
@@ -6,13 +6,12 @@ import {
   validateFooterLinkData 
 } from '@/lib/footer-management'
 import { FooterLinkFormData } from '@/types/footer-management'
+import { withAdminSecurity } from '@/lib/security/api-wrapper'
+import { SecurityContext } from '@/lib/security/core-security'
 
 // PUT /api/admin/footer/links/[id] - Update footer link
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+const putHandler = async (request: NextRequest, context: SecurityContext, { params }: { params: { id: string } }): Promise<NextResponse> => {
+  const { id } = params;
   try {
     const supabase = await createClient()
     
@@ -57,11 +56,8 @@ export async function PUT(
 }
 
 // DELETE /api/admin/footer/links/[id] - Delete footer link
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+const deleteHandler = async (request: NextRequest, context: SecurityContext, { params }: { params: { id: string } }): Promise<NextResponse> => {
+  const { id } = params;
   try {
     const supabase = await createClient()
     
@@ -91,3 +87,6 @@ export async function DELETE(
     )
   }
 }
+
+export const PUT = withAdminSecurity(putHandler);
+export const DELETE = withAdminSecurity(deleteHandler);

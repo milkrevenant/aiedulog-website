@@ -1,3 +1,19 @@
+import { 
+  withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getNotificationService } from '@/lib/services/notification-service'
@@ -58,7 +74,7 @@ async function validateUserAccess(supabase: any, userId?: string) {
  * GET /api/notifications
  * Enhanced notification retrieval with comprehensive filtering, pagination, and real-time support
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     const url = new URL(request.url)
@@ -240,7 +256,7 @@ export async function GET(request: NextRequest) {
  * POST /api/notifications
  * Create new notification with enhanced validation and template support
  */
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -392,7 +408,7 @@ export async function POST(request: NextRequest) {
  * PUT /api/notifications
  * Bulk update notifications (mark as read, archive, etc.)
  */
-export async function PUT(request: NextRequest) {
+const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -486,7 +502,7 @@ export async function PUT(request: NextRequest) {
  * DELETE /api/notifications
  * Delete notifications (with admin override)
  */
-export async function DELETE(request: NextRequest) {
+const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -559,3 +575,8 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
+export const GET = withPublicSecurity(getHandler);
+export const POST = withPublicSecurity(postHandler);
+export const PUT = withPublicSecurity(putHandler);
+export const DELETE = withPublicSecurity(deleteHandler);

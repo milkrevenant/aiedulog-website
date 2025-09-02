@@ -1,155 +1,113 @@
 /**
  * Admin User Management API
  * Comprehensive user administration endpoints
+ * 
+ * SECURITY: Protected by withAdminSecurity wrapper
+ * - Requires admin authentication
+ * - Rate limited for admin operations
+ * - Full audit logging enabled
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { AdminService } from '@/lib/admin/services';
+import { withAdminSecurity } from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { createErrorResponse, ErrorType, handleValidationError } from '@/lib/security/error-handler';
 import type { UserManagementRequest, UserSearchFilters } from '@/lib/admin/types';
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const adminService = new AdminService();
-    
-    // Check admin authentication
-    const authCheck = await checkAdminAuth(supabase);
-    if (!authCheck.success) {
-      return NextResponse.json(authCheck, { status: 401 });
-    }
+// GET handler with security wrapper
+export const GET = withAdminSecurity(async (
+  request: NextRequest,
+  context: SecurityContext
+): Promise<NextResponse> => {
+  const adminService = new AdminService();
+  const searchParams = request.nextUrl.searchParams;
+  const action = searchParams.get('action');
 
-    // Check permissions
-    const hasPermission = await adminService.permissions.userHasPermission(
-      authCheck.adminId,
-      'user.read'
-    );
+  // Additional permission check for user management
+  const hasPermission = await adminService.permissions.userHasPermission(
+    context.userId!,
+    'user.read'
+  );
 
-    if (!hasPermission.data?.has_permission) {
-      return NextResponse.json(
-        { success: false, error: 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
-
-    const searchParams = request.nextUrl.searchParams;
-    const action = searchParams.get('action');
-
-    switch (action) {
-      case 'list':
-        return await handleUsersList(searchParams, adminService);
-      
-      case 'details':
-        const userId = searchParams.get('userId');
-        if (!userId) {
-          return NextResponse.json(
-            { success: false, error: 'User ID required' },
-            { status: 400 }
-          );
-        }
-        return await handleUserDetails(userId, adminService);
-      
-      case 'statistics':
-        return await handleUserStatistics(adminService);
-      
-      case 'archived_data':
-        const archiveUserId = searchParams.get('userId');
-        if (!archiveUserId) {
-          return NextResponse.json(
-            { success: false, error: 'User ID required' },
-            { status: 400 }
-          );
-        }
-        return await handleArchivedData(archiveUserId, searchParams, adminService);
-      
-      default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        );
-    }
-  } catch (error) {
-    console.error('Admin users API error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
-      { status: 500 }
-    );
+  if (!hasPermission.data?.has_permission) {
+    return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
   }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const adminService = new AdminService();
+  switch (action) {
+    case 'list':
+      return await handleUsersList(searchParams, adminService, context);
     
-    // Check admin authentication
-    const authCheck = await checkAdminAuth(supabase);
-    if (!authCheck.success) {
-      return NextResponse.json(authCheck, { status: 401 });
-    }
-
-    const { action, ...data } = await request.json();
-
-    switch (action) {
-      case 'delete':
-        return await handleUserDeletion(data, authCheck.adminId, adminService);
-      
-      case 'archive':
-        return await handleUserArchive(data, authCheck.adminId, adminService);
-      
-      case 'restore':
-        return await handleUserRestore(data, adminService);
-      
-      case 'update_status':
-        return await handleStatusUpdate(data, adminService);
-      
-      case 'bulk_operation':
-        return await handleBulkOperation(data, adminService);
-      
-      default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        );
-    }
-  } catch (error) {
-    console.error('Admin users API error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
-      { status: 500 }
-    );
+    case 'details':
+      const userId = searchParams.get('userId');
+      if (!userId) {
+        return handleValidationError(context, ['User ID is required'], 'userId');
+      }
+      return await handleUserDetails(userId, adminService, context);
+    
+    case 'statistics':
+      return await handleUserStatistics(adminService, context);
+    
+    case 'archived_data':
+      const archiveUserId = searchParams.get('userId');
+      if (!archiveUserId) {
+        return handleValidationError(context, ['User ID is required'], 'userId');
+      }
+      return await handleArchivedData(archiveUserId, searchParams, adminService, context);
+    
+    default:
+      return handleValidationError(context, ['Invalid action specified'], 'action');
   }
-}
+});
 
-async function checkAdminAuth(supabase: any) {
-  const { data: user } = await supabase.auth.getUser();
+// POST handler with security wrapper
+export const POST = withAdminSecurity(async (
+  request: NextRequest,
+  context: SecurityContext
+): Promise<NextResponse> => {
+  const adminService = new AdminService();
   
-  if (!user.user) {
-    return { success: false, error: 'Not authenticated' };
+  // Parse request body safely
+  let requestData: any;
+  try {
+    requestData = await request.json();
+  } catch (error) {
+    return handleValidationError(context, ['Invalid JSON in request body']);
   }
 
-  const { data: adminProfile } = await supabase
-    .from('auth_methods')
-    .select('identity_id')
-    .eq('provider_user_id', user.user.id)
-    .single();
+  const { action, ...data } = requestData;
 
-  if (!adminProfile) {
-    return { success: false, error: 'Admin profile not found' };
+  if (!action) {
+    return handleValidationError(context, ['Action is required'], 'action');
   }
 
-  return { success: true, adminId: adminProfile.identity_id };
-}
+  switch (action) {
+    case 'delete':
+      return await handleUserDeletion(data, context.userId!, adminService, context);
+    
+    case 'archive':
+      return await handleUserArchive(data, context.userId!, adminService, context);
+    
+    case 'restore':
+      return await handleUserRestore(data, adminService, context);
+    
+    case 'update_status':
+      return await handleStatusUpdate(data, adminService, context);
+    
+    case 'bulk_operation':
+      return await handleBulkOperation(data, adminService, context);
+    
+    default:
+      return handleValidationError(context, ['Invalid action specified'], 'action');
+  }
+});
+
+// Authentication is now handled by the security wrapper
 
 async function handleUsersList(
   searchParams: URLSearchParams,
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
   const filters: any = {};
   const page = parseInt(searchParams.get('page') || '1');
@@ -167,12 +125,12 @@ async function handleUsersList(
   return NextResponse.json(result);
 }
 
-async function handleUserDetails(userId: string, adminService: AdminService) {
+async function handleUserDetails(userId: string, adminService: AdminService, context: SecurityContext) {
   const result = await adminService.users.getUserDetails(userId);
   return NextResponse.json(result);
 }
 
-async function handleUserStatistics(adminService: AdminService) {
+async function handleUserStatistics(adminService: AdminService, context: SecurityContext) {
   const result = await adminService.users.getUserStatistics();
   return NextResponse.json(result);
 }
@@ -180,7 +138,8 @@ async function handleUserStatistics(adminService: AdminService) {
 async function handleArchivedData(
   userId: string,
   searchParams: URLSearchParams,
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
@@ -192,7 +151,8 @@ async function handleArchivedData(
 async function handleUserDeletion(
   data: UserManagementRequest,
   adminId: string,
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
   // Check delete permissions
   const hasPermission = await adminService.permissions.userHasPermission(
@@ -201,17 +161,11 @@ async function handleUserDeletion(
   );
 
   if (!hasPermission.data?.has_permission) {
-    return NextResponse.json(
-      { success: false, error: 'Insufficient permissions for user deletion' },
-      { status: 403 }
-    );
+    return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
   }
 
   if (!data.user_id || !data.reason) {
-    return NextResponse.json(
-      { success: false, error: 'User ID and reason required' },
-      { status: 400 }
-    );
+    return handleValidationError(context, ['User ID and reason are required']);
   }
 
   const result = await adminService.users.deleteUser(data);
@@ -221,13 +175,11 @@ async function handleUserDeletion(
 async function handleUserArchive(
   data: { user_id: string; reason: string },
   adminId: string,
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
   if (!data.user_id || !data.reason) {
-    return NextResponse.json(
-      { success: false, error: 'User ID and reason required' },
-      { status: 400 }
-    );
+    return handleValidationError(context, ['User ID and reason are required']);
   }
 
   const result = await adminService.users.archiveUserData(
@@ -240,13 +192,11 @@ async function handleUserArchive(
 
 async function handleUserRestore(
   data: { user_id: string; correlation_id?: string },
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
   if (!data.user_id) {
-    return NextResponse.json(
-      { success: false, error: 'User ID required' },
-      { status: 400 }
-    );
+    return handleValidationError(context, ['User ID is required']);
   }
 
   const result = await adminService.users.restoreUserData(
@@ -263,13 +213,11 @@ async function handleStatusUpdate(
     reason: string; 
     duration_days?: number 
   },
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
   if (!data.user_id || !data.new_status || !data.reason) {
-    return NextResponse.json(
-      { success: false, error: 'User ID, status, and reason required' },
-      { status: 400 }
-    );
+    return handleValidationError(context, ['User ID, status, and reason are required']);
   }
 
   const result = await adminService.users.updateUserStatus(
@@ -288,27 +236,19 @@ async function handleBulkOperation(
     reason: string;
     options?: { duration_days?: number; archive_data?: boolean };
   },
-  adminService: AdminService
+  adminService: AdminService,
+  context: SecurityContext
 ) {
-  if (!data.user_ids || !data.operation || !data.reason) {
-    return NextResponse.json(
-      { success: false, error: 'User IDs, operation, and reason required' },
-      { status: 400 }
-    );
-  }
-
-  if (data.user_ids.length === 0) {
-    return NextResponse.json(
-      { success: false, error: 'At least one user ID required' },
-      { status: 400 }
-    );
-  }
-
-  if (data.user_ids.length > 100) {
-    return NextResponse.json(
-      { success: false, error: 'Maximum 100 users per bulk operation' },
-      { status: 400 }
-    );
+  const validationErrors: string[] = [];
+  
+  if (!data.user_ids) validationErrors.push('User IDs are required');
+  if (!data.operation) validationErrors.push('Operation is required');
+  if (!data.reason) validationErrors.push('Reason is required');
+  if (data.user_ids && data.user_ids.length === 0) validationErrors.push('At least one user ID is required');
+  if (data.user_ids && data.user_ids.length > 100) validationErrors.push('Maximum 100 users per bulk operation');
+  
+  if (validationErrors.length > 0) {
+    return handleValidationError(context, validationErrors);
   }
 
   const result = await adminService.users.bulkUserOperation(

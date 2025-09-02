@@ -1,3 +1,19 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { TemplateEngine, TemplatePreview } from '@/lib/templates';
@@ -6,7 +22,7 @@ import { TemplateEngine, TemplatePreview } from '@/lib/templates';
  * POST /api/admin/templates/apply
  * Apply template to create content
  */
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -66,7 +82,7 @@ export async function POST(request: NextRequest) {
  * GET /api/admin/templates/apply
  * Get template application preview
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -111,3 +127,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const POST = withAdminSecurity(postHandler);
+export const GET = withAdminSecurity(getHandler);

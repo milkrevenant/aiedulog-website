@@ -1,6 +1,8 @@
 # Scheduling System Implementation Plan
 *AIedulog Advanced Appointment & Calendar Management System*
 
+> **⚠️ STATUS: PLANNING DOCUMENT** - This is a planning document for future implementation. The comprehensive appointment booking system described here is **NOT YET IMPLEMENTED**. Currently, only a basic content scheduler exists in the admin panel.
+
 ## 🎯 Project Overview
 
 **Objective**: Implement a comprehensive Calendly-like scheduling system for AIedulog platform with advanced booking capabilities, notification system, and administrative controls.

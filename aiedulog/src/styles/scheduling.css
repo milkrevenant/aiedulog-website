@@ -1,0 +1,156 @@
+/* Scheduling system responsive styles */
+
+/* Ensure proper spacing for mobile bottom navigation */
+@media (max-width: 899px) {
+  .scheduling-container {
+    padding-bottom: 80px; /* Space for bottom navigation */
+  }
+}
+
+/* Time slot button grid for better mobile experience */
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+@media (max-width: 599px) {
+  .time-slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+  }
+}
+
+/* Instructor card hover effects */
+.instructor-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.instructor-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Service card hover effects */
+.service-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Calendar picker responsive styles */
+@media (max-width: 599px) {
+  .MuiDatePicker-root {
+    width: 100% !important;
+  }
+  
+  .MuiPickersToolbar-root {
+    flex-direction: column;
+  }
+}
+
+/* Toggle button group responsive */
+@media (max-width: 899px) {
+  .meeting-type-toggle {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .meeting-type-toggle .MuiToggleButton-root {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+/* Stepper responsive adjustments */
+@media (max-width: 599px) {
+  .MuiStepper-root .MuiStepLabel-root {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .MuiStepper-root .MuiStepLabel-label {
+    font-size: 0.875rem;
+  }
+}
+
+/* Loading skeleton animations */
+.skeleton-pulse {
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+/* Better focus styles for accessibility */
+.MuiButton-root:focus-visible,
+.MuiToggleButton-root:focus-visible {
+  outline: 2px solid #2E86AB;
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling for time slot selection */
+.time-slots-container {
+  scroll-behavior: smooth;
+}
+
+/* Better mobile form spacing */
+@media (max-width: 599px) {
+  .booking-form .MuiTextField-root {
+    margin-bottom: 16px;
+  }
+  
+  .booking-form .MuiFormControl-root {
+    margin-bottom: 16px;
+  }
+}
+
+/* Confirmation page success animation */
+.success-icon {
+  animation: success-bounce 0.6s ease-out;
+}
+
+@keyframes success-bounce {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Print styles for confirmation page */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .confirmation-page {
+    padding: 20px;
+  }
+  
+  .confirmation-page .MuiCard-root {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+}

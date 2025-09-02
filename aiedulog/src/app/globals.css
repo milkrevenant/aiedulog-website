@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/chatintegration.css";
+@import "../styles/scheduling.css";
 
 :root {
   --background: #ffffff;

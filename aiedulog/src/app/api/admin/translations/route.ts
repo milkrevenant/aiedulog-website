@@ -1,3 +1,19 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -5,7 +21,7 @@ import { createClient } from '@/lib/supabase/server';
  * GET /api/admin/translations
  * Get translations for content or translation progress
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -93,7 +109,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/translations
  * Create or update translation
  */
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -172,7 +188,7 @@ export async function POST(request: NextRequest) {
  * PUT /api/admin/translations
  * Update translation status, review, or content
  */
-export async function PUT(request: NextRequest) {
+const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -337,7 +353,7 @@ export async function PUT(request: NextRequest) {
  * DELETE /api/admin/translations
  * Delete translation
  */
-export async function DELETE(request: NextRequest) {
+const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     
@@ -373,3 +389,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const POST = withAdminSecurity(postHandler);
+export const PUT = withAdminSecurity(putHandler);
+export const DELETE = withAdminSecurity(deleteHandler);

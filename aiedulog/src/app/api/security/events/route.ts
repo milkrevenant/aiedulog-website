@@ -3,19 +3,32 @@
  * Processes and logs security events from client-side monitoring
  */
 
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
 import { getSecureLogger, getSecurityMonitor, secureConsoleLog, SecurityEventType } from '@/lib/security'
 
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const body = await request.json()
     const { events, timestamp } = body
 
     if (!events || !Array.isArray(events)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid events data' },
-        { status: 400 }
-      )
+      return createErrorResponse(ErrorType.BAD_REQUEST, context);
     }
 
     // Get security modules
@@ -73,10 +86,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     secureConsoleLog('Security events API error', error, 'error')
     
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
@@ -91,3 +101,5 @@ export async function OPTIONS() {
     },
   })
 }
+
+export const POST = withHighSecurity(postHandler);

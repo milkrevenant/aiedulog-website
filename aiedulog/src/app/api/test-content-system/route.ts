@@ -1,3 +1,19 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -5,7 +21,7 @@ import { createClient } from '@/lib/supabase/server'
  * Test endpoint to verify Main Content Management System is working
  * This endpoint tests database connectivity and basic functionality
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   const supabase = await createClient()
   
   try {
@@ -164,3 +180,5 @@ export async function HEAD() {
     })
   }
 }
+
+export const GET = withPublicSecurity(getHandler);

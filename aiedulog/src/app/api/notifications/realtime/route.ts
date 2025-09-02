@@ -1,11 +1,13 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { withPublicSecurity } from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
 
 /**
  * GET /api/notifications/realtime
  * Server-Sent Events endpoint for real-time notifications
  */
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<Response> => {
   try {
     const supabase = await createClient();
     
@@ -111,3 +113,5 @@ export async function GET(request: NextRequest) {
     return new Response('Internal server error', { status: 500 });
   }
 }
+
+export const GET = withPublicSecurity(getHandler as any);

@@ -1,0 +1,93 @@
+/**
+ * Security Events API - Receives client-side security violations
+ * Processes and logs security events from client-side monitoring
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { getSecureLogger, getSecurityMonitor, secureConsoleLog, SecurityEventType } from '@/lib/security'
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { events, timestamp } = body
+
+    if (!events || !Array.isArray(events)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid events data' },
+        { status: 400 }
+      )
+    }
+
+    // Get security modules
+    const [logger, monitor] = await Promise.all([
+      getSecureLogger(),
+      getSecurityMonitor()
+    ])
+
+    // Process each event
+    for (const event of events) {
+      try {
+        // Log the security event
+        if (logger) {
+          logger.logSecurityEvent(SecurityEventType.SECURITY_VIOLATION, {
+            severity: event.severity,
+            context: {
+              type: event.type,
+              source: event.source,
+              sessionId: event.sessionId,
+              userId: event.userId,
+              details: event.details,
+              metadata: event.metadata,
+              clientTimestamp: event.timestamp,
+              serverTimestamp: Date.now()
+            }
+          })
+        }
+
+        // Record in security monitor
+        if (monitor && (event.severity === 'HIGH' || event.severity === 'CRITICAL')) {
+          monitor.recordSecurityEvent(SecurityEventType.SECURITY_VIOLATION, {
+            ipAddress: event.metadata?.ipAddress || 'unknown',
+            userAgent: event.metadata?.userAgent || 'unknown',
+            requestId: `client_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            userId: event.userId
+          }, {
+            violationType: event.type,
+            severity: event.severity,
+            details: event.details,
+            source: 'client'
+          })
+        }
+      } catch (eventError) {
+        secureConsoleLog('Failed to process security event', eventError, 'error')
+      }
+    }
+
+    // Return success response
+    return NextResponse.json({
+      success: true,
+      processed: events.length,
+      timestamp: Date.now()
+    })
+
+  } catch (error) {
+    secureConsoleLog('Security events API error', error, 'error')
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
+}

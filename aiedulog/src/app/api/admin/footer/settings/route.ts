@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { 
   getFooterSettings, 
   updateFooterSetting 
 } from '@/lib/footer-management'
 import { FooterSettingFormData } from '@/types/footer-management'
+import { withAdminSecurity } from '@/lib/security/api-wrapper'
+import { SecurityContext } from '@/lib/security/core-security'
 
 // GET /api/admin/footer/settings - Get all footer settings
-export async function GET() {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -39,7 +41,7 @@ export async function GET() {
 }
 
 // PUT /api/admin/footer/settings - Update footer settings (bulk update)
-export async function PUT(request: Request) {
+const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient()
     
@@ -76,3 +78,6 @@ export async function PUT(request: Request) {
     )
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const PUT = withAdminSecurity(putHandler);

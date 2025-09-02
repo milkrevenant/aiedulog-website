@@ -1,3 +1,19 @@
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { getNotificationService } from '@/lib/services/notification-service';
 
@@ -5,7 +21,7 @@ import { getNotificationService } from '@/lib/services/notification-service';
  * POST /api/workers/notification-processor
  * Process notification queue (for background workers)
  */
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     // Verify worker authorization (in production, use proper authentication)
     const authHeader = request.headers.get('authorization');
@@ -40,7 +56,7 @@ export async function POST(request: NextRequest) {
  * GET /api/workers/notification-processor
  * Get worker status and queue metrics
  */
-export async function GET() {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     // This would typically query the database for queue status
     const queueStatus = {
@@ -63,3 +79,6 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+
+export const POST = withPublicSecurity(postHandler);
+export const GET = withPublicSecurity(getHandler);

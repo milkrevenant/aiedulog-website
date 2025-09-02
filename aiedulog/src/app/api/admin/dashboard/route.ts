@@ -3,17 +3,33 @@
  * Provides comprehensive dashboard data and system health information
  */
 
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { AdminService } from '@/lib/admin/services';
 
-export async function GET(request: NextRequest) {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     const adminService = new AdminService();
     
     // Check admin authentication
-    const authCheck = await checkAdminAuth(supabase);
+    const authCheck = await checkAdminAuth(supabase, context);
     if (!authCheck.success) {
       return NextResponse.json(authCheck, { status: 401 });
     }
@@ -25,10 +41,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (!hasPermission.data?.has_permission) {
-      return NextResponse.json(
-        { success: false, error: 'Insufficient permissions' },
-        { status: 403 }
-      );
+      return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -36,48 +49,39 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'stats':
-        return await handleDashboardStats(adminService);
+        return await handleDashboardStats(adminService, context);
       
       case 'health':
-        return await handleSystemHealth(adminService);
+        return await handleSystemHealth(adminService, context);
       
       case 'alerts':
         const limit = parseInt(searchParams.get('limit') || '10');
-        return await handleSecurityAlerts(adminService, limit);
+        return await handleSecurityAlerts(adminService, limit, context);
       
       case 'activity_trends':
         const days = parseInt(searchParams.get('days') || '30');
-        return await handleActivityTrends(adminService, days, supabase);
+        return await handleActivityTrends(adminService, days, supabase, context);
       
       case 'system_metrics':
         const metricDays = parseInt(searchParams.get('days') || '7');
-        return await handleSystemMetrics(adminService, metricDays, supabase);
+        return await handleSystemMetrics(adminService, metricDays, supabase, context);
       
       default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        );
+        return createErrorResponse(ErrorType.BAD_REQUEST, context);
     }
   } catch (error) {
     console.error('Admin dashboard API error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
-      { status: 500 }
-    );
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const supabase = await createClient();
     const adminService = new AdminService();
     
     // Check admin authentication
-    const authCheck = await checkAdminAuth(supabase);
+    const authCheck = await checkAdminAuth(supabase, context);
     if (!authCheck.success) {
       return NextResponse.json(authCheck, { status: 401 });
     }
@@ -86,33 +90,24 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'maintenance':
-        return await handleSystemMaintenance(authCheck.adminId, adminService);
+        return await handleSystemMaintenance(authCheck.adminId, adminService, context);
       
       case 'initialize':
-        return await handleServiceInitialization(adminService);
+        return await handleServiceInitialization(adminService, context);
       
       case 'refresh_stats':
-        return await handleStatsRefresh(adminService);
+        return await handleStatsRefresh(adminService, context);
       
       default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        );
+        return createErrorResponse(ErrorType.BAD_REQUEST, context);
     }
   } catch (error) {
     console.error('Admin dashboard API error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Internal server error' 
-      },
-      { status: 500 }
-    );
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function checkAdminAuth(supabase: any) {
+async function checkAdminAuth(supabase: any, context: SecurityContext) {
   const { data: user } = await supabase.auth.getUser();
   
   if (!user.user) {
@@ -132,7 +127,7 @@ async function checkAdminAuth(supabase: any) {
   return { success: true, adminId: adminProfile.identity_id };
 }
 
-async function handleDashboardStats(adminService: AdminService) {
+async function handleDashboardStats(adminService: AdminService, context: SecurityContext) {
   try {
     const result = await adminService.getDashboardStats();
     
@@ -166,27 +161,21 @@ async function handleDashboardStats(adminService: AdminService) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to get dashboard stats:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to retrieve dashboard statistics'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function handleSystemHealth(adminService: AdminService) {
+async function handleSystemHealth(adminService: AdminService, context: SecurityContext) {
   try {
     const result = await adminService.getSystemHealth();
     return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to get system health:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to retrieve system health information'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function handleSecurityAlerts(adminService: AdminService, limit: number) {
+async function handleSecurityAlerts(adminService: AdminService, limit: number, context: SecurityContext) {
   try {
     const result = await adminService.getSecurityAlerts(limit);
     
@@ -212,10 +201,7 @@ async function handleSecurityAlerts(adminService: AdminService, limit: number) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to get security alerts:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to retrieve security alerts'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
@@ -232,7 +218,7 @@ function getPriorityValue(priority: string): number {
   return values[priority as keyof typeof values] || 0;
 }
 
-async function handleActivityTrends(adminService: AdminService, days: number, supabase: any) {
+async function handleActivityTrends(adminService: AdminService, days: number, supabase: any, context: SecurityContext) {
   try {
     // Get activity data for the specified period
     const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -297,14 +283,11 @@ async function handleActivityTrends(adminService: AdminService, days: number, su
     });
   } catch (error) {
     console.error('Failed to get activity trends:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to retrieve activity trends'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function handleSystemMetrics(adminService: AdminService, days: number, supabase: any) {
+async function handleSystemMetrics(adminService: AdminService, days: number, supabase: any, context: SecurityContext) {
   try {
     const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     
@@ -340,14 +323,11 @@ async function handleSystemMetrics(adminService: AdminService, days: number, sup
     });
   } catch (error) {
     console.error('Failed to get system metrics:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to retrieve system metrics'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function handleSystemMaintenance(adminId: string, adminService: AdminService) {
+async function handleSystemMaintenance(adminId: string, adminService: AdminService, context: SecurityContext) {
   try {
     // Check maintenance permissions
     const hasPermission = await adminService.permissions.userHasPermission(
@@ -356,37 +336,28 @@ async function handleSystemMaintenance(adminId: string, adminService: AdminServi
     );
 
     if (!hasPermission.data?.has_permission) {
-      return NextResponse.json(
-        { success: false, error: 'Insufficient permissions for system maintenance' },
-        { status: 403 }
-      );
+      return createErrorResponse(ErrorType.AUTHORIZATION_FAILED, context);
     }
 
     const result = await adminService.performMaintenance();
     return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to perform system maintenance:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to perform system maintenance'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function handleServiceInitialization(adminService: AdminService) {
+async function handleServiceInitialization(adminService: AdminService, context: SecurityContext) {
   try {
     const result = await adminService.initialize();
     return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to initialize admin service:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to initialize admin service'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
-async function handleStatsRefresh(adminService: AdminService) {
+async function handleStatsRefresh(adminService: AdminService, context: SecurityContext) {
   try {
     // Force refresh of cached statistics
     const result = await adminService.getDashboardStats();
@@ -405,9 +376,9 @@ async function handleStatsRefresh(adminService: AdminService) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Failed to refresh stats:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to refresh dashboard statistics'
-    }, { status: 500 });
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
+
+export const GET = withAdminSecurity(getHandler);
+export const POST = withAdminSecurity(postHandler);

@@ -7,6 +7,7 @@ import { theme } from './theme/theme'
 import { AuthProvider } from '@/lib/auth/context'
 import { useEffect } from 'react'
 import { initializeClientSecurity } from '@/lib/security/client-security'
+import SchedulingNavigation from '@/components/SchedulingNavigation'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -30,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <CssBaseline />
         <AuthProvider>
           {children}
+          <SchedulingNavigation />
         </AuthProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>

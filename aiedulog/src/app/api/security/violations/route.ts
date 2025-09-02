@@ -3,18 +3,31 @@
  * Used by client-side security monitoring for immediate violation reporting
  */
 
+import {
+withSecurity, 
+  withPublicSecurity,
+  withUserSecurity, 
+  withAdminSecurity, 
+  withHighSecurity,
+  withAuthSecurity,
+  withUploadSecurity,
+} from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { 
+  createErrorResponse, 
+  handleValidationError,
+  handleUnexpectedError,
+  ErrorType 
+} from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
 import { getSecureLogger, getSecurityMonitor, secureConsoleLog, SecurityEventType } from '@/lib/security'
 
-export async function POST(request: NextRequest) {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
     const violation = await request.json()
     
     if (!violation || typeof violation !== 'object') {
-      return NextResponse.json(
-        { success: false, error: 'Invalid violation data' },
-        { status: 400 }
-      )
+      return createErrorResponse(ErrorType.BAD_REQUEST, context);
     }
 
     // Get client IP and user agent
@@ -84,10 +97,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     secureConsoleLog('Security violation API error', error, 'error')
     
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
   }
 }
 
@@ -113,3 +123,5 @@ export async function OPTIONS() {
     },
   })
 }
+
+export const POST = withHighSecurity(postHandler);
