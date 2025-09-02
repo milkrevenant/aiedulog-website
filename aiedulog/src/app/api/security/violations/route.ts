@@ -46,7 +46,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Log the violation
     if (logger) {
-      logger.logSecurityEvent(SecurityEventType.SECURITY_VIOLATION, {
+      logger.logSecurityEvent('security_violation', {
         severity: mapSeverity(violation.severity),
         context: {
           type: violation.type,

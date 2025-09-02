@@ -42,7 +42,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       try {
         // Log the security event
         if (logger) {
-          logger.logSecurityEvent(SecurityEventType.SECURITY_VIOLATION, {
+          logger.logSecurityEvent('security_violation', {
             severity: event.severity,
             context: {
               type: event.type,
@@ -59,7 +59,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
         // Record in security monitor
         if (monitor && (event.severity === 'HIGH' || event.severity === 'CRITICAL')) {
-          monitor.recordSecurityEvent(SecurityEventType.SECURITY_VIOLATION, {
+          monitor.recordSecurityEvent(SecurityEventType.SUSPICIOUS_ACTIVITY, {
             ipAddress: event.metadata?.ipAddress || 'unknown',
             userAgent: event.metadata?.userAgent || 'unknown',
             requestId: `client_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,

@@ -68,10 +68,12 @@ export async function GET(request: NextRequest) {
 
             if (result.error) {
               if (logger) {
-                logger.error('Database query failed', result.error, {
+                logger.error('Database query failed', {
                   requestId: context.requestId,
-                  operation: 'secure_select'
-                })
+                  operation: 'secure_select',
+                  errorName: result.error?.name,
+                  errorMessage: result.error?.message
+                }, result.error)
               } else {
                 secureConsoleLog('Database query failed', result.error, 'error')
               }
@@ -94,7 +96,7 @@ export async function GET(request: NextRequest) {
 
             // Log successful data access
             if (logger) {
-              logger.logSecurityEvent(SecurityEventType.DATA_ACCESS, {
+              logger.logSecurityEvent('data_access_success', {
                 severity: 'LOW',
                 resource: 'posts',
                 action: 'read',
@@ -140,11 +142,13 @@ export async function GET(request: NextRequest) {
 
         } catch (error) {
           if (logger) {
-            logger.error('Secure API error', error as Error, {
+            logger.error('Secure API error', {
               requestId: context.requestId,
               endpoint: '/api/secure-example',
-              method: 'GET'
-            })
+              method: 'GET',
+              errorName: (error as Error).name,
+              errorMessage: (error as Error).message
+            }, error as Error)
           } else {
             secureConsoleLog('Secure API error', error, 'error')
           }
@@ -278,10 +282,12 @@ export async function POST(request: NextRequest) {
 
             if (insertResult.error) {
               if (logger) {
-                logger.error('Database insert failed', insertResult.error, {
+                logger.error('Database insert failed', {
                   requestId: context.requestId,
-                  operation: 'secure_insert'
-                })
+                  operation: 'secure_insert',
+                  errorName: insertResult.error?.name,
+                  errorMessage: insertResult.error?.message
+                }, insertResult.error)
               }
               
               return NextResponse.json({
@@ -302,7 +308,7 @@ export async function POST(request: NextRequest) {
 
           // Log successful creation
           if (logger) {
-            logger.logSecurityEvent(SecurityEventType.DATA_MODIFICATION, {
+            logger.logSecurityEvent('data_modification_success', {
               severity: 'LOW',
               resource: 'posts',
               action: 'create',
@@ -317,7 +323,7 @@ export async function POST(request: NextRequest) {
           // Record security event for content creation
           if (monitor) {
             try {
-              monitor.recordSecurityEvent(SecurityEventType.DATA_MODIFICATION, {
+              monitor.recordSecurityEvent(SecurityEventType.SUSPICIOUS_ACTIVITY, {
                 ipAddress: context.ipAddress,
                 userAgent: context.userAgent,
                 requestId: context.requestId,
@@ -347,11 +353,13 @@ export async function POST(request: NextRequest) {
 
         } catch (error) {
           if (logger) {
-            logger.error('Secure POST API error', error as Error, {
+            logger.error('Secure POST API error', {
               requestId: context.requestId,
               endpoint: '/api/secure-example',
-              method: 'POST'
-            })
+              method: 'POST',
+              errorName: (error as Error).name,
+              errorMessage: (error as Error).message
+            }, error as Error)
           } else {
             secureConsoleLog('Secure POST API error', error, 'error')
           }

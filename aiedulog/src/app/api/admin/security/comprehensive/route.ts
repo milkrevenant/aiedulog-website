@@ -14,8 +14,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withSecurity } from '@/lib/api/secure-client'
 import { createClient } from '@/lib/supabase/server'
 import { RLSSecurityEnforcer, SecurityRole, DataClassification } from '@/lib/security/rls-enforcer'
-import { secureLogger, SecurityEventType } from '@/lib/security/secure-logger'
-import { rateLimiter } from '@/lib/security/rateLimiter'
+import { getSecureLogger, SecurityEventType, rateLimiter } from '@/lib/security'
+
+// Get runtime-safe logger
+const secureLogger = getSecureLogger()
 
 interface SecurityDashboardMetrics {
   overview: {
@@ -124,11 +126,13 @@ export const GET = withSecurity(
           return await getSecurityDashboard(supabase, context)
       }
     } catch (error) {
-      secureLogger.error('Security API error', error as Error, {
+      secureLogger.error('Security API error', {
         requestId: context.requestId,
         action,
-        userId: user.id
-      })
+        userId: user.id,
+        errorName: (error as Error).name,
+        errorMessage: (error as Error).message
+      }, error as Error)
       
       return {
         success: false,
@@ -202,11 +206,13 @@ export const POST = withSecurity(
           }
       }
     } catch (error) {
-      secureLogger.error('Security action error', error as Error, {
+      secureLogger.error('Security action error', {
         requestId: context.requestId,
         action,
-        userId: user.id
-      })
+        userId: user.id,
+        errorName: (error as Error).name,
+        errorMessage: (error as Error).message
+      }, error as Error)
       
       return {
         success: false,
