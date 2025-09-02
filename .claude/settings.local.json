@@ -109,7 +109,9 @@
       "Bash(npx @mui/codemod:*)",
       "WebFetch(domain:mui.com)",
       "Bash(psql:*)",
-      "Bash(supabase status:*)"
+      "Bash(supabase status:*)",
+      "Bash(npm:*)",
+      "Bash(nvm use:*)"
     ],
     "deny": [],
     "ask": [],

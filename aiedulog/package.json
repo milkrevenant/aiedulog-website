@@ -73,6 +73,10 @@
     "yup": "^1.7.0",
     "zod": "^4.1.5"
   },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
