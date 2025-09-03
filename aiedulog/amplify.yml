@@ -5,138 +5,151 @@ applications:
       phases:
         preBuild:
           commands:
-            # Ensure Node 20 is installed and used consistently
-            - "echo 'Setting up Node.js 20...'"
-            - "nvm install 20.17.0"
-            - "nvm use 20.17.0"
-            - "nvm alias default 20.17.0"
-            # Verify Node version
-            - "node --version"
-            - "npm --version"
-            # SSM Secrets handling with graceful fallback
-            - "echo 'Setting up environment variables and secrets...'"
-            - |
-              # Attempt to use AWS Systems Manager (SSM) for secrets
-              if command -v aws >/dev/null 2>&1; then
-                echo "AWS CLI available - attempting SSM parameter retrieval..."
-                # Try to get secrets from SSM, but don't fail if not available
-                SSM_URL=$(aws ssm get-parameter --name "/amplify/aiedulog/NEXT_PUBLIC_SUPABASE_URL" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
-                if [ -n "$SSM_URL" ]; then
-                  export NEXT_PUBLIC_SUPABASE_URL="$SSM_URL"
-                  echo "✅ Using SSM parameter for Supabase URL"
-                fi
-                
-                SSM_KEY=$(aws ssm get-parameter --name "/amplify/aiedulog/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
-                if [ -n "$SSM_KEY" ]; then
-                  export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SSM_KEY"
-                  echo "✅ Using SSM parameter for Supabase key"
-                fi
-              else
-                echo "ℹ️ AWS CLI not available - using environment variables"
-              fi
-            # Environment variable validation with fallback mechanisms
-            - "echo 'Validating environment variables...'"
+            # === PHASE 1: Environment Setup ===
+            - echo "🚀 Starting AWS Amplify build for AiEduLog..."
+            - echo "Build timestamp: $(date)"
+            - echo "Working directory: $(pwd)"
+            
+            # Node.js version management - simplified
+            - echo "📦 Setting up Node.js environment..."
+            - node --version
+            - npm --version
+            - echo "Node.js environment ready"
+            
+            # === PHASE 2: Environment Variables ===
+            - echo "🔧 Configuring environment variables..."
+            # Validate required environment variables
             - |
               if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
-                echo "WARNING: NEXT_PUBLIC_SUPABASE_URL not set"
-                if [ -n "$SUPABASE_PROJECT_URL" ]; then
-                  export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_PROJECT_URL"
-                  echo "Using fallback SUPABASE_PROJECT_URL: $NEXT_PUBLIC_SUPABASE_URL"
-                else
-                  echo "ERROR: No Supabase URL found in any environment variable"
-                  exit 1
-                fi
-              else
-                echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
+                echo "❌ ERROR: NEXT_PUBLIC_SUPABASE_URL is required"
+                echo "Please set this in AWS Amplify Environment Variables"
+                exit 1
               fi
+              echo "✅ Supabase URL configured"
             - |
               if [ -z "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ]; then
-                echo "WARNING: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY not set"
-                if [ -n "$SUPABASE_ANON_KEY" ]; then
-                  export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_ANON_KEY"
-                  echo "Using fallback SUPABASE_ANON_KEY"
-                elif [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-                  export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
-                  echo "WARNING: Using service role key as fallback - not recommended for client-side"
-                else
-                  echo "ERROR: No Supabase key found in any environment variable"
-                  exit 1
-                fi
-              else
-                echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY configured"
+                echo "❌ ERROR: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required"
+                echo "Please set this in AWS Amplify Environment Variables"
+                exit 1
               fi
-            # Check for additional optional environment variables
+              echo "✅ Supabase key configured"
+            
+            # Generate NEXTAUTH_SECRET if not provided
             - |
-              if [ -n "$NEXTAUTH_SECRET" ]; then
-                echo "NextAuth secret configured"
-              else
-                echo "WARNING: NEXTAUTH_SECRET not set - generating temporary secret"
+              if [ -z "$NEXTAUTH_SECRET" ]; then
+                echo "⚠️ NEXTAUTH_SECRET not set, generating temporary secret"
                 export NEXTAUTH_SECRET=$(openssl rand -base64 32)
               fi
-            - |
-              if [ -n "$NEXTAUTH_URL" ]; then
-                echo "NextAuth URL: $NEXTAUTH_URL"
-              else
-                echo "WARNING: NEXTAUTH_URL not set - will use default"
-              fi
-            - "echo 'Environment variables validated successfully'"
-            # Optimized cache management to prevent 404 errors
-            - "echo 'Managing build cache strategically...'"
-            - |
-              # Remove only problematic caches, keep beneficial ones
-              rm -rf .next/cache .next/standalone
-              # Clean npm cache issues but preserve node_modules if valid
-              if [ -d "node_modules" ] && [ -f "package-lock.json" ]; then
-                echo "Validating existing node_modules..."
-                # Quick validation - if critical packages exist, skip reinstall
-                if [ -d "node_modules/next" ] && [ -d "node_modules/react" ]; then
-                  echo "Using existing node_modules (cache hit)"
-                  npm ci --prefer-offline --no-audit --ignore-scripts
-                else
-                  echo "Rebuilding node_modules (cache miss)"
-                  rm -rf node_modules
-                  npm ci --prefer-offline --no-audit
-                fi
-              else
-                echo "Fresh install required"
-                npm ci --prefer-offline --no-audit
-              fi
-            # Verify critical files exist
+              echo "✅ NextAuth configuration ready"
+            
+            # === PHASE 3: Clean Installation ===
+            - echo "🧹 Cleaning previous build artifacts..."
+            - rm -rf .next node_modules/.cache .npm-cache
+            
+            # Verify package.json exists
             - |
               if [ ! -f "package.json" ]; then
-                echo "ERROR: package.json not found"
+                echo "❌ ERROR: package.json not found"
                 exit 1
               fi
+              echo "✅ package.json found"
+            
+            # Install dependencies with error handling
+            - echo "📋 Installing dependencies..."
             - |
-              if [ ! -f "next.config.ts" ]; then
-                echo "ERROR: next.config.ts not found"
+              if npm ci --no-audit --no-fund --prefer-offline; then
+                echo "✅ Dependencies installed successfully"
+              else
+                echo "⚠️ npm ci failed, trying npm install as fallback"
+                npm install --no-audit --no-fund
+                echo "✅ Dependencies installed with npm install"
+              fi
+            
+            # === PHASE 4: Validation ===
+            - echo "🔍 Validating installation..."
+            # Verify Next.js is available
+            - |
+              if ! command -v npx >/dev/null 2>&1; then
+                echo "❌ ERROR: npx not available"
                 exit 1
               fi
-            - "echo 'Critical files verified'"
+              if ! npx next --version >/dev/null 2>&1; then
+                echo "❌ ERROR: Next.js not properly installed"
+                echo "Installed packages:"
+                npm list next || echo "Next.js not found in dependencies"
+                exit 1
+              fi
+              echo "✅ Next.js $(npx next --version) is ready"
+            
+            # Verify critical files
+            - |
+              for file in "next.config.ts" "src/app/layout.tsx" "tsconfig.json"; do
+                if [ ! -f "$file" ]; then
+                  echo "❌ ERROR: Critical file missing: $file"
+                  exit 1
+                fi
+              done
+              echo "✅ All critical files present"
+            
+            - echo "✅ Pre-build phase completed successfully"
         build:
           commands:
-            - "echo 'Building application...'"
-            - "echo 'Node version:' && node --version"
-            - "echo 'Build environment:' $NODE_ENV"
-            - "npm run build"
+            # === BUILD PHASE ===
+            - echo "🏗️ Starting application build..."
+            - echo "Node version: $(node --version)"
+            - echo "npm version: $(npm --version)"
+            - echo "Next.js version: $(npx next --version)"
+            
+            # Set optimal build environment
+            - export NODE_ENV=production
+            - export NEXT_TELEMETRY_DISABLED=1
+            - export CI=true
+            
+            # Build with comprehensive error handling
+            - |
+              echo "🔨 Running Next.js build..."
+              if npm run build; then
+                echo "✅ Build completed successfully"
+              else
+                echo "❌ Build failed, debugging information:"
+                echo "Available scripts:"
+                npm run --silent || true
+                echo "Node modules check:"
+                ls -la node_modules/.bin/next || echo "next binary not found"
+                echo "Package.json scripts:"
+                cat package.json | grep -A 10 '"scripts"' || true
+                exit 1
+              fi
+            
             # Verify build output
             - |
               if [ ! -d ".next" ]; then
-                echo "ERROR: Build failed - .next directory not created"
+                echo "❌ ERROR: Build failed - .next directory not created"
+                echo "Current directory contents:"
+                ls -la
                 exit 1
               fi
-            - "echo 'Build completed successfully'"
+              
+              # Check for essential build files
+              if [ ! -f ".next/BUILD_ID" ]; then
+                echo "⚠️ WARNING: BUILD_ID not found, but .next exists"
+              fi
+              
+              # Check build size
+              BUILD_SIZE=$(du -sh .next 2>/dev/null | cut -f1 || echo "unknown")
+              echo "📊 Build size: $BUILD_SIZE"
+              echo "✅ Build verification completed"
       artifacts:
         baseDirectory: .next
         files:
           - '**/*'
       cache:
         paths:
-          # Cache npm packages but not node_modules directly (prevents conflicts)
+          # Cache npm packages for faster installs
           - ~/.npm/**/*
-          # Cache Next.js build artifacts (but avoid .next/cache which causes 404)
-          - .next/trace
-          - .next/server/**/*
-          - .next/static/**/*
-          # Cache package-lock for faster installs
+          # Cache package-lock.json for dependency resolution
           - package-lock.json
+          # Cache Next.js build traces (safe to cache)
+          - .next/trace
+          # Do not cache .next/cache as it can cause 404 errors
+          # Do not cache node_modules as it can cause platform issues
