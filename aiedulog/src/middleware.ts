@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -72,78 +71,13 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Create Supabase client with optimized edge runtime configuration
-  let user = null
-  
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-            response = NextResponse.next({
-              request,
-            })
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            )
-          },
-        },
-        global: {
-          // Edge runtime compatible fetch with timeout
-          fetch: (url, options = {}) => {
-            const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
-            
-            return fetch(url, {
-              ...options,
-              signal: controller.signal,
-              headers: {
-                ...options.headers,
-                // Add DNS resolution hint for edge runtime
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-              }
-            }).finally(() => clearTimeout(timeoutId))
-          }
-        }
-      }
-    )
+  // Edge-safe auth presence check using cookies only (no Supabase import)
+  // Looks for Supabase auth cookie names; adjust if your project uses different names
+  const hasAuthCookie = request.cookies.has('sb-access-token') ||
+    request.cookies.has('sb:token') ||
+    request.cookies.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('token'))
 
-    // Try to get user with timeout protection
-    const authPromise = supabase.auth.getUser()
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Auth timeout')), 2000)
-    )
-    
-    const result = await Promise.race([authPromise, timeoutPromise]) as any
-    user = result?.data?.user || null
-    
-  } catch (error) {
-    // Log DNS/network errors for debugging but don't block the request
-    console.warn(`[${requestId}] Auth check failed:`, {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      path,
-      timestamp: new Date().toISOString()
-    })
-    
-    // For protected routes, if auth fails completely, redirect to login
-    // This ensures the app doesn't break due to network issues
-    if (isProtectedRoute || isAdminRoute) {
-      console.warn(`[${requestId}] Redirecting to login due to auth failure`)
-      url.pathname = '/auth/login'
-      url.searchParams.set('next', path)
-      return NextResponse.redirect(url)
-    }
-    
-    // For other routes, allow through (auth will be handled by individual pages)
-    return response
-  }
+  const user = hasAuthCookie ? { id: 'placeholder' } : null
 
   // 2. Auth routes - redirect to dashboard if already logged in
   if (isAuthRoute) {
