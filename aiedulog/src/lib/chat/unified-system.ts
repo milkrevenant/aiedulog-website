@@ -181,7 +181,12 @@ export async function loadChatMessages(roomId: string): Promise<ChatMessage[]> {
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Failed to load messages:', error)
+      console.error('Failed to load messages:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
       return []
     }
 
