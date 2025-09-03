@@ -1,0 +1,53 @@
+version: 1
+applications:
+  - appRoot: aiedulog
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "AWS Amplify Build Started"
+            - echo "Timestamp $(date)"
+            - echo "Node $(node --version)"
+            - echo "NPM $(npm --version)"
+            - echo "Validating environment"
+            - 'test -n "$NEXT_PUBLIC_SUPABASE_URL" || { echo "Missing NEXT_PUBLIC_SUPABASE_URL"; exit 1; }'
+            - 'test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"; exit 1; }'
+            - 'if [ -z "$NEXTAUTH_SECRET" ]; then export NEXTAUTH_SECRET=$(openssl rand -base64 32); echo "Generated NEXTAUTH_SECRET"; fi'
+            - echo "Environment OK"
+            - echo "Cleaning artifacts"
+            - rm -rf .next node_modules/.cache .npm-cache
+            - echo "Checking package.json"
+            - test -f package.json || { echo "package.json missing"; exit 1; }
+            - echo "Installing dependencies"
+            - npm ci --no-audit --no-fund --prefer-offline
+            - echo "Verifying installation"
+            - command -v npx || { echo "npx missing"; exit 1; }
+            - npx next --version || { echo "Next.js missing"; exit 1; }
+            - test -f next.config.ts || echo "Warning next.config.ts missing"
+            - test -f src/app/layout.tsx || { echo "layout.tsx missing"; exit 1; }
+            - test -f tsconfig.json || { echo "tsconfig.json missing"; exit 1; }
+            - echo "Pre-build validation complete"
+        build:
+          commands:
+            - echo "Build phase started"
+            - echo "Node $(node --version)"
+            - echo "Next $(npx next --version)"
+            - export NODE_ENV=production
+            - export NEXT_TELEMETRY_DISABLED=1
+            - export CI=true
+            - echo "Running build"
+            - npm run build
+            - echo "Verifying build output"
+            - test -d .next || { echo "Build failed - no .next directory"; ls -la; exit 1; }
+            - test -f .next/BUILD_ID || echo "Warning BUILD_ID missing"
+            - echo "Build size $(du -sh .next | cut -f1)"
+            - echo "Build complete"
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - ~/.npm/**/*
+          - package-lock.json
+          - .next/trace

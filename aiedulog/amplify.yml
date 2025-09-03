@@ -5,151 +5,55 @@ applications:
       phases:
         preBuild:
           commands:
-            # === PHASE 1: Environment Setup ===
-            - echo "🚀 Starting AWS Amplify build for AiEduLog..."
-            - echo "Build timestamp: $(date)"
-            - echo "Working directory: $(pwd)"
+            # Phase 1: Environment Setup
+            - "echo 'Starting AWS Amplify build for AiEduLog'"
+            - "echo 'Build timestamp:' $(date)"
+            - "echo 'Working directory:' $(pwd)"
+            - "echo 'Node version:' $(node --version)"
+            - "echo 'NPM version:' $(npm --version)"
             
-            # Node.js version management - simplified
-            - echo "📦 Setting up Node.js environment..."
-            - node --version
-            - npm --version
-            - echo "Node.js environment ready"
+            # Phase 2: Environment Variables Validation
+            - "echo 'Validating environment variables'"
+            - "test -n \"$NEXT_PUBLIC_SUPABASE_URL\" || (echo 'ERROR: NEXT_PUBLIC_SUPABASE_URL required' && exit 1)"
+            - "test -n \"$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY\" || (echo 'ERROR: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY required' && exit 1)"
+            - "echo 'Environment variables validated'"
             
-            # === PHASE 2: Environment Variables ===
-            - echo "🔧 Configuring environment variables..."
-            # Validate required environment variables
-            - |
-              if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
-                echo "❌ ERROR: NEXT_PUBLIC_SUPABASE_URL is required"
-                echo "Please set this in AWS Amplify Environment Variables"
-                exit 1
-              fi
-              echo "✅ Supabase URL configured"
-            - |
-              if [ -z "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ]; then
-                echo "❌ ERROR: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required"
-                echo "Please set this in AWS Amplify Environment Variables"
-                exit 1
-              fi
-              echo "✅ Supabase key configured"
+            # Phase 3: Clean Build Environment  
+            - "echo 'Cleaning build environment'"
+            - "rm -rf .next node_modules/.cache"
+            - "test -f package.json || (echo 'ERROR: package.json not found' && exit 1)"
+            - "echo 'Build environment cleaned'"
             
-            # Generate NEXTAUTH_SECRET if not provided
-            - |
-              if [ -z "$NEXTAUTH_SECRET" ]; then
-                echo "⚠️ NEXTAUTH_SECRET not set, generating temporary secret"
-                export NEXTAUTH_SECRET=$(openssl rand -base64 32)
-              fi
-              echo "✅ NextAuth configuration ready"
+            # Phase 4: Install Dependencies
+            - "echo 'Installing dependencies'"
+            - "npm ci --no-audit --no-fund --prefer-offline || npm install --no-audit --no-fund"
+            - "echo 'Dependencies installed'"
             
-            # === PHASE 3: Clean Installation ===
-            - echo "🧹 Cleaning previous build artifacts..."
-            - rm -rf .next node_modules/.cache .npm-cache
+            # Phase 5: Validate Next.js Installation
+            - "echo 'Validating Next.js installation'"
+            - "npx next --version || (echo 'ERROR: Next.js not properly installed' && exit 1)"
+            - "test -f next.config.ts || (echo 'ERROR: next.config.ts missing' && exit 1)"
+            - "test -f src/app/layout.tsx || (echo 'ERROR: layout.tsx missing' && exit 1)"
+            - "echo 'Next.js validation completed'"
             
-            # Verify package.json exists
-            - |
-              if [ ! -f "package.json" ]; then
-                echo "❌ ERROR: package.json not found"
-                exit 1
-              fi
-              echo "✅ package.json found"
-            
-            # Install dependencies with error handling
-            - echo "📋 Installing dependencies..."
-            - |
-              if npm ci --no-audit --no-fund --prefer-offline; then
-                echo "✅ Dependencies installed successfully"
-              else
-                echo "⚠️ npm ci failed, trying npm install as fallback"
-                npm install --no-audit --no-fund
-                echo "✅ Dependencies installed with npm install"
-              fi
-            
-            # === PHASE 4: Validation ===
-            - echo "🔍 Validating installation..."
-            # Verify Next.js is available
-            - |
-              if ! command -v npx >/dev/null 2>&1; then
-                echo "❌ ERROR: npx not available"
-                exit 1
-              fi
-              if ! npx next --version >/dev/null 2>&1; then
-                echo "❌ ERROR: Next.js not properly installed"
-                echo "Installed packages:"
-                npm list next || echo "Next.js not found in dependencies"
-                exit 1
-              fi
-              echo "✅ Next.js $(npx next --version) is ready"
-            
-            # Verify critical files
-            - |
-              for file in "next.config.ts" "src/app/layout.tsx" "tsconfig.json"; do
-                if [ ! -f "$file" ]; then
-                  echo "❌ ERROR: Critical file missing: $file"
-                  exit 1
-                fi
-              done
-              echo "✅ All critical files present"
-            
-            - echo "✅ Pre-build phase completed successfully"
         build:
           commands:
-            # === BUILD PHASE ===
-            - echo "🏗️ Starting application build..."
-            - echo "Node version: $(node --version)"
-            - echo "npm version: $(npm --version)"
-            - echo "Next.js version: $(npx next --version)"
+            # Build Phase
+            - "echo 'Starting application build'"
+            - "echo 'Node version:' $(node --version)"
+            - "echo 'Next.js version:' $(npx next --version)"
+            - "export NODE_ENV=production"
+            - "export NEXT_TELEMETRY_DISABLED=1"
+            - "export CI=true"
+            - "npm run build"
+            - "test -d .next || (echo 'ERROR: Build failed - no .next directory' && exit 1)"
+            - "echo 'Build completed successfully'"
             
-            # Set optimal build environment
-            - export NODE_ENV=production
-            - export NEXT_TELEMETRY_DISABLED=1
-            - export CI=true
-            
-            # Build with comprehensive error handling
-            - |
-              echo "🔨 Running Next.js build..."
-              if npm run build; then
-                echo "✅ Build completed successfully"
-              else
-                echo "❌ Build failed, debugging information:"
-                echo "Available scripts:"
-                npm run --silent || true
-                echo "Node modules check:"
-                ls -la node_modules/.bin/next || echo "next binary not found"
-                echo "Package.json scripts:"
-                cat package.json | grep -A 10 '"scripts"' || true
-                exit 1
-              fi
-            
-            # Verify build output
-            - |
-              if [ ! -d ".next" ]; then
-                echo "❌ ERROR: Build failed - .next directory not created"
-                echo "Current directory contents:"
-                ls -la
-                exit 1
-              fi
-              
-              # Check for essential build files
-              if [ ! -f ".next/BUILD_ID" ]; then
-                echo "⚠️ WARNING: BUILD_ID not found, but .next exists"
-              fi
-              
-              # Check build size
-              BUILD_SIZE=$(du -sh .next 2>/dev/null | cut -f1 || echo "unknown")
-              echo "📊 Build size: $BUILD_SIZE"
-              echo "✅ Build verification completed"
       artifacts:
         baseDirectory: .next
         files:
           - '**/*'
       cache:
         paths:
-          # Cache npm packages for faster installs
           - ~/.npm/**/*
-          # Cache package-lock.json for dependency resolution
           - package-lock.json
-          # Cache Next.js build traces (safe to cache)
-          - .next/trace
-          # Do not cache .next/cache as it can cause 404 errors
-          # Do not cache node_modules as it can cause platform issues
