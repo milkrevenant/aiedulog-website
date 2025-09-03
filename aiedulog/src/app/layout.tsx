@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   description: '전남에듀테크교육연구회 커뮤니티 플랫폼',
 }
 
+export const runtime = 'nodejs'
+
 export default function RootLayout({
   children,
 }: Readonly<{
