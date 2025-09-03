@@ -5,6 +5,13 @@ applications:
       phases:
         preBuild:
           commands:
+            # Ensure Node.js 20.x for dependencies requiring Node >=20
+            - "echo 'Switching to Node.js 20.x'"
+            - "export NVM_DIR=\"$HOME/.nvm\"; [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\""
+            - "nvm install 20"
+            - "nvm use 20"
+            - "echo 'Using Node:' $(node --version)"
+            - "echo 'Using NPM:' $(npm --version)"
             # Phase 1: Environment Setup
             - "echo 'Starting AWS Amplify build for AiEduLog'"
             - "echo 'Build timestamp:' $(date)"
