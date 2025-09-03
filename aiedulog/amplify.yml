@@ -13,6 +13,9 @@ applications:
             - "nvm use 20"
             - "echo 'Using Node:' $(node --version)"
             - "echo 'Using NPM:' $(npm --version)"
+            - "npm config set fund false"
+            - "npm config set audit false"
+            - "npm config set loglevel warn"
             # Phase 1: Environment Setup
             - "echo 'Starting AWS Amplify build for AiEduLog'"
             - "echo 'Build timestamp:' $(date)"
