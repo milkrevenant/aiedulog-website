@@ -15,7 +15,9 @@
     "clean": "rm -rf .next node_modules",
     "pre-commit": "npm run type-check && npm run lint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "amplify:debug": "./scripts/amplify-debug.sh",
+    "amplify:simulate": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 CI=true npm run build"
   },
   "dependencies": {
     "@auth/supabase-adapter": "^1.10.0",
