@@ -6,15 +6,15 @@ applications:
         preBuild:
           commands:
             # Ensure Node 20 is installed and used consistently
-            - echo "Setting up Node.js 20..."
-            - nvm install 20.17.0
-            - nvm use 20.17.0
-            - nvm alias default 20.17.0
+            - "echo 'Setting up Node.js 20...'"
+            - "nvm install 20.17.0"
+            - "nvm use 20.17.0"
+            - "nvm alias default 20.17.0"
             # Verify Node version
-            - node --version
-            - npm --version
+            - "node --version"
+            - "npm --version"
             # SSM Secrets handling with graceful fallback
-            - echo "Setting up environment variables and secrets..."
+            - "echo 'Setting up environment variables and secrets...'"
             - |
               # Attempt to use AWS Systems Manager (SSM) for secrets
               if command -v aws >/dev/null 2>&1; then
@@ -35,7 +35,7 @@ applications:
                 echo "ℹ️ AWS CLI not available - using environment variables"
               fi
             # Environment variable validation with fallback mechanisms
-            - echo "Validating environment variables..."
+            - "echo 'Validating environment variables...'"
             - |
               if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
                 echo "WARNING: NEXT_PUBLIC_SUPABASE_URL not set"
@@ -79,9 +79,9 @@ applications:
               else
                 echo "WARNING: NEXTAUTH_URL not set - will use default"
               fi
-            - echo "Environment variables validated successfully"
+            - "echo 'Environment variables validated successfully'"
             # Optimized cache management to prevent 404 errors
-            - echo "Managing build cache strategically..."
+            - "echo 'Managing build cache strategically...'"
             - |
               # Remove only problematic caches, keep beneficial ones
               rm -rf .next/cache .next/standalone
@@ -112,20 +112,20 @@ applications:
                 echo "ERROR: next.config.ts not found"
                 exit 1
               fi
-            - echo "Critical files verified"
+            - "echo 'Critical files verified'"
         build:
           commands:
-            - echo "Building application..."
-            - echo "Node version: $(node --version)"
-            - echo "Build environment: $NODE_ENV"
-            - npm run build
+            - "echo 'Building application...'"
+            - "echo 'Node version:' && node --version"
+            - "echo 'Build environment:' $NODE_ENV"
+            - "npm run build"
             # Verify build output
             - |
               if [ ! -d ".next" ]; then
                 echo "ERROR: Build failed - .next directory not created"
                 exit 1
               fi
-            - echo "Build completed successfully"
+            - "echo 'Build completed successfully'"
       artifacts:
         baseDirectory: .next
         files:
