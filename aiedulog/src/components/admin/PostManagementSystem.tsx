@@ -34,8 +34,9 @@ import {
   Avatar,
   Card,
   CardContent,
-  GridLegacy as Grid,
+  
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -326,7 +327,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
 
         {/* Statistics Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -339,7 +340,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -352,7 +353,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -365,7 +366,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center">
@@ -598,7 +599,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
               />
 
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <FormControl fullWidth>
                     <InputLabel>상태</InputLabel>
                     <Select
@@ -613,7 +614,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="카테고리"
                     fullWidth
@@ -680,5 +681,5 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
         </Dialog>
       </Box>
     </LocalizationProvider>
-  )
+  );
 }

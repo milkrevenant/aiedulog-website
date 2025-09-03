@@ -5,12 +5,13 @@ import {
   Box,
   Typography,
   Container,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   useTheme,
   alpha,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import { motion } from 'framer-motion'
 import { 
   TrendingUp, 
@@ -115,7 +116,6 @@ export function FeatureGridBlock({
           </MotionTypography>
         </MotionBox>
       )}
-
       {content.subtitle && (
         <MotionTypography
           variant="h5"
@@ -131,7 +131,6 @@ export function FeatureGridBlock({
           {getLocalizedText(content.subtitle, language)}
         </MotionTypography>
       )}
-
       <MotionGrid 
         container 
         spacing={4}
@@ -141,13 +140,13 @@ export function FeatureGridBlock({
           const IconComponent = getFeatureIcon(feature.icon)
           
           return (
-            <Grid 
-              item 
-              xs={12} 
-              sm={content.columns === 2 ? 6 : content.columns === 4 ? 6 : 4}
-              md={content.columns === 2 ? 6 : content.columns === 4 ? 3 : 4}
+            <Grid
               key={feature.id || index}
-            >
+              size={{
+                xs: 12,
+                sm: content.columns === 2 ? 6 : content.columns === 4 ? 6 : 4,
+                md: content.columns === 2 ? 6 : content.columns === 4 ? 3 : 4
+              }}>
               <MotionCard
                 variants={shouldAnimate ? getVariants(featureCardVariants) : undefined}
                 whileHover={shouldAnimate ? "hover" : undefined}
@@ -226,9 +225,9 @@ export function FeatureGridBlock({
                 </CardContent>
               </MotionCard>
             </Grid>
-          )
+          );
         })}
       </MotionGrid>
     </MotionContainer>
-  )
+  );
 }

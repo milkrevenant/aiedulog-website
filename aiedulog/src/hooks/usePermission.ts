@@ -38,7 +38,7 @@ export function usePermission() {
             
             setUser({
               id: authUser.id,
-              identity_id: identity.identity_id,
+              identity_id: identity.user_id,
               email: profile.email,
               role: profile.role as UserRole,
               full_name: profile.full_name,

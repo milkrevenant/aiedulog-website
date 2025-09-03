@@ -1,5 +1,8 @@
 'use client'
 
+// Edge Runtime에서 Node.js API 사용 오류 해결
+export const runtime = 'nodejs'
+
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -379,7 +382,18 @@ export default function FeedPage() {
 
   // Show loading state while checking authentication
   if (authLoading) {
-    return <CircularProgress />
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    )
   }
 
   // Show unauthenticated state if user is not logged in
@@ -389,7 +403,18 @@ export default function FeedPage() {
 
   // Show loading state while profile is loading
   if (!profile) {
-    return <CircularProgress />
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    )
   }
 
   return (

@@ -334,7 +334,7 @@ export default function PostDetailPage() {
       const newCommentData = {
         ...data,
         author: {
-          id: profile?.identity_id,
+          id: profile?.user_id,
           name: profile?.email?.split('@')[0] || '사용자',
           email: profile?.email,
           role: profile?.role || 'member',

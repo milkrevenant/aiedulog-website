@@ -19,7 +19,7 @@ import {
   TextField,
   Switch,
   FormControlLabel,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -43,6 +43,7 @@ import {
   ListItemText,
   ListItemSecondaryAction,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -673,7 +674,13 @@ export default function FooterManagementPage() {
 
                 <Grid container spacing={2}>
                   {categories.map((category) => (
-                    <Grid key={category.id} xs={12} sm={6} md={4}>
+                    <Grid
+                      key={category.id}
+                      size={{
+                        xs: 12,
+                        sm: 6,
+                        md: 4
+                      }}>
                       <Card>
                         <CardContent>
                           <Typography variant="h6" gutterBottom>
@@ -817,7 +824,13 @@ export default function FooterManagementPage() {
 
                 <Grid container spacing={2}>
                   {socialLinks.map((social) => (
-                    <Grid key={social.id} xs={12} sm={6} md={4}>
+                    <Grid
+                      key={social.id}
+                      size={{
+                        xs: 12,
+                        sm: 6,
+                        md: 4
+                      }}>
                       <Card>
                         <CardContent>
                           <Typography variant="h6" gutterBottom>
@@ -891,7 +904,12 @@ export default function FooterManagementPage() {
 
                   <Grid container spacing={3}>
                     {FOOTER_SETTING_KEYS.map((key) => (
-                      <Grid key={key} xs={12} md={6}>
+                      <Grid
+                        key={key}
+                        size={{
+                          xs: 12,
+                          md: 6
+                        }}>
                         <Card>
                           <CardContent>
                             <Typography variant="h6" gutterBottom>

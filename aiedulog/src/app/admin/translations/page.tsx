@@ -9,7 +9,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -62,6 +62,7 @@ import {
   Skeleton,
   Snackbar,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Dashboard,
   Translate,
@@ -723,7 +724,13 @@ function TranslationManagement() {
             <Skeleton variant="rectangular" height={80} />
             <Grid container spacing={2}>
               {[1, 2, 3, 4].map(i => (
-                <Grid item xs={12} sm={6} md={3} key={i}>
+                <Grid
+                  key={i}
+                  size={{
+                    xs: 12,
+                    sm: 6,
+                    md: 3
+                  }}>
                   <Skeleton variant="rectangular" height={100} />
                 </Grid>
               ))}
@@ -732,7 +739,7 @@ function TranslationManagement() {
           </Stack>
         </Container>
       </Box>
-    )
+    );
   }
 
   return (
@@ -814,7 +821,12 @@ function TranslationManagement() {
 
             {/* Stats Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Paper 
                   elevation={0}
                   sx={{ 
@@ -837,7 +849,12 @@ function TranslationManagement() {
                 </Paper>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Paper 
                   elevation={0}
                   sx={{ 
@@ -860,7 +877,12 @@ function TranslationManagement() {
                 </Paper>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Paper 
                   elevation={0}
                   sx={{ 
@@ -883,7 +905,12 @@ function TranslationManagement() {
                 </Paper>
               </Grid>
               
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Paper 
                   elevation={0}
                   sx={{ 
@@ -912,7 +939,11 @@ function TranslationManagement() {
         {/* Filters and Controls */}
         <Paper elevation={0} sx={{ p: 3, mb: 3, backgroundColor: 'grey.50', border: '1px solid', borderColor: 'grey.200' }}>
           <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid
+              size={{
+                xs: 12,
+                md: 4
+              }}>
               <TextField
                 fullWidth
                 placeholder="Search translations..."
@@ -931,7 +962,12 @@ function TranslationManagement() {
               />
             </Grid>
             
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 2
+              }}>
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -953,7 +989,12 @@ function TranslationManagement() {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 2
+              }}>
               <FormControl fullWidth>
                 <InputLabel>Language</InputLabel>
                 <Select
@@ -969,7 +1010,12 @@ function TranslationManagement() {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 2
+              }}>
               <FormControl fullWidth>
                 <InputLabel>Method</InputLabel>
                 <Select
@@ -991,7 +1037,12 @@ function TranslationManagement() {
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 2
+              }}>
               <Stack direction="row" spacing={1}>
                 <Tooltip title="Reset Filters">
                   <IconButton onClick={resetFilters} sx={{ color: THEME_COLORS.secondary }}>
@@ -1283,7 +1334,12 @@ function TranslationManagement() {
           <DialogContent sx={{ p: 0 }}>
             <Grid container sx={{ minHeight: 500 }}>
               {/* Original Text */}
-              <Grid item xs={12} md={6} sx={{ p: 3, borderRight: { md: 1 }, borderColor: 'divider' }}>
+              <Grid
+                sx={{ p: 3, borderRight: { md: 1 }, borderColor: 'divider' }}
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Typography variant="h6" gutterBottom sx={{ color: THEME_COLORS.primary }}>
                   Original Text
                 </Typography>
@@ -1318,7 +1374,12 @@ function TranslationManagement() {
               </Grid>
               
               {/* Translation */}
-              <Grid item xs={12} md={6} sx={{ p: 3 }}>
+              <Grid
+                sx={{ p: 3 }}
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Typography variant="h6" gutterBottom sx={{ color: THEME_COLORS.secondary }}>
                   Translation
                 </Typography>
@@ -1394,7 +1455,11 @@ function TranslationManagement() {
             </Alert>
             
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6
+                }}>
                 <FormControl fullWidth>
                   <InputLabel>Translation Engine</InputLabel>
                   <Select defaultValue="gpt4">
@@ -1416,7 +1481,11 @@ function TranslationManagement() {
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6
+                }}>
                 <FormControl fullWidth>
                   <InputLabel>Quality Level</InputLabel>
                   <Select defaultValue="high">
@@ -1470,7 +1539,12 @@ function TranslationManagement() {
           <DialogContent sx={{ p: 0 }}>
             {selectedTranslation && (
               <Grid container sx={{ minHeight: 400 }}>
-                <Grid item xs={12} md={6} sx={{ p: 3, borderRight: { md: 1 }, borderColor: 'divider', backgroundColor: 'grey.50' }}>
+                <Grid
+                  sx={{ p: 3, borderRight: { md: 1 }, borderColor: 'divider', backgroundColor: 'grey.50' }}
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Stack spacing={2}>
                     <Typography variant="h6" sx={{ color: THEME_COLORS.primary }}>
                       Original ({selectedTranslation.language_code === 'en' ? 'Korean' : 'English'})
@@ -1496,7 +1570,12 @@ function TranslationManagement() {
                   </Stack>
                 </Grid>
                 
-                <Grid item xs={12} md={6} sx={{ p: 3 }}>
+                <Grid
+                  sx={{ p: 3 }}
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Stack spacing={2}>
                     <Typography variant="h6" sx={{ color: THEME_COLORS.secondary }}>
                       Translation ({selectedTranslation.language_code.toUpperCase()})
@@ -1619,7 +1698,7 @@ function TranslationManagement() {
         </Dialog>
       </Container>
     </>
-  )
+  );
 }
 
 export default function TranslationManagementPage() {

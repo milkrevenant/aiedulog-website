@@ -33,8 +33,8 @@ import { AppointmentStatus } from '@/types/appointment-system';
 
 describe('CRITICAL-04: Authorization Logic Tests', () => {
   let supabase: any;
-  let testUsers: Record<string, any> = {};
-  let testAppointments: Record<string, any> = {};
+  const testUsers: Record<string, any> = {};
+  const testAppointments: Record<string, any> = {};
 
   beforeAll(async () => {
     supabase = await createClient();
@@ -516,7 +516,7 @@ describe('CRITICAL-04: Authorization Logic Tests', () => {
           appointment_date: new Date().toISOString().split('T')[0],
           start_time: new Date().toTimeString().split(' ')[0],
           end_time: new Date(Date.now() + 60 * 60 * 1000).toTimeString().split(' ')[0],
-          status: AppointmentStatus.IN_PROGRESS
+          status: AppointmentStatus.PENDING
         })
         .select('id')
         .single();
@@ -679,7 +679,7 @@ describe('CRITICAL-04: Authorization Logic Tests', () => {
 
     test('should handle batch processing limits', async () => {
       // Test with more than batch size to ensure chunking works
-      const manyIds = Array(25).fill().map(() => testAppointments.user_pending.id);
+      const manyIds = Array(25).fill(null).map(() => testAppointments.user_pending.id);
       
       const adminContext: AuthorizationContext = {
         userId: testUsers.admin.id,

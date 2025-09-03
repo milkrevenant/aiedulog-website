@@ -132,7 +132,7 @@ export default function KanbanEmbed({
       const { data: identityData, error: identityError } = await supabase
         .from('user_profiles')
         .select(`
-          identity_id,
+          user_id,
           email,
           nickname,
           avatar_url,
@@ -144,7 +144,7 @@ export default function KanbanEmbed({
       if (identityError) throw identityError
 
       const mappedUsers = identityData?.map(profile => ({
-        id: profile.identity_id,
+        id: profile.user_id,
         email: profile.email,
         nickname: profile.nickname,
         avatar_url: profile.avatar_url,

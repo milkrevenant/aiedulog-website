@@ -92,7 +92,7 @@ async function handleAdminLogin(
     .select(`
       admin_roles (name, display_name, level)
     `)
-    .eq('user_id', adminProfile.identity_id)
+    .eq('user_id', adminProfile.user_id)
     .eq('is_active', true);
 
   if (!adminRoles || adminRoles.length === 0) {
@@ -107,7 +107,7 @@ async function handleAdminLogin(
   await supabase
     .from('admin_sessions')
     .insert({
-      admin_user_id: adminProfile.identity_id,
+      admin_user_id: adminProfile.user_id,
       session_token: sessionToken,
       ip_address: request.headers.get('x-forwarded-for') || 'unknown',
       user_agent: request.headers.get('user-agent'),
@@ -120,7 +120,7 @@ async function handleAdminLogin(
     p_event_type: 'login_success',
     p_event_category: 'authentication',
     p_actor_type: 'admin',
-    p_actor_id: adminProfile.identity_id,
+    p_actor_id: adminProfile.user_id,
     p_action: 'admin_login',
     p_description: 'Admin user successfully logged in',
     p_metadata: {
@@ -137,7 +137,7 @@ async function handleAdminLogin(
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        identity_id: adminProfile.identity_id
+        identity_id: adminProfile.user_id
       },
       roles: adminRoles.map((r: any) => r.admin_roles),
       session: {
@@ -171,7 +171,7 @@ async function handlePermissionVerification(
   }
 
   const hasPermission = await adminService.permissions.userHasPermission(
-    adminProfile.identity_id,
+    adminProfile.user_id,
     data.permission,
     data.resource_type,
     data.resource_id
@@ -198,7 +198,7 @@ async function handleSessionRefresh(supabase: any, context: SecurityContext) {
     await supabase
       .from('admin_sessions')
       .update({ last_activity: new Date().toISOString() })
-      .eq('admin_user_id', adminProfile.identity_id)
+      .eq('admin_user_id', adminProfile.user_id)
       .eq('is_active', true);
   }
 
@@ -223,14 +223,14 @@ async function handleAdminLogout(supabase: any, context: SecurityContext) {
       await supabase
         .from('admin_sessions')
         .update({ is_active: false })
-        .eq('admin_user_id', adminProfile.identity_id);
+        .eq('admin_user_id', adminProfile.user_id);
 
       // Log admin logout
       await supabase.rpc('create_audit_log', {
         p_event_type: 'logout',
         p_event_category: 'authentication',
         p_actor_type: 'admin',
-        p_actor_id: adminProfile.identity_id,
+        p_actor_id: adminProfile.user_id,
         p_action: 'admin_logout',
         p_description: 'Admin user logged out'
       });

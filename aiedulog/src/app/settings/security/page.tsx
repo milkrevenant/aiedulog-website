@@ -31,12 +31,13 @@ import {
   Chip,
   IconButton,
   Collapse,
-  GridLegacy as Grid,
+  
   useTheme,
   alpha,
   Snackbar,
   Badge,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Security,
   Smartphone,
@@ -378,7 +379,11 @@ export default function SecuritySettingsPage() {
 
                 {/* Add New Methods */}
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <Card variant="outlined">
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -403,7 +408,11 @@ export default function SecuritySettingsPage() {
                     </Card>
                   </Grid>
 
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <Card variant="outlined">
                       <CardContent>
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -558,7 +567,7 @@ export default function SecuritySettingsPage() {
             <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Grid container spacing={1}>
                 {backupCodes.map((code, index) => (
-                  <Grid item xs={6} key={index}>
+                  <Grid key={index} size={6}>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                       {index + 1}. {code}
                     </Typography>
@@ -586,5 +595,5 @@ export default function SecuritySettingsPage() {
         />
       </Container>
     </>
-  )
+  );
 }

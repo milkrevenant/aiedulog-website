@@ -6,7 +6,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -34,6 +34,7 @@ import {
   ListItemSecondaryAction,
   Paper,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -409,7 +410,12 @@ export default function AnnouncementsManagementPage() {
         </Typography>
         <Grid container spacing={2}>
           {normalAnnouncements.map((announcement) => (
-            <Grid item xs={12} md={6} key={announcement.id}>
+            <Grid
+              key={announcement.id}
+              size={{
+                xs: 12,
+                md: 6
+              }}>
               <Card>
                 <CardContent>
                   <Box
@@ -504,7 +510,7 @@ export default function AnnouncementsManagementPage() {
           ))}
 
           {normalAnnouncements.length === 0 && !loading && (
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Alert severity="info">등록된 일반 공지사항이 없습니다</Alert>
             </Grid>
           )}
@@ -538,7 +544,7 @@ export default function AnnouncementsManagementPage() {
               />
 
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <FormControl fullWidth>
                     <InputLabel>카테고리</InputLabel>
                     <Select
@@ -559,7 +565,7 @@ export default function AnnouncementsManagementPage() {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <FormControl fullWidth>
                     <InputLabel>우선순위</InputLabel>
                     <Select
@@ -650,5 +656,5 @@ export default function AnnouncementsManagementPage() {
         </Dialog>
       </Container>
     </AuthGuard>
-  )
+  );
 }

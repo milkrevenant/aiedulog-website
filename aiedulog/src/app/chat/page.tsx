@@ -33,8 +33,9 @@ import {
   Autocomplete,
   useMediaQuery,
   useTheme,
-  GridLegacy as Grid,
+  
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import { Chat, Search, Add, Person, Group, MoreVert, Circle, Create, PersonAdd, Notes } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 import ChatInterface from '@/components/ChatInterface'
@@ -170,7 +171,7 @@ export default function ChatPage() {
                   identities!chat_participants_user_id_fkey (
                     id,
                     status,
-                    user_profiles!identities_user_profiles_identity_id_fkey (
+                    user_profiles!identities_user_profiles_user_id_fkey (
                       email,
                       nickname,
                       avatar_url,
@@ -287,14 +288,14 @@ export default function ChatPage() {
     try {
       // 통합 identity 시스템을 통한 사용자 검색
       const currentIdentity = user ? await getUserIdentity(user, supabase) : null
-      const currentIdentityId = currentIdentity?.identity_id
+      const currentIdentityId = currentIdentity?.user_id
       
       // 신규 통합 검색 헬퍼 사용
       const searchResults = await searchUsers(searchText, supabase, currentIdentityId, 10)
       
       // 호환성을 위해 기존 형식으로 매핑
       const mappedUsers = searchResults.map(profile => ({
-        id: profile.identity_id,
+        id: profile.user_id,
         email: profile.email,
         nickname: profile.nickname,
         avatar_url: profile.avatar_url,

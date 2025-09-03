@@ -28,7 +28,7 @@ import {
   IconButton,
   Tooltip,
   Alert,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -38,7 +38,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   LinearProgress
-} from '@mui/material';
+} from '@mui/material'
+import Grid from '@mui/material/Grid';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -443,7 +444,7 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
       
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               label="사용자 ID (쉼표로 구분)"
@@ -454,7 +455,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             />
           </Grid>
           
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <FormControl fullWidth>
               <InputLabel>카테고리</InputLabel>
               <Select
@@ -471,7 +476,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             </FormControl>
           </Grid>
           
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <FormControl fullWidth>
               <InputLabel>우선순위</InputLabel>
               <Select
@@ -488,7 +497,7 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             </FormControl>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Typography variant="subtitle2" gutterBottom>전송 채널</Typography>
             <Box display="flex" gap={1} flexWrap="wrap">
               {channels.map(channel => (
@@ -510,7 +519,7 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             </Box>
           </Grid>
           
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               label="제목"
@@ -519,7 +528,7 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             />
           </Grid>
           
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               multiline
@@ -530,7 +539,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             />
           </Grid>
           
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <TextField
               fullWidth
               label="템플릿 키 (선택사항)"
@@ -540,7 +553,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             />
           </Grid>
           
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <TextField
               fullWidth
               multiline
@@ -552,7 +569,7 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             />
           </Grid>
           
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Button
               variant="contained"
               startIcon={<SendIcon />}
@@ -602,7 +619,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
       {analytics && (
         <Grid container spacing={3}>
           {/* Summary Cards */}
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="primary">
@@ -615,7 +636,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="success.main">
@@ -628,7 +653,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="info.main">
@@ -641,7 +670,11 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="error.main">
@@ -655,7 +688,7 @@ const NotificationManagementSystem: React.FC<NotificationManagementSystemProps> 
           </Grid>
 
           {/* Template Performance */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" mb={2}>템플릿 성능</Typography>
               <TableContainer>

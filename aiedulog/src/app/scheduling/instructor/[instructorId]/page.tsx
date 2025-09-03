@@ -25,7 +25,7 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
-  GridLegacy as Grid,
+  
   Paper,
   IconButton,
   Divider,
@@ -37,6 +37,7 @@ import {
   RadioGroup,
   Radio
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   ArrowBack,
   Event,
@@ -126,7 +127,13 @@ function TimeSlotGrid({
   return (
     <Grid container spacing={2}>
       {availableSlots.map((slot) => (
-        <Grid item xs={6} sm={4} md={3} key={slot.start_time}>
+        <Grid
+          key={slot.start_time}
+          size={{
+            xs: 6,
+            sm: 4,
+            md: 3
+          }}>
           <Button
             variant={selectedTime === slot.start_time ? "contained" : "outlined"}
             fullWidth
@@ -142,7 +149,7 @@ function TimeSlotGrid({
         </Grid>
       ))}
     </Grid>
-  )
+  );
 }
 
 function WeekCalendar({
@@ -188,7 +195,7 @@ function WeekCalendar({
             const isSelected = selectedDate && isSameDay(day, selectedDate)
             
             return (
-              <Grid item xs key={dateKey}>
+              <Grid key={dateKey} size="grow">
                 <Button
                   variant={isSelected ? "contained" : "outlined"}
                   fullWidth
@@ -214,12 +221,12 @@ function WeekCalendar({
                   )}
                 </Button>
               </Grid>
-            )
+            );
           })}
         </Grid>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export default function InstructorBookingPage() {
@@ -517,7 +524,12 @@ export default function InstructorBookingPage() {
               </Typography>
               <Grid container spacing={3}>
                 {appointmentTypes.map((type) => (
-                  <Grid item xs={12} md={6} key={type.id}>
+                  <Grid
+                    key={type.id}
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <Card 
                       variant={bookingState.appointmentType?.id === type.id ? "outlined" : "elevation"}
                       sx={{ 
@@ -558,7 +570,7 @@ export default function InstructorBookingPage() {
               </Grid>
             </CardContent>
           </Card>
-        )
+        );
       
       case 2:
         return (
@@ -603,7 +615,11 @@ export default function InstructorBookingPage() {
               </Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <TextField
                     fullWidth
                     label="이름"
@@ -616,7 +632,11 @@ export default function InstructorBookingPage() {
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <TextField
                     fullWidth
                     label="이메일"
@@ -630,7 +650,11 @@ export default function InstructorBookingPage() {
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <TextField
                     fullWidth
                     label="연락처"
@@ -643,7 +667,7 @@ export default function InstructorBookingPage() {
                   />
                 </Grid>
                 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <FormControl component="fieldset">
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                       수업 방식
@@ -690,7 +714,7 @@ export default function InstructorBookingPage() {
                 </Grid>
 
                 {bookingState.meetingType === MeetingType.OFFLINE && (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <TextField
                       fullWidth
                       label="만날 장소"
@@ -704,7 +728,7 @@ export default function InstructorBookingPage() {
                   </Grid>
                 )}
                 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     fullWidth
                     label="메모 (선택사항)"
@@ -718,7 +742,7 @@ export default function InstructorBookingPage() {
               </Grid>
             </CardContent>
           </Card>
-        )
+        );
       
       case 4:
         return (

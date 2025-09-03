@@ -5,7 +5,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardMedia,
@@ -24,6 +24,7 @@ import {
   Avatar,
   Skeleton
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Search,
   CalendarToday,
@@ -399,14 +400,17 @@ function SchedulingPageContent() {
           </Stack>
         </Container>
       </Box>
-
       <Container maxWidth="lg" sx={{ py: 4 }}>
         {/* Filters */}
         <Card sx={{ mb: 4 }}>
           <CardContent>
             <Grid container spacing={3} alignItems="center">
               {/* Search */}
-              <Grid item xs={12} md={4}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 4
+                }}>
                 <TextField
                   fullWidth
                   placeholder="강사명 또는 전문분야 검색..."
@@ -423,7 +427,12 @@ function SchedulingPageContent() {
               </Grid>
 
               {/* Subject Filter */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 2
+                }}>
                 <FormControl fullWidth>
                   <InputLabel>과목</InputLabel>
                   <Select
@@ -441,7 +450,12 @@ function SchedulingPageContent() {
               </Grid>
 
               {/* Meeting Type Filter */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 2
+                }}>
                 <FormControl fullWidth>
                   <InputLabel>수업 방식</InputLabel>
                   <Select
@@ -459,7 +473,12 @@ function SchedulingPageContent() {
               </Grid>
 
               {/* Sort */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 2
+                }}>
                 <FormControl fullWidth>
                   <InputLabel>정렬</InputLabel>
                   <Select
@@ -475,7 +494,12 @@ function SchedulingPageContent() {
               </Grid>
 
               {/* Results Count */}
-              <Grid item xs={12} sm={6} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 2
+                }}>
                 <Typography variant="body2" color="text.secondary" textAlign="center">
                   {loading ? '로딩 중...' : `${filteredInstructors.length}명의 강사`}
                 </Typography>
@@ -502,7 +526,13 @@ function SchedulingPageContent() {
         {loading && (
           <Grid container spacing={3}>
             {Array.from({ length: 6 }).map((_, index) => (
-              <Grid item xs={12} sm={6} lg={4} key={index}>
+              <Grid
+                key={index}
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  lg: 4
+                }}>
                 <InstructorCardSkeleton />
               </Grid>
             ))}
@@ -514,7 +544,13 @@ function SchedulingPageContent() {
           <>
             <Grid container spacing={3}>
               {filteredInstructors.map((instructor) => (
-                <Grid item xs={12} sm={6} lg={4} key={instructor.id}>
+                <Grid
+                  key={instructor.id}
+                  size={{
+                    xs: 12,
+                    sm: 6,
+                    lg: 4
+                  }}>
                   <InstructorCard instructor={instructor} />
                 </Grid>
               ))}
@@ -564,7 +600,7 @@ function SchedulingPageContent() {
         )}
       </Container>
     </Box>
-  )
+  );
 }
 
 export default function SchedulingPage() {

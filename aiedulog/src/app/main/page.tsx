@@ -19,7 +19,7 @@ import {
   Grow,
   Collapse,
   Divider,
-  GridLegacy as Grid,
+  
   Fab,
   Menu as MuiMenu,
   List,
@@ -28,6 +28,7 @@ import {
   ListItemText,
   ListItemIcon,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import Link from 'next/link'
 import {
   ArrowForward,
@@ -219,9 +220,7 @@ export default function Home() {
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: '#F7F9FF', // Material Theme: surface
-          borderBottom: '1px solid',
-          borderColor: '#C0C7CD', // Material Theme: outlineVariant
+          bgcolor: '#FAFCFE', // Material Theme: background (matches hero)
           backdropFilter: 'blur(10px)',
         }}
       >
@@ -356,7 +355,11 @@ export default function Home() {
                             onMouseLeave={handleMenuClose}
                           >
                             <Grid container>
-                              <Grid item xs={12} md={5}>
+                              <Grid
+                                size={{
+                                  xs: 12,
+                                  md: 5
+                                }}>
                                 <Box sx={{ p: 3 }}>
                                   {item.dropdown.sections.map((section, idx) => (
                                     <Box
@@ -393,7 +396,11 @@ export default function Home() {
                                 </Box>
                               </Grid>
                               {item.dropdown.featured && (
-                                <Grid item xs={12} md={7}>
+                                <Grid
+                                  size={{
+                                    xs: 12,
+                                    md: 7
+                                  }}>
                                   <Box
                                     sx={{
                                       bgcolor: '#FFFFFF', // 흰색 배경

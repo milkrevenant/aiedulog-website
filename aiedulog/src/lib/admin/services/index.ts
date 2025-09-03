@@ -16,6 +16,7 @@ import { ContentManagementService } from './content-management-service';
 import { PermissionService } from './permission-service';
 import { GdprService } from './gdpr-service';
 import { createClient } from '@/lib/supabase/client';
+import { getUserIdentity } from '@/lib/identity/helpers';
 import type { 
   AdminDashboardStats, 
   SecurityAlert,
@@ -44,20 +45,16 @@ export class AdminService {
         throw new Error('Admin not authenticated');
       }
 
-      // Get admin profile
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', user.user.id)
-        .single();
-
-      if (!adminProfile) {
+      // Get admin profile using identity service
+      const adminIdentity = await getUserIdentity(user.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
       // Check if user has admin permissions
       const hasPermission = await this.permissions.userHasPermission(
-        adminProfile.identity_id,
+        adminIdentity.user_id,
         'admin.roles.manage'
       );
 

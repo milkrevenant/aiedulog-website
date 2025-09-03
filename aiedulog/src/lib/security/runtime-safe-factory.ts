@@ -5,6 +5,7 @@
 
 import { runtimeCapabilities, safeGetEnv } from './runtime-detector'
 import { edgeSafeLogger, SecurityEventType, LogLevel } from './edge-safe-logger'
+import { rateLimiter } from './rateLimiter'
 
 // Base interfaces for runtime-agnostic components
 export interface RuntimeSafeLogger {
@@ -373,7 +374,6 @@ export class RuntimeSafeFactory {
       if (runtimeCapabilities.isNodeRuntime()) {
         // Try to load existing rate limiter if available
         try {
-          const { rateLimiter } = require('./rateLimiter')
           this.rateLimiterInstance = rateLimiter
         } catch {
           // Fallback to edge-safe rate limiter

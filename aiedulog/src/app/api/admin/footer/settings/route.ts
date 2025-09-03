@@ -22,7 +22,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
-      .eq('identity_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {
@@ -54,7 +54,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
-      .eq('identity_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {

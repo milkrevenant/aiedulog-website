@@ -40,8 +40,8 @@ import {
   Divider,
   useTheme,
   alpha,
-  GridLegacy as Grid
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Search,
   FilterList,
@@ -252,7 +252,11 @@ function AppointmentDetailsDialog({
                   {appointment.title}
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      sm: 6
+                    }}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <CalendarToday fontSize="small" color="action" />
                       <Typography variant="body2">
@@ -260,7 +264,11 @@ function AppointmentDetailsDialog({
                       </Typography>
                     </Stack>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      sm: 6
+                    }}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <AccessTime fontSize="small" color="action" />
                       <Typography variant="body2">
@@ -404,7 +412,6 @@ function AppointmentDetailsDialog({
           )}
         </DialogActions>
       </Dialog>
-
       {/* Cancel Dialog */}
       <Dialog
         open={showCancelDialog}
@@ -442,7 +449,6 @@ function AppointmentDetailsDialog({
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Reschedule Dialog */}
       <Dialog
         open={showRescheduleDialog}
@@ -494,7 +500,7 @@ function AppointmentDetailsDialog({
         </DialogActions>
       </Dialog>
     </>
-  )
+  );
 }
 
 export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabProps) {
@@ -764,7 +770,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
               </Typography>
               
               <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CalendarToday fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
@@ -772,7 +782,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <AccessTime fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
@@ -819,7 +833,7 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </Stack>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -840,10 +854,14 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </Button>
         )}
       </Stack>
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 2.4
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" fontWeight="bold" color="primary">
@@ -855,7 +873,12 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 2.4
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" fontWeight="bold" color="warning.main">
@@ -867,7 +890,12 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 2.4
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" fontWeight="bold" color="success.main">
@@ -879,7 +907,12 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 2.4
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" fontWeight="bold" color="info.main">
@@ -891,7 +924,12 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 2.4
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Typography variant="h4" fontWeight="bold" color="error.main">
@@ -904,7 +942,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </Card>
         </Grid>
       </Grid>
-
       {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -915,7 +952,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
             </Stack>
             
             <Grid container spacing={2}>
-              <Grid item xs={12} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 3
+                }}>
                 <TextField
                   fullWidth
                   placeholder="검색..."
@@ -932,7 +973,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
                 />
               </Grid>
               
-              <Grid item xs={12} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 2
+                }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>상태</InputLabel>
                   <Select
@@ -950,7 +995,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 2
+                }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>미팅 유형</InputLabel>
                   <Select
@@ -968,7 +1017,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 2
+                }}>
                 <TextField
                   fullWidth
                   type="date"
@@ -980,7 +1033,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
                 />
               </Grid>
               
-              <Grid item xs={12} md={2}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 2
+                }}>
                 <TextField
                   fullWidth
                   type="date"
@@ -992,7 +1049,11 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
                 />
               </Grid>
               
-              <Grid item xs={12} md={1}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 1
+                }}>
                 <Button
                   variant="outlined"
                   onClick={() => loadAppointments(1)}
@@ -1007,7 +1068,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </Stack>
         </CardContent>
       </Card>
-
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
         <Tabs
@@ -1023,7 +1083,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           <Tab label="예약 기록" icon={<AccessTime />} />
         </Tabs>
       </Paper>
-
       {/* Content */}
       <TabPanel value={activeTab} index={0}>
         {/* Upcoming Appointments */}
@@ -1084,7 +1143,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </>
         )}
       </TabPanel>
-
       <TabPanel value={activeTab} index={1}>
         {/* All Appointments */}
         {loading && page === 1 ? (
@@ -1144,7 +1202,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </>
         )}
       </TabPanel>
-
       <TabPanel value={activeTab} index={2}>
         {/* History */}
         {loading && page === 1 ? (
@@ -1194,7 +1251,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           </>
         )}
       </TabPanel>
-
       {/* Details Dialog */}
       <AppointmentDetailsDialog
         appointment={selectedAppointment}
@@ -1207,7 +1263,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
         onReschedule={handleRescheduleAppointment}
         onDownloadIcs={handleDownloadIcs}
       />
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
@@ -1222,7 +1277,6 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
           {snackbar.message}
         </Alert>
       </Snackbar>
-
       {/* Floating Action Button for new appointment */}
       {onNewAppointment && (
         <Fab
@@ -1239,5 +1293,5 @@ export default function AppointmentsTab({ onNewAppointment }: AppointmentsTabPro
         </Fab>
       )}
     </Box>
-  )
+  );
 }

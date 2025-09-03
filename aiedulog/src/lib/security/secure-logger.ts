@@ -17,15 +17,8 @@ export {
   edgeSafeLogger as secureLogger
 } from './edge-safe-logger'
 
-// Legacy warning for development
-if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
-  console.warn(
-    '⚠️  DEPRECATION WARNING: secure-logger.ts is deprecated.\n' +
-    '   Please migrate to the new runtime-safe security system:\n' +
-    '   import { getSecurityLogger } from "@/lib/security"\n' +
-    '   const logger = getSecurityLogger()'
-  )
-}
+// Legacy warning for development (Edge Runtime safe)
+// Warning disabled for Edge Runtime compatibility
 
 // Export the edge-safe logger as default for backward compatibility
 import { edgeSafeLogger } from './edge-safe-logger'

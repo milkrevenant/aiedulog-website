@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { AuditService } from './audit-service';
+import { getUserIdentity } from '@/lib/identity/helpers';
 import type { 
   UserManagementRequest,
   ArchivedData,
@@ -33,13 +34,7 @@ export class UserManagementService {
       let query = this.supabase
         .from('user_profiles')
         .select(`
-          *,
-          identities!user_profiles_identity_id_fkey (
-            id,
-            status,
-            created_at,
-            updated_at
-          )
+          *
         `, { count: 'exact' })
         .order('created_at', { ascending: false });
 
@@ -74,7 +69,7 @@ export class UserManagementService {
           const { data: lastActivity } = await this.supabase
             .from('user_activities')
             .select('created_at')
-            .eq('user_id', user.identity_id)
+            .eq('user_id', user.user_id)
             .order('created_at', { ascending: false })
             .limit(1)
             .single();
@@ -82,7 +77,7 @@ export class UserManagementService {
           return {
             ...user,
             last_activity: lastActivity?.created_at,
-            status: user.identities?.[0]?.status || 'unknown'
+            status: user.is_active ? 'active' : 'inactive'
           };
         })
       );
@@ -135,15 +130,9 @@ export class UserManagementService {
       const { data: profile, error: profileError } = await this.supabase
         .from('user_profiles')
         .select(`
-          *,
-          identities!user_profiles_identity_id_fkey (
-            id,
-            status,
-            created_at,
-            updated_at
-          )
+          *
         `)
-        .eq('identity_id', userId)
+        .eq('user_id', userId)
         .single();
 
       if (profileError) throw profileError;
@@ -236,19 +225,15 @@ export class UserManagementService {
         throw new Error('Admin user not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
       const { data, error } = await this.supabase.rpc('delete_user_comprehensive', {
         p_user_id: request.user_id,
-        p_admin_id: adminProfile.identity_id,
+        p_admin_id: adminIdentity.user_id,
         p_reason: request.reason,
         p_archive_data: request.archive_data !== false
       });
@@ -283,19 +268,15 @@ export class UserManagementService {
         throw new Error('Admin user not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
       const { data, error } = await this.supabase.rpc('restore_user_data', {
         p_user_id: userId,
-        p_admin_id: adminProfile.identity_id,
+        p_admin_id: adminIdentity.user_id,
         p_correlation_id: correlationId
       });
 
@@ -331,35 +312,33 @@ export class UserManagementService {
         throw new Error('Admin user not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
-      // Get current status
-      const { data: currentIdentity } = await this.supabase
-        .from('identities')
-        .select('status')
-        .eq('id', userId)
+      // Get current user profile
+      const { data: currentProfile } = await this.supabase
+        .from('user_profiles')
+        .select('is_active')
+        .eq('user_id', userId)
         .single();
 
-      if (!currentIdentity) {
+      if (!currentProfile) {
         throw new Error('User not found');
       }
 
-      // Update identity status
+      const currentStatus = currentProfile.is_active ? 'active' : 'inactive';
+
+      // Update user profile status
       const { error: updateError } = await this.supabase
-        .from('identities')
+        .from('user_profiles')
         .update({ 
-          status: newStatus,
+          is_active: newStatus === 'active',
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId);
+        .eq('user_id', userId);
 
       if (updateError) throw updateError;
 
@@ -372,9 +351,9 @@ export class UserManagementService {
         .from('user_status_history')
         .insert({
           user_id: userId,
-          old_status: currentIdentity.status,
+          old_status: currentStatus,
           new_status: newStatus,
-          changed_by: adminProfile.identity_id,
+          changed_by: adminIdentity.user_id,
           reason,
           duration_days: durationDays,
           auto_revert_at: autoRevertAt
@@ -388,10 +367,10 @@ export class UserManagementService {
         event_category: 'user_management',
         actor_type: 'admin',
         action: 'update_status',
-        description: `User status changed from ${currentIdentity.status} to ${newStatus}. Reason: ${reason}`,
+        description: `User status changed from ${currentStatus} to ${newStatus}. Reason: ${reason}`,
         target_type: 'user',
         target_id: userId,
-        before_state: { status: currentIdentity.status },
+        before_state: { status: currentStatus },
         after_state: { status: newStatus },
         metadata: {
           duration_days: durationDays,
@@ -490,31 +469,31 @@ export class UserManagementService {
 
       // Get total users
       const { count: totalUsers } = await this.supabase
-        .from('identities')
-        .select('id', { count: 'exact', head: true });
+        .from('user_profiles')
+        .select('user_id', { count: 'exact', head: true });
 
       // Get active users
       const { count: activeUsers } = await this.supabase
-        .from('identities')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active');
+        .from('user_profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('is_active', true);
 
-      // Get suspended users
+      // Get inactive users (equivalent to suspended)
       const { count: suspendedUsers } = await this.supabase
-        .from('identities')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'suspended');
+        .from('user_profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('is_active', false);
 
       // Get new users today
       const { count: newUsersToday } = await this.supabase
-        .from('identities')
-        .select('id', { count: 'exact', head: true })
+        .from('user_profiles')
+        .select('user_id', { count: 'exact', head: true })
         .gte('created_at', today.toISOString());
 
       // Get new users this week
       const { count: newUsersThisWeek } = await this.supabase
-        .from('identities')
-        .select('id', { count: 'exact', head: true })
+        .from('user_profiles')
+        .select('user_id', { count: 'exact', head: true })
         .gte('created_at', weekAgo.toISOString());
 
       // Get users by role
@@ -522,10 +501,10 @@ export class UserManagementService {
         .from('user_profiles')
         .select('role');
 
-      // Get users by status
+      // Get users by status (active/inactive)
       const { data: statusData } = await this.supabase
-        .from('identities')
-        .select('status');
+        .from('user_profiles')
+        .select('is_active');
 
       const usersByRole = (roleData || []).reduce((acc: any, user) => {
         acc[user.role] = (acc[user.role] || 0) + 1;
@@ -533,7 +512,8 @@ export class UserManagementService {
       }, {});
 
       const usersByStatus = (statusData || []).reduce((acc: any, user) => {
-        acc[user.status] = (acc[user.status] || 0) + 1;
+        const status = user.is_active ? 'active' : 'inactive';
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       }, {});
 
@@ -599,14 +579,13 @@ export class UserManagementService {
               break;
             case 'archive':
               const { data: currentUser } = await this.supabase.auth.getUser();
-              const { data: adminProfile } = await this.supabase
-                .from('auth_methods')
-                .select('identity_id')
-                .eq('provider_user_id', currentUser.user?.id)
-                .single();
+              if (!currentUser.user) {
+                throw new Error('Admin user not authenticated');
+              }
+              const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
               
-              if (adminProfile) {
-                await this.archiveUserData(userId, adminProfile.identity_id, reason);
+              if (adminIdentity) {
+                await this.archiveUserData(userId, adminIdentity.user_id, reason);
                 successful.push(userId);
               } else {
                 failed.push({ user_id: userId, error: 'Admin identity not found' });

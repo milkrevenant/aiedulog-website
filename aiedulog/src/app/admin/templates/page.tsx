@@ -9,7 +9,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -49,6 +49,7 @@ import {
   Rating,
   AvatarGroup,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Dashboard,
   FileCopy,
@@ -406,7 +407,14 @@ function TemplateLibrary() {
   }
 
   const renderTemplateCard = (template: ContentTemplate, variant: 'featured' | 'standard' = 'standard') => (
-    <Grid item xs={12} sm={6} md={variant === 'featured' ? 6 : 4} lg={variant === 'featured' ? 4 : 3} key={template.id}>
+    <Grid
+      key={template.id}
+      size={{
+        xs: 12,
+        sm: 6,
+        md: variant === 'featured' ? 6 : 4,
+        lg: variant === 'featured' ? 4 : 3
+      }}>
       <motion.div
         whileHover={{ scale: 1.02, y: -5 }}
         whileTap={{ scale: 0.98 }}
@@ -622,7 +630,11 @@ function TemplateLibrary() {
 
             {/* Stats */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {templates.length}
@@ -632,7 +644,11 @@ function TemplateLibrary() {
                   </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {templates.filter(t => t.is_featured).length}
@@ -642,7 +658,11 @@ function TemplateLibrary() {
                   </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {Object.keys(TEMPLATE_CATEGORIES).length}
@@ -652,7 +672,11 @@ function TemplateLibrary() {
                   </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {templates.reduce((sum, t) => sum + t.usage_count, 0)}
@@ -917,7 +941,7 @@ function TemplateLibrary() {
         </SpeedDial>
       </Container>
     </>
-  )
+  );
 }
 
 export default function TemplateLibraryPage() {

@@ -49,23 +49,40 @@ export async function getNotifications(limit = 20, offset = 0) {
 export async function getUnreadNotificationCount() {
   const supabase = createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return 0
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return 0
 
-  const { count, error } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('is_read', false)
+    // First get the user's user_id from auth_methods table
+    const { data: authMethod, error: authError } = await supabase
+      .from('auth_methods')
+      .select('user_id')
+      .eq('provider_user_id', user.id)
+      .single()
+    
+    if (authError || !authMethod) {
+      console.warn('No user found for auth, returning 0 notifications')
+      return 0
+    }
 
-  if (error) {
-    console.error('Failed to fetch unread count:', error)
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', authMethod.user_id)
+      .eq('is_read', false)
+
+    if (error) {
+      console.error('Failed to fetch unread count:', error)
+      return 0
+    }
+
+    return count || 0
+  } catch (error) {
+    console.error('Error in getUnreadNotificationCount:', error)
     return 0
   }
-
-  return count || 0
 }
 
 // 알림 읽음 처리

@@ -116,7 +116,7 @@ async function checkAdminAuth(supabase: any, context: SecurityContext) {
 
   const { data: adminProfile } = await supabase
     .from('auth_methods')
-    .select('identity_id')
+    .select('user_id')
     .eq('provider_user_id', user.user.id)
     .single();
 
@@ -124,7 +124,7 @@ async function checkAdminAuth(supabase: any, context: SecurityContext) {
     return { success: false, error: 'Admin profile not found' };
   }
 
-  return { success: true, adminId: adminProfile.identity_id };
+  return { success: true, adminId: adminProfile.user_id };
 }
 
 async function handleDashboardStats(adminService: AdminService, context: SecurityContext) {

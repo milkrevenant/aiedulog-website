@@ -7,7 +7,7 @@ import {
   Typography,
   Button,
   CircularProgress,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   Chip,
@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   ExpandMore,
   Refresh,
@@ -187,7 +188,11 @@ export default function IdentityHealthDashboard() {
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Grid container alignItems="center" spacing={2}>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h6" color="text.secondary">
                       Overall Status
@@ -200,7 +205,11 @@ export default function IdentityHealthDashboard() {
                     />
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h3" color="primary">
                       {healthResult.score}
@@ -213,7 +222,11 @@ export default function IdentityHealthDashboard() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <LinearProgress
                     variant="determinate"
                     value={healthResult.score}
@@ -231,7 +244,13 @@ export default function IdentityHealthDashboard() {
           {/* Category Scores */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
             {Object.entries(healthResult.categories).map(([key, category]) => (
-              <Grid item xs={12} sm={6} md={3} key={key}>
+              <Grid
+                key={key}
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card>
                   <CardContent>
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>

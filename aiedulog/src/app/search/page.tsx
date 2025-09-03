@@ -194,7 +194,7 @@ function SearchContent() {
       try {
         // Use the standardized searchUsers helper from identity system
         const currentIdentity = user ? await getUserIdentity(user, supabase) : null
-        const currentIdentityId = currentIdentity?.identity_id
+        const currentIdentityId = currentIdentity?.user_id
         
         // Use the helper function for consistent user search
         const { searchUsers } = await import('@/lib/identity/helpers')
@@ -202,7 +202,7 @@ function SearchContent() {
         
         // Map to consistent format for UI
         const usersData = searchResults.map(profile => ({
-          id: profile.identity_id,
+          id: profile.user_id,
           email: profile.email,
           nickname: profile.nickname,
           avatar_url: profile.avatar_url,

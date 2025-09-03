@@ -1,10 +1,25 @@
 /**
  * Environment Variable Validation
  * Validates required environment variables with build-time safety
+ * Enhanced for AWS Amplify deployment compatibility
  */
 
 // Edge Runtime type declaration
 declare const EdgeRuntime: string | undefined
+
+/**
+ * Detect if running in AWS Amplify build environment
+ */
+export function isAmplifyBuild(): boolean {
+  return !!(process.env.AWS_APP_ID || process.env._HANDLER || process.env.AWS_REGION);
+}
+
+/**
+ * Detect if running in production environment for env validation
+ */
+export function isProductionEnv(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
 
 interface EnvConfig {
   NODE_ENV?: string
@@ -24,7 +39,52 @@ export function getEnvVar(key: keyof EnvConfig, fallback?: string): string | und
     return fallback
   }
   
+  // In Amplify builds, log missing critical environment variables
+  if (isAmplifyBuild() && !process.env[key] && ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'].includes(key)) {
+    console.warn(`[AMPLIFY BUILD] Critical environment variable missing: ${key}`);
+  }
+  
   return process.env[key] || fallback
+}
+
+/**
+ * Validate critical environment variables for Amplify deployment
+ */
+export function validateAmplifyEnvironment(): {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+} {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Check critical public environment variables
+  const requiredPublicVars = [
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'
+  ];
+  
+  requiredPublicVars.forEach(key => {
+    if (!getEnvVar(key as keyof EnvConfig)) {
+      errors.push(`Missing required public environment variable: ${key}`);
+    }
+  });
+  
+  // Check if we're in Amplify environment
+  if (isAmplifyBuild()) {
+    warnings.push('Running in AWS Amplify build environment');
+  }
+  
+  // Check Node environment
+  if (!process.env.NODE_ENV) {
+    warnings.push('NODE_ENV not set, assuming development');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  };
 }
 
 /**

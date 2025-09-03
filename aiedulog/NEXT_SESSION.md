@@ -109,8 +109,6 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 ```bash
 cd aiedulog
 npm run dev
-# or use the enhanced script:
-./scripts/dev-server.sh
 ```
 
 ### **3. Access Key Features**
@@ -124,11 +122,11 @@ npm run dev
 ## 📋 **DEVELOPMENT UTILITIES**
 
 ### **Available Scripts:**
-- `./scripts/dev-server.sh` - Comprehensive dev server management
-- `./scripts/health-check.js` - Environment diagnostics
-- `./scripts/clear-dev-cache.js` - Next.js cache management
-- `npm run lint` - Code linting
+- `npm run dev` - Start development server
+- `npm run lint` - Code linting and fixing
 - `npm run build` - Production build
+- `npm run type-check` - TypeScript validation
+- `npm run format` - Code formatting
 
 ### **Database Management:**
 - **Migration Status:** All migrations consolidated into baseline
@@ -200,10 +198,11 @@ npm run dev
 - API Documentation: Embedded in code comments
 
 ### **Troubleshooting:**
-- Use `./scripts/health-check.js` for environment issues
-- Use `./scripts/clear-dev-cache.js` for Next.js problems
+- Run `npm run type-check` to identify TypeScript issues
+- Use `npm run lint` to fix code style problems
 - Check Supabase dashboard for database connectivity
 - Review browser console for client-side errors
+- Clear cache: `npm run clean` then `npm run dev`
 
 ---
 

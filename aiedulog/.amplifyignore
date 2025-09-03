@@ -1,0 +1,94 @@
+# AWS Amplify Build Optimization
+# Exclude unnecessary files from build transfer to reduce build time
+
+# Documentation and README files
+*.md
+README*
+CHANGELOG*
+LICENSE*
+docs/
+examples/
+
+# Development and testing files
+src/__tests__/
+**/*.test.*
+**/*.spec.*
+coverage/
+.nyc_output/
+jest.config.*
+*.config.test.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.editorconfig
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Cache directories
+.cache/
+*.cache/
+.eslintcache
+.next/cache/
+node_modules/.cache/
+
+# Development configuration
+.env.local
+.env.development.local
+.env.test.local
+.gitignore
+
+# Scripts not needed for deployment
+scripts/system-health-check.js
+scripts/fix-system-issues.js
+scripts/test-*.js
+scripts/dev-*.sh
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Database files (handled separately)
+*.db
+*.sqlite
+
+# Build artifacts from other environments
+dist/
+out/
+
+# Version control
+.git/
+.gitattributes
+
+# Package manager files
+.yarn/
+.pnp.*
+yarn.lock
+package-lock.json
+
+# Excalidraw specific
+public/excalidraw-assets/
+.excalidraw/
+
+# Supabase (migrations handled via CLI)
+supabase/.branches/
+supabase/.temp/
+
+# TypeScript incremental compilation
+*.tsbuildinfo

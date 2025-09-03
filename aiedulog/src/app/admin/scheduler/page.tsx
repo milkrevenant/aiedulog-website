@@ -9,7 +9,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -53,6 +53,7 @@ import {
   SpeedDialAction,
   SpeedDialIcon,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Dashboard,
   Schedule,
@@ -889,18 +890,17 @@ function ContentScheduler() {
         {/* Day headers */}
         <Grid container sx={{ mb: 1 }}>
           {dayNames.map(day => (
-            <Grid item xs key={day}>
+            <Grid key={day} size="grow">
               <Typography variant="caption" sx={{ p: 1, textAlign: 'center', display: 'block', fontWeight: 'bold' }}>
                 {day}
               </Typography>
             </Grid>
           ))}
         </Grid>
-        
         {/* Calendar grid */}
         <Grid container sx={{ minHeight: '400px' }}>
           {days.map((day, index) => (
-            <Grid item xs key={index}>
+            <Grid key={index} size="grow">
               <Paper 
                 variant="outlined" 
                 sx={{ 
@@ -966,7 +966,7 @@ function ContentScheduler() {
           ))}
         </Grid>
       </Box>
-    )
+    );
   }
 
   const renderWeekView = () => {
@@ -978,9 +978,9 @@ function ContentScheduler() {
       <Box>
         {/* Week header */}
         <Grid container sx={{ mb: 2 }}>
-          <Grid item xs={1}></Grid> {/* Time column spacer */}
+          <Grid size={1}></Grid> {/* Time column spacer */}
           {days.map((day, index) => (
-            <Grid item xs key={day.toISOString()}>
+            <Grid key={day.toISOString()} size="grow">
               <Paper variant="outlined" sx={{ p: 1, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary">
                   {dayNames[index]}
@@ -992,12 +992,11 @@ function ContentScheduler() {
             </Grid>
           ))}
         </Grid>
-        
         {/* Week grid */}
         <Box sx={{ maxHeight: 600, overflow: 'auto' }}>
           {hours.map(hour => (
             <Grid container key={hour} sx={{ minHeight: 40, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Grid item xs={1}>
+              <Grid size={1}>
                 <Typography variant="caption" sx={{ p: 1 }}>
                   {hour.toString().padStart(2, '0')}:00
                 </Typography>
@@ -1009,7 +1008,7 @@ function ContentScheduler() {
                 })
                 
                 return (
-                  <Grid item xs key={`${day.toISOString()}-${hour}`}>
+                  <Grid key={`${day.toISOString()}-${hour}`} size="grow">
                     <Paper 
                       variant="outlined" 
                       sx={{ 
@@ -1050,13 +1049,13 @@ function ContentScheduler() {
                       })}
                     </Paper>
                   </Grid>
-                )
+                );
               })}
             </Grid>
           ))}
         </Box>
       </Box>
-    )
+    );
   }
 
   if (loading) {
@@ -1150,7 +1149,11 @@ function ContentScheduler() {
 
             {/* Stats */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ 
                   p: 2, 
                   textAlign: 'center', 
@@ -1172,7 +1175,11 @@ function ContentScheduler() {
                   </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ 
                   p: 2, 
                   textAlign: 'center', 
@@ -1188,7 +1195,11 @@ function ContentScheduler() {
                   </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ 
                   p: 2, 
                   textAlign: 'center', 
@@ -1204,7 +1215,11 @@ function ContentScheduler() {
                   </Typography>
                 </Paper>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 3
+                }}>
                 <Paper sx={{ 
                   p: 2, 
                   textAlign: 'center', 
@@ -1226,7 +1241,11 @@ function ContentScheduler() {
 
         <Grid container spacing={3}>
           {/* Main Content */}
-          <Grid item xs={12} lg={8}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 8
+            }}>
             {/* Bulk Actions Bar */}
             {selectedSchedules.length > 0 && viewMode === 'list' && (
               <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
@@ -1395,7 +1414,11 @@ function ContentScheduler() {
           </Grid>
 
           {/* Sidebar */}
-          <Grid item xs={12} lg={4}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 4
+            }}>
             {/* Upcoming Schedules */}
             <Paper sx={{ p: 3, mb: 3 }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1553,7 +1576,11 @@ function ContentScheduler() {
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DialogContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <FormControl fullWidth>
                     <InputLabel>Content Type</InputLabel>
                     <Select
@@ -1567,7 +1594,11 @@ function ContentScheduler() {
                   </FormControl>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <TextField
                     fullWidth
                     label="Content ID"
@@ -1577,7 +1608,11 @@ function ContentScheduler() {
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <FormControl fullWidth>
                     <InputLabel>Schedule Type</InputLabel>
                     <Select
@@ -1597,7 +1632,11 @@ function ContentScheduler() {
                   </FormControl>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <DateTimePicker
                     label="Scheduled Time"
                     value={formData.scheduled_time}
@@ -1610,7 +1649,7 @@ function ContentScheduler() {
                   />
                 </Grid>
                 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     fullWidth
                     label="Recurrence Rule (Optional)"
@@ -1663,7 +1702,11 @@ function ContentScheduler() {
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DialogContent sx={{ pt: 2 }}>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <FormControl fullWidth>
                     <InputLabel>Content Type</InputLabel>
                     <Select
@@ -1677,7 +1720,11 @@ function ContentScheduler() {
                   </FormControl>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <TextField
                     fullWidth
                     label="Content ID"
@@ -1688,7 +1735,11 @@ function ContentScheduler() {
                   />
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <FormControl fullWidth>
                     <InputLabel>Schedule Type</InputLabel>
                     <Select
@@ -1708,7 +1759,11 @@ function ContentScheduler() {
                   </FormControl>
                 </Grid>
                 
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <DateTimePicker
                     label="Scheduled Time"
                     value={formData.scheduled_time}
@@ -1728,7 +1783,7 @@ function ContentScheduler() {
                   />
                 </Grid>
                 
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <TextField
                     fullWidth
                     label="Recurrence Rule (Optional)"
@@ -1780,7 +1835,7 @@ function ContentScheduler() {
           <DialogContent>
             {selectedSchedule && (
               <Grid container spacing={2}>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -1975,7 +2030,7 @@ function ContentScheduler() {
         </Snackbar>
       </Container>
     </>
-  )
+  );
 }
 
 export default function ContentSchedulerPage() {

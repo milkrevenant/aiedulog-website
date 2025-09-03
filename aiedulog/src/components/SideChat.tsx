@@ -255,7 +255,7 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
               
               if (senderIdentity?.profile) {
                 senderInfo = {
-                  id: senderIdentity.identity_id,
+                  id: senderIdentity.user_id,
                   email: senderIdentity.profile.email,
                   nickname: senderIdentity.profile.nickname,
                   avatar_url: senderIdentity.profile.avatar_url
