@@ -9,6 +9,8 @@
 
 const https = require('https')
 const http = require('http')
+const fs = require('fs')
+const path = require('path')
 
 const BASE_URL = 'http://localhost:3000'
 
@@ -82,6 +84,50 @@ async function main() {
   colorLog(colors.blue + colors.bold, '🔍 AIedulog System Health Check')
   console.log('═'.repeat(60))
   console.log()
+
+  // Basic local checks (integrated from health-check)
+  try {
+    const projectRoot = path.resolve(__dirname, '..')
+    colorLog(colors.bold, '🧭 BASIC FILE CHECKS')
+
+    // next.config.ts
+    const nextConfigPath = path.join(projectRoot, 'next.config.ts')
+    if (fs.existsSync(nextConfigPath)) {
+      colorLog(colors.green, '✓ next.config.ts exists')
+    } else {
+      colorLog(colors.red, '✗ next.config.ts missing')
+    }
+
+    // middleware.ts and static exclusions
+    const mwPath = path.join(projectRoot, 'src/middleware.ts')
+    if (fs.existsSync(mwPath)) {
+      const mw = fs.readFileSync(mwPath, 'utf8')
+      if (mw.includes('_next/static') && mw.includes('_next/image')) {
+        colorLog(colors.green, '✓ middleware excludes Next static paths')
+      } else {
+        colorLog(colors.yellow, '⚠ middleware may not exclude all Next static paths')
+      }
+    } else {
+      colorLog(colors.red, '✗ src/middleware.ts missing')
+    }
+
+    // .env.local and required vars
+    const envPath = path.join(projectRoot, '.env.local')
+    if (fs.existsSync(envPath)) {
+      const env = fs.readFileSync(envPath, 'utf8')
+      const requiredVars = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
+      const missing = requiredVars.filter(v => !env.includes(v))
+      if (missing.length === 0) {
+        colorLog(colors.green, '✓ .env.local has required Supabase vars')
+      } else {
+        colorLog(colors.yellow, `⚠ .env.local missing vars: ${missing.join(', ')}`)
+      }
+    } else {
+      colorLog(colors.yellow, '⚠ .env.local not found')
+    }
+  } catch (e) {
+    colorLog(colors.yellow, `⚠ Basic checks error: ${e.message}`)
+  }
 
   const tests = [
     {
