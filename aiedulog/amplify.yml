@@ -8,6 +8,7 @@ applications:
             # Ensure Node.js 20.x for dependencies requiring Node >=20
             - "echo 'Switching to Node.js 20.x'"
             - "export NVM_DIR=\"$HOME/.nvm\"; [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\""
+            - "rm -f \"$NVM_DIR/default-packages\""
             - "nvm install 20"
             - "nvm use 20"
             - "echo 'Using Node:' $(node --version)"

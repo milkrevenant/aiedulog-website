@@ -16,10 +16,11 @@
     "pre-commit": "npm run type-check && npm run lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "amplify:debug": "./scripts/amplify-debug.sh",
     "amplify:simulate": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 CI=true npm run build",
-    "amplify:validate": "bash scripts/validate-amplify.sh",
-    "amplify:test-build": "bash scripts/simulate-amplify-build.sh"
+    "health:check": "node scripts/system-health-check.js",
+    "identity:fix": "node scripts/fix-identity-system.js",
+    "identity:test": "node scripts/test-identity-function.js",
+    "cache:clear": "node scripts/clear-dev-cache.js"
   },
   "dependencies": {
     "@auth/supabase-adapter": "^1.10.0",
@@ -59,7 +60,7 @@
     "zod": "^4.1.5"
   },
   "engines": {
-    "node": ">=18.20.0",
+    "node": ">=20.0.0",
     "npm": ">=8.0.0"
   },
   "devDependencies": {
