@@ -29,7 +29,7 @@ export async function getUserFromRequest(request: NextRequest): Promise<AuthUser
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
-      .eq('identity_id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     return {

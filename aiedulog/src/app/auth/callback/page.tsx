@@ -81,65 +81,40 @@ export default function AuthCallbackPage() {
 
           // Check if this is a new user using integrated identity system
           if (data?.user) {
-            const existingIdentity = await getUserIdentity(data.user, supabase)
-            
-            if (!existingIdentity) {
-              console.log('Creating new user identity and profile for OAuth login')
+            try {
+              // Attempt to get existing identity first
+              let identity = await getUserIdentity(data.user, supabase)
               
-              try {
-                // Step 1: Create identity record
-                const { data: identityData, error: identityError } = await supabase
-                  .from('identities')
-                  .insert({
-                    id: data.user.id,
-                    status: 'active'
+              if (!identity) {
+                console.log('Creating new user identity using ensure_user_identity function')
+                
+                // Use the database function to ensure identity exists
+                const { data: identityId, error: identityError } = await supabase
+                  .rpc('ensure_user_identity', {
+                    new_auth_user_id: data.user.id,
+                    user_email: data.user.email || ''
                   })
-                  .select()
-                  .single()
 
                 if (identityError) {
-                  console.error('Failed to create identity:', identityError)
-                } else {
-                  // Step 2: Create user profile linked to identity
-                  const { error: profileError } = await supabase
-                    .from('user_profiles')
-                    .insert({
-                      identity_id: data.user.id,
-                      email: data.user.email || '',
-                      username: data.user.email?.split('@')[0] || 'user',
-                      nickname: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
-                      full_name: data.user.user_metadata?.full_name,
-                      avatar_url: data.user.user_metadata?.avatar_url,
-                      role: 'member',
-                      is_active: true
-                    })
-
-                  if (profileError) {
-                    console.error('Error creating user profile via identity system:', profileError)
-                    // Try to clean up identity if profile creation failed
-                    await supabase.from('identities').delete().eq('id', data.user.id)
-                  } else {
-                    // Step 3: Create auth_methods record
-                    const { error: authMethodError } = await supabase
-                      .from('auth_methods')
-                      .insert({
-                        identity_id: data.user.id,
-                        provider: 'oauth',
-                        provider_user_id: data.user.id,
-                        email_confirmed_at: new Date().toISOString(),
-                        last_sign_in_at: new Date().toISOString()
-                      })
-
-                    if (authMethodError) {
-                      console.warn('Failed to create auth_methods record:', authMethodError)
-                      // Continue anyway as the main profile is created
-                    }
+                  console.error('Failed to ensure user identity:', identityError)
+                  // Continue to login even if identity creation failed
+                } else if (identityId) {
+                  console.log('Successfully created/found identity:', identityId)
+                  
+                  // Try to get the identity again after creation
+                  identity = await getUserIdentity(data.user, supabase)
+                  if (!identity) {
+                    console.warn('Identity created but could not be retrieved')
                   }
+                } else {
+                  console.error('ensure_user_identity returned null')
                 }
-              } catch (err) {
-                console.error('Failed to create complete identity system records:', err)
-                // Continue to login even if identity creation partially failed
+              } else {
+                console.log('Existing identity found:', identity.user_id)
               }
+            } catch (err) {
+              console.error('Error in identity management:', err)
+              // Continue to login even if identity management failed
             }
           }
 

@@ -22,7 +22,7 @@ import {
   Alert,
   CircularProgress,
   Skeleton,
-  GridLegacy as Grid,
+  
   Menu,
   MenuItem,
   Divider,
@@ -34,6 +34,7 @@ import {
   FormControl,
   InputLabel
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Event,
   Schedule,
@@ -486,10 +487,13 @@ function AppointmentsPageContent() {
           </Button>
         </Stack>
       </Stack>
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={6} md={3}>
+        <Grid
+          size={{
+            xs: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <EventAvailable sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
@@ -502,7 +506,11 @@ function AppointmentsPageContent() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} md={3}>
+        <Grid
+          size={{
+            xs: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Schedule sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
@@ -515,7 +523,11 @@ function AppointmentsPageContent() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} md={3}>
+        <Grid
+          size={{
+            xs: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <CheckCircle sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
@@ -528,7 +540,11 @@ function AppointmentsPageContent() {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} md={3}>
+        <Grid
+          size={{
+            xs: 6,
+            md: 3
+          }}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Event sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
@@ -542,7 +558,6 @@ function AppointmentsPageContent() {
           </Card>
         </Grid>
       </Grid>
-
       {/* Tabs */}
       <Card sx={{ mb: 3 }}>
         <Tabs
@@ -579,7 +594,6 @@ function AppointmentsPageContent() {
           />
         </Tabs>
       </Card>
-
       {/* Error State */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -589,7 +603,6 @@ function AppointmentsPageContent() {
           </Button>
         </Alert>
       )}
-
       {/* Content */}
       {loading ? (
         <Box>
@@ -640,7 +653,6 @@ function AppointmentsPageContent() {
           )}
         </TabPanel>
       )}
-
       {/* Floating Action Button */}
       <Fab
         color="primary"
@@ -650,7 +662,7 @@ function AppointmentsPageContent() {
         <Add />
       </Fab>
     </Container>
-  )
+  );
 }
 
 export default function AppointmentsPage() {

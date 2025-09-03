@@ -1,180 +1,151 @@
 import type { NextConfig } from "next";
-const { getHeadersConfig } = require('./scripts/dev-headers');
 
-// Security headers to protect against XSS, clickjacking, and other attacks
+// Security headers for production
 const securityHeaders = [
-  // Prevent XSS attacks
   {
     key: 'X-XSS-Protection',
     value: '1; mode=block'
   },
-  // Prevent clickjacking attacks
   {
     key: 'X-Frame-Options',
     value: 'DENY'
   },
-  // Prevent MIME type sniffing
   {
     key: 'X-Content-Type-Options',
     value: 'nosniff'
   },
-  // Control referrer information
   {
     key: 'Referrer-Policy',
     value: 'strict-origin-when-cross-origin'
   },
-  // Restrict dangerous browser features
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=(), bluetooth=(), magnetometer=(), gyroscope=()'
   },
-  // Force HTTPS connections
+  {
+    key: 'Content-Security-Policy',
+    value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.stripe.com; frame-src https://js.stripe.com;"
+  },
   {
     key: 'Strict-Transport-Security',
     value: 'max-age=31536000; includeSubDomains; preload'
   },
-  // Content Security Policy - Ultra-strict protection
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://maps.googleapis.com",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-      "media-src 'self' https://*.supabase.co",
-      "worker-src 'self' blob:"
-    ].join('; ')
-  },
-  // Additional security headers
-  {
-    key: 'X-DNS-Prefetch-Control',
-    value: 'on'
-  },
-  {
-    key: 'X-Permitted-Cross-Domain-Policies',
-    value: 'none'
-  }
 ];
 
 const nextConfig: NextConfig = {
-  // Enable security headers and asset-specific headers
+  // Enable React strict mode
+  reactStrictMode: true,
+  
+  // Optimize images
+  images: {
+    domains: ['images.unsplash.com', 'via.placeholder.com'],
+    formats: ['image/webp', 'image/avif'],
+  },
+  
+  // Security headers
   async headers() {
-    const assetHeaders = getHeadersConfig();
     return [
-      // Asset-specific headers (development cache control or production optimization)
-      ...assetHeaders,
       {
-        // Apply security headers to all routes except static assets
-        source: '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+        source: '/(.*)',
         headers: securityHeaders,
       },
     ];
   },
-  
-  // Additional security configurations
-  poweredByHeader: false, // Remove X-Powered-By header
-  compress: true, // Enable gzip compression
-  
-  // Development server configuration
-  devIndicators: {
-    position: 'bottom-left',
-  },
-  
-  // Environment variables validation
+
+  // Environment variable validation
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   },
-  
-  // Development optimizations
+
+  // AWS Amplify optimizations
   experimental: {
     optimizePackageImports: ['@mui/material', '@mui/icons-material'],
   },
 
-  // Asset optimization and cache management
-  generateBuildId: async () => {
-    // Use timestamp-based build ID for cache busting in development
-    return process.env.NODE_ENV === 'development' 
-      ? `dev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      : null
-  },
-
-  // Development cache control
-  assetPrefix: process.env.NODE_ENV === 'development' ? '' : undefined,
-  
-  // Disable caching in development to prevent manifest issues
+  // Better error handling for AWS Amplify builds
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
 
-  // Force asset regeneration in development
-  distDir: '.next',
+  // AWS Amplify output configuration
+  output: process.env.AWS_APP_ID ? 'standalone' : undefined,
 
-  // Webpack configuration to fix Excalidraw readonly property issues
+  // Production webpack configuration
   webpack: (config: any, { isServer, dev }: { isServer: boolean; dev: boolean }) => {
-    // Development optimizations and cache management
-    if (dev && !isServer) {
-      // Disable caching in development to prevent manifest issues
+    // AWS Amplify build detection
+    const isAmplifyBuild = process.env.AWS_APP_ID || process.env._HANDLER || process.env.AMPLIFY_BUILD_MODE;
+    
+    if (isAmplifyBuild && !dev) {
+      console.log('🚀 Optimizing for AWS Amplify build environment');
+      
+      // Disable webpack cache to prevent 404 errors
       config.cache = false;
       
-      // Force fresh builds with timestamped chunks
-      const timestamp = Date.now().toString().slice(-8);
-      
+      // Memory optimization for Amplify's 8GiB limit
       config.optimization = {
         ...config.optimization,
+        minimize: true,
         splitChunks: {
-          ...config.optimization.splitChunks,
+          chunks: 'all',
           cacheGroups: {
-            ...config.optimization.splitChunks?.cacheGroups,
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
+              chunks: 'all',
+              maxSize: 500000, // 500KB chunks
+            },
+            mui: {
+              test: /[\\/]node_modules[\\/]@mui[\\/]/,
+              name: 'mui',
               chunks: 'all',
               priority: 10,
             },
           },
         },
       };
-      
-      // Ensure fresh assets without versioning conflicts
-      config.output = {
-        ...config.output,
-        filename: 'static/chunks/[name].js',
-        chunkFilename: 'static/chunks/[name].js',
+
+      // Reduce memory usage for large bundles
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Optimize MUI imports
+        '@mui/material': require.resolve('@mui/material'),
+        '@mui/icons-material': require.resolve('@mui/icons-material'),
       };
     }
 
-    // Handle Excalidraw's ESM modules
+    // Fix for @excalidraw and other readonly property issues
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      crypto: false,
+      stream: false,
+      util: false,
+      http: false,
+      https: false,
+      url: false,
+      net: false,
+      tls: false,
+    };
+
+    // Additional optimizations for Edge Runtime compatibility
     if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        crypto: false,
-      }
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Optimize specific packages for browser builds
+        '@supabase/realtime-js': '@supabase/realtime-js',
+      };
     }
-    
-    // Add rule to handle Excalidraw's readonly properties
-    config.module.rules.push({
-      test: /node_modules\/@excalidraw\/excalidraw/,
-      use: {
-        loader: 'string-replace-loader',
-        options: {
-          search: /Object\.defineProperty\(([^,]+),\s*"([^"]+)",\s*\{\s*value:\s*([^,]+),\s*writable:\s*false/g,
-          replace: 'Object.defineProperty($1, "$2", { value: $3, writable: true',
-          flags: 'g'
-        }
-      }
-    })
-    
-    return config
-  }
+
+    // Ignore source maps in Amplify builds for faster deployment
+    if (isAmplifyBuild && !dev) {
+      config.devtool = false;
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;

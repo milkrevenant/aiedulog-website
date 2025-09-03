@@ -112,6 +112,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0)
   const [presenceUsers, setPresenceUsers] = useState<Array<{id: string, name: string, cursor?: {x: number, y: number}}>>([])
   const [collaborationState, setCollaborationState] = useState<{editing: string[], conflicts: string[]}>({editing: [], conflicts: []})
+  const [toolLoading, setToolLoading] = useState<string | null>(null)
   
   // Legacy sizing system removed - now using unified embed sizing
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -407,24 +408,48 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
   }
 
   // Microsoft Loop-style slash command handler
-  const handleSlashCommand = (commandId: string) => {
+  const handleSlashCommand = async (commandId: string) => {
+    // 슬래시 메뉴 즉시 닫기
+    setSlashMenuOpen(false)
+    setSelectedCommandIndex(0)
     setNewMessage('')  // Clear the slash command
     
+    // chatUser 체크
+    if (!chatUser) {
+      alert('사용자 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.')
+      return
+    }
+    
+    // 새 채팅인 경우 먼저 방 생성
+    let actualRoomId = roomId
+    if (roomId === 'new' || !roomId) {
+      console.log('Creating new room for slash command...')
+      const newRoomId = await createChatRoom(
+        `새 대화 - ${new Date().toLocaleDateString()}`,
+        'direct',
+        chatUser
+      )
+      
+      if (newRoomId) {
+        actualRoomId = newRoomId
+        // URL 업데이트 (선택사항)
+        if (typeof window !== 'undefined') {
+          window.history.pushState({}, '', `/chat/${newRoomId}`)
+        }
+      } else {
+        alert('채팅방 생성에 실패했습니다.')
+        return
+      }
+    }
+    
+    // 명령어별 처리
     switch (commandId) {
       case 'whiteboard':
-        insertCollaborationTool('whiteboard')
-        break
       case 'kanban':
-        insertCollaborationTool('kanban')
-        break
       case 'todo':
-        insertCollaborationTool('todo')
-        break
       case 'poll':
-        insertCollaborationTool('poll')
-        break
       case 'table':
-        insertCollaborationTool('table')
+        await insertCollaborationTool(commandId as any, actualRoomId)
         break
       case 'file':
         // Trigger file upload
@@ -435,23 +460,53 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
     }
   }
 
-  const insertCollaborationTool = async (toolType: 'kanban' | 'whiteboard' | 'todo' | 'poll' | 'table') => {
-    if (!chatUser) {
-      console.error('Chat user not available')
-      return
-    }
+  const insertCollaborationTool = async (
+    toolType: 'kanban' | 'whiteboard' | 'todo' | 'poll' | 'table',
+    overrideRoomId?: string
+  ) => {
+    // 로딩 상태 시작
+    setToolLoading(toolType)
+    
+    try {
+      // chatUser 체크 및 재시도
+      if (!chatUser) {
+        await loadCurrentUserProfile()
+        if (!chatUser) {
+          alert('사용자 정보를 불러올 수 없습니다.')
+          return
+        }
+      }
 
-    // 현재 roomId 사용
-    const actualRoomId = roomId
-    if (roomId === 'new' || !roomId) {
-      alert('채팅방을 먼저 생성해주세요.')
-      return
+    // roomId 결정
+    let targetRoomId = overrideRoomId || roomId
+    
+    // 새 채팅 처리
+    if (targetRoomId === 'new' || !targetRoomId) {
+      console.log('Creating new room for collaboration tool...')
+      const newRoomId = await createChatRoom(
+        `협업 공간 - ${new Date().toLocaleDateString()}`,
+        'direct',
+        chatUser
+      )
+      
+      if (newRoomId) {
+        targetRoomId = newRoomId
+        // URL 업데이트
+        if (typeof window !== 'undefined') {
+          window.history.pushState({}, '', `/chat/${newRoomId}`)
+        }
+        // 방 정보 업데이트 (필요시)
+        await loadRoomData()
+      } else {
+        alert('채팅방 생성에 실패했습니다.')
+        return
+      }
     }
 
     // 도구 메시지를 인라인 확장 가능한 형태로 생성
     const toolMessage: ChatMessage = {
       id: `${toolType}-${Date.now()}`,
-      roomId: actualRoomId,
+      roomId: targetRoomId,
       senderId: chatUser.identityId,
       message: toolType === 'kanban' 
         ? '칸반보드를 생성했습니다'
@@ -474,19 +529,26 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
       },
     }
 
-    // 메시지 목록에 추가
-    setMessages(prev => [...prev, toolMessage])
+      // 메시지 목록에 추가
+      setMessages(prev => [...prev, toolMessage])
 
-    // DB에 저장
-    await sendSimpleChatMessage(
-      actualRoomId,
-      toolMessage.message,
-      chatUser,
-      toolType === 'whiteboard' ? 'excalidraw' : toolType,
-      toolMessage.attachments
-    )
+      // DB에 저장
+      await sendSimpleChatMessage(
+        targetRoomId,
+        toolMessage.message,
+        chatUser,
+        toolType === 'whiteboard' ? 'excalidraw' : toolType,
+        toolMessage.attachments
+      )
 
-    setToolMenuAnchor(null)
+    } catch (error) {
+      console.error('Failed to insert collaboration tool:', error)
+      alert('도구 삽입에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      // 로딩 상태 해제 및 메뉴 닫기
+      setToolLoading(null)
+      setToolMenuAnchor(null)
+    }
   }
 
 
@@ -581,18 +643,33 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
           <Stack direction="row" spacing={1}>
             {/* 협업 도구 버튼들 */}
             <Tooltip title="Kanban 보드">
-              <IconButton onClick={() => insertCollaborationTool('kanban')}>
-                <Dashboard />
+              <IconButton 
+                onClick={async () => {
+                  await insertCollaborationTool('kanban')
+                }}
+                disabled={!chatUser || toolLoading === 'kanban'}
+              >
+                {toolLoading === 'kanban' ? <CircularProgress size={20} /> : <Dashboard />}
               </IconButton>
             </Tooltip>
             <Tooltip title="화이트보드 (Excalidraw)">
-              <IconButton onClick={() => insertCollaborationTool('whiteboard')}>
-                <Draw />
+              <IconButton 
+                onClick={async () => {
+                  await insertCollaborationTool('whiteboard')
+                }}
+                disabled={!chatUser || toolLoading === 'whiteboard'}
+              >
+                {toolLoading === 'whiteboard' ? <CircularProgress size={20} /> : <Draw />}
               </IconButton>
             </Tooltip>
             <Tooltip title="투표 생성">
-              <IconButton onClick={() => insertCollaborationTool('poll')}>
-                <Poll />
+              <IconButton 
+                onClick={async () => {
+                  await insertCollaborationTool('poll')
+                }}
+                disabled={!chatUser || toolLoading === 'poll'}
+              >
+                {toolLoading === 'poll' ? <CircularProgress size={20} /> : <Poll />}
               </IconButton>
             </Tooltip>
             <Tooltip title="버블 크기 설정">
@@ -768,7 +845,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
                     placeholder="메시지를 입력하세요... (/ 를 입력하여 도구 삽입)"
                     value={newMessage}
                     inputRef={inputRef}
-                    onKeyDown={(e) => {
+                    onKeyDown={async (e) => {
                       if (e.key === 'Enter' && !e.shiftKey && !slashMenuOpen) {
                         e.preventDefault()
                         sendMessage()
@@ -788,9 +865,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
                         }
                       } else if (e.key === 'Tab' && slashMenuOpen) {
                         e.preventDefault()
-                        handleSlashCommand(slashCommands[selectedCommandIndex].id)
-                        setSlashMenuOpen(false)
-                        setSelectedCommandIndex(0)
+                        await handleSlashCommand(slashCommands[selectedCommandIndex].id)
                       }
                     }}
                     onChange={(e) => {
@@ -991,10 +1066,8 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
                 key={command.id}
                 component="button"
                 className="slash-menu-item"
-                onClick={() => {
-                  handleSlashCommand(command.id)
-                  setSlashMenuOpen(false)
-                  setSelectedCommandIndex(0)
+                onClick={async () => {
+                  await handleSlashCommand(command.id)
                 }}
                 sx={{
                   display: 'flex',
@@ -1182,23 +1255,52 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
           horizontal: 'left',
         }}
       >
-        <MenuItem onClick={() => insertCollaborationTool('kanban')}>
+        <MenuItem 
+          onClick={async () => {
+            await insertCollaborationTool('kanban')
+          }}
+          disabled={!chatUser}
+        >
           <Dashboard sx={{ mr: 1 }} /> Kanban 보드
         </MenuItem>
-        <MenuItem onClick={() => insertCollaborationTool('whiteboard')}>
+        <MenuItem 
+          onClick={async () => {
+            await insertCollaborationTool('whiteboard')
+          }}
+          disabled={!chatUser}
+        >
           <Draw sx={{ mr: 1 }} /> 화이트보드
         </MenuItem>
-        <MenuItem onClick={() => insertCollaborationTool('todo')}>
+        <MenuItem 
+          onClick={async () => {
+            await insertCollaborationTool('todo')
+          }}
+          disabled={!chatUser}
+        >
           <TableChart sx={{ mr: 1 }} /> 할 일 목록
         </MenuItem>
-        <MenuItem onClick={() => insertCollaborationTool('poll')}>
+        <MenuItem 
+          onClick={async () => {
+            await insertCollaborationTool('poll')
+          }}
+          disabled={!chatUser}
+        >
           <Poll sx={{ mr: 1 }} /> 투표
         </MenuItem>
-        <MenuItem onClick={() => insertCollaborationTool('table')}>
+        <MenuItem 
+          onClick={async () => {
+            await insertCollaborationTool('table')
+          }}
+          disabled={!chatUser}
+        >
           <TableChart sx={{ mr: 1 }} /> 테이블
         </MenuItem>
         <Divider />
-        <MenuItem onClick={() => handleSlashCommand('file')}>
+        <MenuItem 
+          onClick={async () => {
+            await handleSlashCommand('file')
+          }}
+        >
           <AttachFile sx={{ mr: 1 }} /> 파일 첨부
         </MenuItem>
         <MenuItem>
@@ -1446,15 +1548,15 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
                   // 통합 Identity 시스템을 통한 사용자 찾기
                   const { data: profileData } = await supabase
                     .from('user_profiles')
-                    .select('identity_id')
+                    .select('user_id')
                     .eq('email', inviteEmail)
                     .single()
 
-                  if (profileData?.identity_id) {
-                    // 참가자 추가 - identity_id 사용
+                  if (profileData?.user_id) {
+                    // 참가자 추가 - user_id 사용
                     await supabase.from('chat_participants').insert({
                       room_id: roomId,
-                      user_id: profileData.identity_id,
+                      user_id: profileData.user_id,
                       is_active: true,
                     })
                     setInviteMenuAnchor(null)

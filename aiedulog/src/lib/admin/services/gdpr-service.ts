@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { AuditService } from './audit-service';
+import { getUserIdentity } from '@/lib/identity/helpers';
 import type {
   UserDataRequest,
   DataRequestType,
@@ -31,20 +32,16 @@ export class GdprService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
       const requestId = await this.supabase.rpc('process_gdpr_request', {
         p_user_id: userId,
         p_request_type: requestType,
-        p_requested_by: adminProfile.identity_id
+        p_requested_by: adminIdentity.user_id
       });
 
       if (!requestId.data) {
@@ -334,13 +331,9 @@ export class GdprService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -367,7 +360,7 @@ export class GdprService {
       // Archive critical data that must be retained for legal reasons
       const archiveResult = await this.supabase.rpc('archive_user_data', {
         p_user_id: userId,
-        p_admin_id: adminProfile.identity_id,
+        p_admin_id: adminIdentity.user_id,
         p_reason: 'gdpr_right_to_be_forgotten'
       });
 
@@ -377,7 +370,7 @@ export class GdprService {
       // Perform comprehensive user deletion
       const deletionResult = await this.supabase.rpc('delete_user_comprehensive', {
         p_user_id: userId,
-        p_admin_id: adminProfile.identity_id,
+        p_admin_id: adminIdentity.user_id,
         p_reason: 'GDPR Right to be Forgotten',
         p_archive_data: false // Already archived above
       });
@@ -393,7 +386,7 @@ export class GdprService {
           .update({
             status: 'completed',
             processed_at: new Date().toISOString(),
-            processed_by: adminProfile.identity_id,
+            processed_by: adminIdentity.user_id,
             notes: `Right to be forgotten processed. User data deleted and references anonymized.`
           })
           .eq('id', requestId);
@@ -490,13 +483,9 @@ export class GdprService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -507,7 +496,7 @@ export class GdprService {
 
       if (status === 'completed' || status === 'rejected') {
         updateData.processed_at = new Date().toISOString();
-        updateData.processed_by = adminProfile.identity_id;
+        updateData.processed_by = adminIdentity.user_id;
       }
 
       if (notes) {

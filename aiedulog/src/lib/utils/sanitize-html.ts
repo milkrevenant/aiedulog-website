@@ -9,8 +9,8 @@ let isLoaded = false
 const loadDOMPurify = async () => {
   if (typeof window !== 'undefined' && !isLoaded) {
     try {
-      const module = await import('dompurify')
-      DOMPurify = module.default
+      const dompurifyModule = await import('dompurify')
+      DOMPurify = dompurifyModule.default
       isLoaded = true
     } catch (error) {
       console.warn('Failed to load DOMPurify:', error)

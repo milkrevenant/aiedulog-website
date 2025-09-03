@@ -9,7 +9,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardMedia,
@@ -38,6 +38,7 @@ import {
   Tab,
   Fab,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Search,
   Menu as MenuIcon,
@@ -297,7 +298,6 @@ export default function LecturesBoardPage() {
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh', pb: 8 }}>
       {/* 공통 헤더 */}
       <AppHeader user={user} profile={profile} />
-
       <Box
         sx={{
           display: 'flex',
@@ -508,7 +508,13 @@ export default function LecturesBoardPage() {
             <Grid container spacing={3} justifyContent="center">
               {loading ? (
                 [...Array(6)].map((_, i) => (
-                  <Grid item xs={12} md={6} lg={4} key={i}>
+                  <Grid
+                    key={i}
+                    size={{
+                      xs: 12,
+                      md: 6,
+                      lg: 4
+                    }}>
                     <Skeleton variant="rectangular" height={400} />
                   </Grid>
                 ))
@@ -522,7 +528,13 @@ export default function LecturesBoardPage() {
                 </Grid>
               ) : (
                 filteredLectures.map((lecture) => (
-                  <Grid item xs={12} md={6} lg={4} key={lecture.id}>
+                  <Grid
+                    key={lecture.id}
+                    size={{
+                      xs: 12,
+                      md: 6,
+                      lg: 4
+                    }}>
                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                       {lecture.thumbnail_image && (
                         <CardMedia
@@ -832,7 +844,7 @@ export default function LecturesBoardPage() {
                         강의 정보
                       </Typography>
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="body2" color="text.secondary">
                             카테고리
                           </Typography>
@@ -840,7 +852,7 @@ export default function LecturesBoardPage() {
                             {getCategoryLabel(selectedLecture.category)}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="body2" color="text.secondary">
                             난이도
                           </Typography>
@@ -848,13 +860,13 @@ export default function LecturesBoardPage() {
                             {getLevelLabel(selectedLecture.level)}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="body2" color="text.secondary">
                             기간
                           </Typography>
                           <Typography variant="body1">{selectedLecture.duration}</Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="body2" color="text.secondary">
                             수강료
                           </Typography>
@@ -864,7 +876,7 @@ export default function LecturesBoardPage() {
                               : '무료'}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="body2" color="text.secondary">
                             일정
                           </Typography>
@@ -874,7 +886,7 @@ export default function LecturesBoardPage() {
                               new Date(selectedLecture.end_date).toLocaleDateString()}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                           <Typography variant="body2" color="text.secondary">
                             시간
                           </Typography>
@@ -882,7 +894,7 @@ export default function LecturesBoardPage() {
                             {selectedLecture.start_time} ~ {selectedLecture.end_time}
                           </Typography>
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                           <Typography variant="body2" color="text.secondary">
                             일정 상세
                           </Typography>
@@ -890,7 +902,7 @@ export default function LecturesBoardPage() {
                             {selectedLecture.schedule_details}
                           </Typography>
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={12}>
                           <Typography variant="body2" color="text.secondary">
                             장소
                           </Typography>
@@ -952,7 +964,6 @@ export default function LecturesBoardPage() {
           </Box>
         </Stack>
       </Box>
-
       {/* 모바일 사이드바 (Drawer로 처리됨) */}
       <FeedSidebar
         user={user}
@@ -960,7 +971,6 @@ export default function LecturesBoardPage() {
         mobileOpen={mobileOpen}
         onMobileToggle={() => setMobileOpen(false)}
       />
-
       {/* 모바일 햄버거 플로팅 버튼 - 왼쪽 하단 */}
       <Fab
         color="primary"
@@ -976,5 +986,5 @@ export default function LecturesBoardPage() {
         <MenuIcon />
       </Fab>
     </Box>
-  )
+  );
 }

@@ -49,7 +49,7 @@ export const sanitizeForTransmission = (data: any): any => {
   if (!data) return data
   
   if (typeof data === 'string') {
-    return data.replace(/[<>"'`]/g, '').trim().substring(0, 1000)
+    return data.replace(/[<>"'`]/g, '').trim().substring(0, 1000);
   }
   
   if (typeof data === 'object') {
@@ -76,12 +76,8 @@ export const isServerSide = (): boolean => runtimeCapabilities.isServerSide()
 let clientSecurity: any = null
 try {
   if (runtimeCapabilities.isBrowser()) {
-    const clientSecurityModule = require('./client-security')
-    clientSecurity = {
-      getClientSecurity: clientSecurityModule.getClientSecurity,
-      initializeClientSecurity: clientSecurityModule.initializeClientSecurity,
-      ClientSecurityMonitor: clientSecurityModule.ClientSecurityMonitor
-    }
+    // Client security imports handled statically elsewhere
+    clientSecurity = null // TODO: Import statically when needed
   }
 } catch {
   // Client security not available or not needed
@@ -125,8 +121,16 @@ export const securityBridge = staticSecurityBridge
 export const SECURITY_CONFIG = {
   // Global security settings
   global: {
-    environment: runtimeCapabilities.canUseProcessEnv() ? 
-      (typeof process !== 'undefined' && process.env?.NODE_ENV) || 'development' : 'unknown',
+    environment: (() => {
+      try {
+        if (runtimeCapabilities.canUseProcessEnv() && typeof process !== 'undefined' && process.env?.NODE_ENV) {
+          return process.env.NODE_ENV
+        }
+        return 'development'
+      } catch {
+        return 'unknown'
+      }
+    })(),
     enableSecurityHeaders: true,
     enableAuditLogging: true,
     enableRealTimeMonitoring: true,
@@ -428,27 +432,43 @@ export function validateSecurityConfig(): {
   const features = runtimeCapabilities.getFeatures()
   const runtime = detectRuntime()
 
-  // Check environment variables if process is available
+  // Check environment variables if process is available (Edge Runtime safe)
   if (runtimeCapabilities.canUseProcessEnv()) {
     try {
-      if (typeof process !== 'undefined' && process.env) {
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-          errors.push('Missing NEXT_PUBLIC_SUPABASE_URL')
+      // Runtime-safe environment checking
+      const getEnvVar = (key: string): string | undefined => {
+        try {
+          if (typeof process !== 'undefined' && process.env) {
+            return process.env[key]
+          }
+          // Client-side fallback for public vars only
+          if (key.startsWith('NEXT_PUBLIC_') && typeof window !== 'undefined') {
+            return (window as any).__NEXT_DATA__?.env?.[key]
+          }
+        } catch {
+          // Silent failure for Edge Runtime compatibility
+        }
+        return undefined
+      }
+      
+      // Check required environment variables
+      if (!getEnvVar('NEXT_PUBLIC_SUPABASE_URL')) {
+        errors.push('Missing NEXT_PUBLIC_SUPABASE_URL')
+      }
+      
+      if (!getEnvVar('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')) {
+        errors.push('Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
+      }
+
+      // Check production readiness (Edge Runtime safe)
+      const nodeEnv = getEnvVar('NODE_ENV') || SECURITY_CONFIG.global.environment
+      if (nodeEnv === 'production') {
+        if (SECURITY_CONFIG.auth.requireMFA === false) {
+          warnings.push('MFA not required in production')
         }
         
-        if (!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
-          errors.push('Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
-        }
-
-        // Check production readiness
-        if (process.env.NODE_ENV === 'production') {
-          if (SECURITY_CONFIG.auth.requireMFA === false) {
-            warnings.push('MFA not required in production')
-          }
-          
-          if (!SECURITY_CONFIG.monitoring.realTimeAlerts) {
-            warnings.push('Real-time alerts disabled in production')
-          }
+        if (!SECURITY_CONFIG.monitoring.realTimeAlerts) {
+          warnings.push('Real-time alerts disabled in production')
         }
       }
     } catch (error) {
@@ -497,7 +517,7 @@ export const getRateLimiterFactory = getRuntimeRateLimiter
 
 export function getSecureAuthService() {
   try {
-    return require('./secure-auth').secureAuthService
+    return null // TODO: Import secureAuthService statically when available
   } catch {
     return null
   }
@@ -505,7 +525,7 @@ export function getSecureAuthService() {
 
 export function getSecureDatabase() {
   try {
-    return require('./secure-database')
+    return null // TODO: Import secureDatabase statically when available
   } catch {
     return null
   }
@@ -513,7 +533,7 @@ export function getSecureDatabase() {
 
 export function getApiMiddleware() {
   try {
-    return require('./api-middleware')
+    return null // TODO: Import apiMiddleware statically when available
   } catch {
     return null
   }

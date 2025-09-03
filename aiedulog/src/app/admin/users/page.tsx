@@ -60,7 +60,7 @@ type UserStatus = 'active' | 'suspended' | 'all'
 
 interface AdminUser {
   id: string
-  identity_id: string
+  user_id: string
   email: string
   username: string
   nickname: string | null
@@ -140,44 +140,33 @@ function UsersManagementContent() {
         throw profilesError
       }
 
-      // Get identities data
-      const identityIds = profilesData?.map(profile => profile.identity_id) || []
-      const { data: identitiesData } = identityIds.length > 0 ? await supabase
-        .from('identities')
-        .select('id, status, created_at')
-        .in('id', identityIds)
-        .eq('status', 'active') : { data: [] }
-
-      // Get auth methods data
-      const { data: authMethodsData } = identityIds.length > 0 ? await supabase
+      // Get user IDs from profiles
+      const userIds = profilesData?.map(profile => profile.user_id) || []
+      
+      // Get auth methods data  
+      const { data: authMethodsData } = userIds.length > 0 ? await supabase
         .from('auth_methods')
-        .select('identity_id, provider, last_sign_in_at, email_confirmed_at')
-        .in('identity_id', identityIds) : { data: [] }
+        .select('user_id, provider, last_sign_in_at, email_confirmed_at')
+        .in('user_id', userIds) : { data: [] }
 
-      // Create lookup maps
-      const identitiesMap = new Map()
-      identitiesData?.forEach(identity => {
-        identitiesMap.set(identity.id, identity)
-      })
-
+      // Create auth methods lookup map
       const authMethodsMap = new Map()
       authMethodsData?.forEach(auth => {
-        authMethodsMap.set(auth.identity_id, auth)
+        authMethodsMap.set(auth.user_id, auth)
       })
 
       // Transform and merge data
       let usersData = profilesData?.map((profile: any) => {
-        const identity = identitiesMap.get(profile.identity_id)
-        const authMethod = authMethodsMap.get(profile.identity_id)
+        const authMethod = authMethodsMap.get(profile.user_id)
         
-        // Only include users with active identities
-        if (!identity || identity.status !== 'active') {
+        // Only include active users
+        if (!profile.is_active) {
           return null
         }
         
         return {
-          id: profile.identity_id,
-          identity_id: profile.identity_id,
+          id: profile.user_id,
+          user_id: profile.user_id,
           email: profile.email || '',
           username: profile.username || profile.email?.split('@')[0] || '',
           nickname: profile.nickname,
@@ -187,11 +176,11 @@ function UsersManagementContent() {
           school: profile.school,
           subject: profile.subject,
           is_active: profile.is_active ?? true,
-          created_at: identity.created_at,
+          created_at: profile.created_at,
           updated_at: profile.updated_at,
           last_sign_in_at: authMethod?.last_sign_in_at,
           email_confirmed_at: authMethod?.email_confirmed_at,
-          status: identity.status
+          status: profile.is_active ? 'active' : 'inactive'
         }
       }).filter(Boolean) || [] // Filter out null values
 
@@ -241,7 +230,7 @@ function UsersManagementContent() {
       const { error } = await supabase
         .from('user_profiles')
         .update({ role: newRole })
-        .eq('identity_id', selectedUser.identity_id)
+        .eq('user_id', selectedUser.user_id)
 
       if (error) {
         console.error('Role update failed:', error)
@@ -250,7 +239,7 @@ function UsersManagementContent() {
 
       // 권한 변경 알림 전송
       try {
-        await notifyRoleChange(selectedUser.identity_id, newRole)
+        await notifyRoleChange(selectedUser.user_id, newRole)
       } catch (notificationError) {
         console.warn('Notification failed but role was updated:', notificationError)
       }
@@ -279,17 +268,13 @@ function UsersManagementContent() {
       const newActiveStatus = !selectedUser.is_active
       const newIdentityStatus = newActiveStatus ? 'active' : 'inactive'
 
-      // Update both user_profiles.is_active and identities.status
-      const [profileResult, identityResult] = await Promise.all([
-        supabase
-          .from('user_profiles')
-          .update({ is_active: newActiveStatus })
-          .eq('identity_id', selectedUser.identity_id),
-        supabase
-          .from('identities')
-          .update({ status: newIdentityStatus })
-          .eq('id', selectedUser.identity_id)
-      ])
+      // Update user_profiles.is_active (no identities table)
+      const profileResult = await supabase
+        .from('user_profiles')
+        .update({ is_active: newActiveStatus })
+        .eq('user_id', selectedUser.user_id)
+      
+      const identityResult = { error: null } // No identities table
 
       if (profileResult.error) {
         console.error('Profile status update failed:', profileResult.error)

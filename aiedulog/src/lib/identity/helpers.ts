@@ -1,97 +1,58 @@
 import { createClient as createClientClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { 
+  StableIdentityService, 
+  getIdentityService,
+  type UserProfile as ServiceUserProfile,
+  type IdentityData as ServiceIdentityData,
+  type UserStats as ServiceUserStats
+} from './stable-identity-service'
 
 /**
  * Identity System Helper Functions
+ * 
+ * UPDATED: Now uses StableIdentityService for improved reliability and performance
+ * These functions maintain backward compatibility while leveraging the new service.
+ * 
+ * The new service provides:
+ * - Email-first identity resolution using ensure_user_identity()
+ * - In-memory caching for better performance
+ * - Improved error handling and fallbacks
+ * - Future Cognito compatibility
+ * 
  * 모든 컴포넌트에서 일관된 Identity 시스템 사용을 보장
  */
 
-export interface UserProfile {
-  id: string
-  identity_id: string
-  email: string
-  nickname?: string
-  avatar_url?: string
-  role: string
-  full_name?: string
-  school?: string
-  subject?: string
-}
+// Re-export types from the service for backward compatibility
+export interface UserProfile extends ServiceUserProfile {}
+export interface IdentityData extends ServiceIdentityData {}
+export interface UserStats extends ServiceUserStats {}
 
-export interface IdentityData {
-  identity_id: string
-  profile: UserProfile
-}
+// Export service types for advanced usage
+export type { 
+  IdentityNotFoundError,
+  IdentityResolutionError,
+  ServiceConfig
+} from './stable-identity-service'
+
+// Export the error class (not interface)
+export { IdentityServiceError } from './stable-identity-service'
 
 /**
  * auth.user.id로부터 identity_id와 profile을 가져오는 통합 함수
+ * 
+ * UPDATED: Now uses StableIdentityService with ensure_user_identity() for improved reliability
+ * 
  * @param user - Supabase User object
  * @param supabaseClient - Optional Supabase client instance
+ * @returns Promise<IdentityData | null> - User identity data or null if not found
  */
 export async function getUserIdentity(user: User, supabaseClient?: any): Promise<IdentityData | null> {
-  const supabase = supabaseClient || createClientClient()
-  
   try {
-    // 실제 DB 구조에 맞춰 수정: provider_user_id로 매핑
-    const { data: authMethod } = await supabase
-      .from('auth_methods')
-      .select(`
-        identity_id,
-        provider_user_id,
-        identities!auth_methods_identity_id_fkey (
-          id,
-          status,
-          user_profiles!user_profiles_identity_id_fkey (
-            identity_id,
-            email,
-            nickname,
-            avatar_url,
-            role,
-            full_name,
-            school,
-            subject
-          )
-        )
-      `)
-      .eq('provider_user_id', user.id)
-      .single()
-
-    // Secure logging: production-safe (no console output in production)
-
-    if (authMethod?.identities?.[0]?.user_profiles?.[0]) {
-      return {
-        identity_id: authMethod.identities[0].id,
-        profile: {
-          id: authMethod.identity_id,
-          identity_id: authMethod.identities[0].id,
-          email: authMethod.identities[0].user_profiles[0].email,
-          nickname: authMethod.identities[0].user_profiles[0].nickname,
-          avatar_url: authMethod.identities[0].user_profiles[0].avatar_url,
-          role: authMethod.identities[0].user_profiles[0].role,
-          full_name: authMethod.identities[0].user_profiles[0].full_name,
-          school: authMethod.identities[0].user_profiles[0].school,
-          subject: authMethod.identities[0].user_profiles[0].subject
-        }
-      }
-    }
-    
-    // Fallback: user_profiles 테이블에서 직접 찾기
-    // Secure logging: production-safe (no console output in production)
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    
-    if (profile) {
-      return {
-        identity_id: profile.identity_id,
-        profile: profile
-      }
-    }
-    
-    return null
+    const service = getIdentityService(supabaseClient)
+    return await service.resolveUserIdentity(user)
   } catch (error) {
+    // Maintain backward compatibility by returning null on error
     console.error('Failed to get user identity:', error)
     return null
   }
@@ -99,28 +60,44 @@ export async function getUserIdentity(user: User, supabaseClient?: any): Promise
 
 /**
  * 채팅 메시지 전송용 - identity_id 반환
+ * 
+ * UPDATED: Now uses StableIdentityService for better performance
  */
-export async function getIdentityId(user: User): Promise<string | null> {
-  const identity = await getUserIdentity(user)
-  return identity?.identity_id || null
+export async function getIdentityId(user: User, supabaseClient?: any): Promise<string | null> {
+  try {
+    const service = getIdentityService(supabaseClient)
+    return await service.getIdentityId(user)
+  } catch (error) {
+    console.error('Failed to get identity ID:', error)
+    return null
+  }
 }
 
 /**
  * 사용자 표시명 반환
+ * 
+ * UPDATED: Now uses StableIdentityService for consistent display name logic
  */
 export function getDisplayName(profile: UserProfile): string {
-  return profile.nickname || profile.email?.split('@')[0] || 'Anonymous'
+  const service = getIdentityService()
+  return service.getDisplayName(profile)
 }
 
 /**
  * 메시지 소유자 확인
+ * 
+ * UPDATED: Now uses StableIdentityService for consistent ownership logic
  */
 export function isMessageOwner(messageSenderId: string, currentUserIdentityId?: string): boolean {
-  return messageSenderId === currentUserIdentityId
+  const service = getIdentityService()
+  return service.isMessageOwner(messageSenderId, currentUserIdentityId)
 }
 
 /**
  * 사용자 검색 - 통합 identity 시스템 활용
+ * 
+ * UPDATED: Now uses StableIdentityService with caching for better performance
+ * 
  * @param searchText - 검색어
  * @param supabaseClient - Optional Supabase client instance
  * @param excludeUserId - 제외할 사용자 ID (옵션)
@@ -132,49 +109,9 @@ export async function searchUsers(
   excludeUserId?: string,
   limit: number = 10
 ): Promise<UserProfile[]> {
-  if (!searchText.trim()) return []
-  
-  const supabase = supabaseClient || createClientClient()
-  
   try {
-    let query = supabase
-      .from('user_profiles')
-      .select(`
-        identity_id,
-        email,
-        nickname,
-        avatar_url,
-        role,
-        full_name,
-        school,
-        subject
-      `)
-      .or(`nickname.ilike.%${searchText}%,email.ilike.%${searchText}%,full_name.ilike.%${searchText}%`)
-      .limit(limit)
-      
-    if (excludeUserId) {
-      query = query.neq('identity_id', excludeUserId)
-    }
-    
-    const { data, error } = await query
-    
-    if (error) {
-      console.error('Error searching users:', error)
-      return []
-    }
-    
-    return data?.map((user: any) => ({
-      id: user.identity_id,
-      identity_id: user.identity_id,
-      email: user.email,
-      nickname: user.nickname,
-      avatar_url: user.avatar_url,
-      role: user.role,
-      full_name: user.full_name,
-      school: user.school,
-      subject: user.subject
-    })) || []
-    
+    const service = getIdentityService(supabaseClient)
+    return await service.searchUsers(searchText, limit, excludeUserId)
   } catch (error) {
     console.error('Failed to search users:', error)
     return []
@@ -183,41 +120,13 @@ export async function searchUsers(
 
 /**
  * 사용자 통계 조회 - 통합 identity 시스템 활용
+ * 
+ * UPDATED: Now uses StableIdentityService with caching and parallel queries
  */
-export async function getUserStats(supabaseClient?: any) {
-  const supabase = supabaseClient || createClientClient()
-  
+export async function getUserStats(supabaseClient?: any): Promise<UserStats> {
   try {
-    // Active identities 기반 통계
-    const { count: totalUsers } = await supabase
-      .from('identities')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-
-    const { count: newUsersToday } = await supabase
-      .from('identities')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
-
-    // user_profiles 기반 역할 통계
-    const { count: verifiedTeachers } = await supabase
-      .from('user_profiles')
-      .select('identity_id', { count: 'exact', head: true })
-      .eq('role', 'verified')
-
-    const { count: activeUsers } = await supabase
-      .from('identities')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      
-    return {
-      totalUsers: totalUsers || 0,
-      newUsersToday: newUsersToday || 0,
-      verifiedTeachers: verifiedTeachers || 0,
-      activeUsers: activeUsers || 0
-    }
-    
+    const service = getIdentityService(supabaseClient)
+    return await service.getUserStats()
   } catch (error) {
     console.error('Failed to get user stats:', error)
     return {
@@ -227,4 +136,47 @@ export async function getUserStats(supabaseClient?: any) {
       activeUsers: 0
     }
   }
+}
+
+// =====================================================================
+// ADVANCED SERVICE ACCESS
+// =====================================================================
+
+/**
+ * Get the StableIdentityService instance for advanced usage
+ * 
+ * This allows components to access advanced features like:
+ * - Cache management
+ * - Configuration updates
+ * - Error handling
+ * - Performance monitoring
+ */
+export function getAdvancedIdentityService(supabaseClient?: any): StableIdentityService {
+  return getIdentityService(supabaseClient)
+}
+
+/**
+ * Clear identity cache for a specific user
+ * Useful when user data has been updated
+ */
+export function clearUserIdentityCache(userId: string): void {
+  const service = getIdentityService()
+  service.clearUserCache(userId)
+}
+
+/**
+ * Clear all identity cache
+ * Useful for testing or when major data changes occur
+ */
+export function clearAllIdentityCache(): void {
+  const service = getIdentityService()
+  service.clearCache()
+}
+
+/**
+ * Get identity service cache statistics
+ */
+export function getIdentityCacheStats(): { size: number; keys: string[] } {
+  const service = getIdentityService()
+  return service.getCacheStats()
 }

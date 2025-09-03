@@ -174,8 +174,7 @@ class HealthChecker {
             // Check for required dependencies
             const requiredDeps = [
                 '@supabase/ssr',
-                '@supabase/supabase-js',
-                'string-replace-loader'
+                '@supabase/supabase-js'
             ];
 
             requiredDeps.forEach(dep => {

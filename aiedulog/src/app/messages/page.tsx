@@ -10,7 +10,7 @@ import {
   Stack,
   useTheme,
   alpha,
-  GridLegacy as Grid,
+  
   Fab,
   Avatar,
   Chip,
@@ -41,6 +41,7 @@ import {
   Collapse,
   Paper,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Add,
   Search,
@@ -383,7 +384,6 @@ export default function MessagesPage() {
   return (
     <Box sx={{ bgcolor: '#FAFCFE', minHeight: '100vh', fontFamily: 'Noto Sans KR, sans-serif' }}>
       <AppHeader user={user} profile={profile} />
-      
       {/* Hero Section */}
       <Box
         sx={{
@@ -504,12 +504,11 @@ export default function MessagesPage() {
           </motion.div>
         </Container>
       </Box>
-
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={3}>
           {/* Filter Tabs */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Card sx={{ mb: 3, borderRadius: 2, overflow: 'hidden' }}>
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs
@@ -570,7 +569,7 @@ export default function MessagesPage() {
           </Grid>
 
           {/* Messages List */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Card sx={{ borderRadius: 2, overflow: 'hidden' }}>
               {loading ? (
                 <Box sx={{ p: 3 }}>
@@ -720,7 +719,6 @@ export default function MessagesPage() {
           </Grid>
         </Grid>
       </Container>
-
       {/* Floating Action Button */}
       <Fab
         color="primary"
@@ -738,7 +736,6 @@ export default function MessagesPage() {
       >
         <Add />
       </Fab>
-
       {/* Message Detail Dialog */}
       <Dialog
         open={messageDetailOpen}
@@ -820,7 +817,6 @@ export default function MessagesPage() {
           </>
         )}
       </Dialog>
-
       {/* Compose Dialog */}
       <Dialog
         open={composeOpen}
@@ -952,9 +948,8 @@ export default function MessagesPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Dynamic Footer */}
       <DynamicFooter language="ko" />
     </Box>
-  )
+  );
 }

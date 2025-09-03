@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Box,
   Container,
-  GridLegacy as Grid,
+  
   Typography,
   Stack,
   IconButton,
@@ -13,6 +13,7 @@ import {
   Link as MuiLink,
   CircularProgress,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   YouTube,
   LinkedIn,
@@ -205,12 +206,23 @@ export default function DynamicFooter({ language = 'ko' }: DynamicFooterProps) {
     >
       <Container maxWidth="xl">
         {footerData.categories.length > 0 && (
-          <Grid container spacing={6} justifyContent="center">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(2, 1fr)', // Mobile: 2 columns
+                sm: 'repeat(2, 1fr)', // Tablet: 2 columns  
+                md: 'repeat(4, 1fr)', // Desktop: 4 columns
+                lg: 'repeat(4, 1fr)', // Large: 4 columns
+              },
+              gap: 3, // Same as hero section
+            }}
+          >
             {footerData.categories
               .filter((category) => category.is_active)
               .sort((a, b) => a.display_order - b.display_order)
               .map((category) => (
-                <Grid key={category.id} xs={6} sm={6} md={3} lg={3}>
+                <Box key={category.id}>
                   <Typography
                     variant="subtitle2"
                     sx={{
@@ -242,9 +254,9 @@ export default function DynamicFooter({ language = 'ko' }: DynamicFooterProps) {
                         </MuiLink>
                       ))}
                   </Stack>
-                </Grid>
+                </Box>
               ))}
-          </Grid>
+          </Box>
         )}
 
         {/* Bottom bar */}
@@ -280,31 +292,6 @@ export default function DynamicFooter({ language = 'ko' }: DynamicFooterProps) {
           )}
         </Box>
 
-        {/* Additional footer info if available */}
-        {(getSetting('contact_email') || getSetting('contact_phone') || getSetting('address_ko')) && (
-          <>
-            <Divider sx={{ borderColor: '#333', my: 2 }} />
-            <Box sx={{ textAlign: 'center' }}>
-              <Stack spacing={1}>
-                {getSetting('contact_email') && (
-                  <Typography variant="body2" sx={{ color: '#888', fontSize: '0.75rem' }}>
-                    Email: {getSetting('contact_email')}
-                  </Typography>
-                )}
-                {getSetting('contact_phone') && (
-                  <Typography variant="body2" sx={{ color: '#888', fontSize: '0.75rem' }}>
-                    Phone: {getSetting('contact_phone')}
-                  </Typography>
-                )}
-                {getSetting(language === 'en' ? 'address_en' : 'address_ko') && (
-                  <Typography variant="body2" sx={{ color: '#888', fontSize: '0.75rem' }}>
-                    {getSetting(language === 'en' ? 'address_en' : 'address_ko')}
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
-          </>
-        )}
       </Container>
     </Box>
   )

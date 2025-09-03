@@ -5,10 +5,11 @@ import {
   Box,
   Typography,
   Container,
-  GridLegacy as Grid,
+  
   useTheme,
   alpha,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import { motion, useInView } from 'framer-motion'
 import { getLocalizedText } from '@/lib/content-client'
 import type { LanguageCode, StatsContent } from '@/types/content-management'
@@ -126,7 +127,6 @@ export function StatsBlock({
           {getLocalizedText(content.title, language)}
         </MotionTypography>
       )}
-
       <MotionGrid 
         container 
         spacing={4}
@@ -137,7 +137,13 @@ export function StatsBlock({
           const animatedValue = useCounter(stat.number, isInView, 1500 + (index * 200))
           
           return (
-            <Grid item xs={12} sm={6} md={3} key={stat.id || index}>
+            <Grid
+              key={stat.id || index}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3
+              }}>
               <MotionBox
                 variants={shouldAnimate ? getVariants(statsVariants) : undefined}
                 whileHover={shouldAnimate ? { 
@@ -196,9 +202,9 @@ export function StatsBlock({
                 </MotionTypography>
               </MotionBox>
             </Grid>
-          )
+          );
         })}
       </MotionGrid>
     </MotionContainer>
-  )
+  );
 }

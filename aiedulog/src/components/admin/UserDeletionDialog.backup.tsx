@@ -34,7 +34,7 @@ import { createClient } from '@/lib/supabase/client'
 
 interface AdminUser {
   id: string
-  identity_id: string
+  user_id: string
   email: string
   username: string
   nickname: string | null
@@ -85,10 +85,10 @@ export default function UserDeletionDialog({
     setStatsLoading(true)
     try {
       const [postsResult, commentsResult, lecturesResult, uploadsResult] = await Promise.all([
-        supabase.from('posts').select('id', { count: 'exact' }).eq('author_id', user.identity_id),
-        supabase.from('comments').select('id', { count: 'exact' }).eq('author_id', user.identity_id),
-        supabase.from('lecture_registrations').select('id', { count: 'exact' }).eq('user_id', user.identity_id),
-        supabase.from('file_uploads').select('id', { count: 'exact' }).eq('uploaded_by', user.identity_id),
+        supabase.from('posts').select('id', { count: 'exact' }).eq('author_id', user.user_id),
+        supabase.from('comments').select('id', { count: 'exact' }).eq('author_id', user.user_id),
+        supabase.from('lecture_registrations').select('id', { count: 'exact' }).eq('user_id', user.user_id),
+        supabase.from('file_uploads').select('id', { count: 'exact' }).eq('uploaded_by', user.user_id),
       ])
 
       setUserStats({
@@ -126,7 +126,7 @@ export default function UserDeletionDialog({
 
       // Log deletion audit
       await supabase.from('user_deletion_audit').insert([{
-        deleted_user_id: user.identity_id,
+        deleted_user_id: user.user_id,
         deleted_by: currentUserData.user?.id,
         deletion_type: deletionType,
         reason,
@@ -160,7 +160,7 @@ export default function UserDeletionDialog({
         deleted_at: new Date().toISOString(),
         is_active: false 
       })
-      .eq('identity_id', user!.identity_id)
+      .eq('identity_id', user!.user_id)
 
     await supabase
       .from('identities')
@@ -168,7 +168,7 @@ export default function UserDeletionDialog({
         deleted_at: new Date().toISOString(),
         status: 'deleted' 
       })
-      .eq('id', user!.identity_id)
+      .eq('id', user!.user_id)
 
     // Handle content based on selected action
     if (contentAction === 'anonymize') {
@@ -188,7 +188,7 @@ export default function UserDeletionDialog({
     await supabase
       .from('identities')
       .delete()
-      .eq('id', user!.identity_id)
+      .eq('id', user!.user_id)
   }
 
   const anonymizeUserContent = async () => {
@@ -202,13 +202,13 @@ export default function UserDeletionDialog({
     await supabase
       .from('posts')
       .update(anonymizedData)
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
 
     // Anonymize comments
     await supabase
       .from('comments')
       .update(anonymizedData)
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
   }
 
   const deleteUserContent = async () => {
@@ -216,19 +216,19 @@ export default function UserDeletionDialog({
     await supabase
       .from('posts')
       .delete()
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
 
     // Delete user's standalone comments
     await supabase
       .from('comments')
       .delete()
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
 
     // Cancel lecture registrations
     await supabase
       .from('lecture_registrations')
       .update({ status: 'cancelled' })
-      .eq('user_id', user!.identity_id)
+      .eq('user_id', user!.user_id)
   }
 
   if (!user) return null

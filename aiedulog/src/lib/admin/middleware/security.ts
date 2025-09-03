@@ -6,6 +6,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { AuditService } from '../services/audit-service';
+import { getUserIdentity } from '@/lib/identity/helpers';
 
 export interface SecurityContext {
   userId?: string;
@@ -79,13 +80,9 @@ export class SecurityMiddleware {
       }
 
       // 3. Get admin identity
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', user.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(user.user, this.supabase);
+      
+      if (!adminIdentity) {
         return {
           success: false,
           error: 'Admin profile not found'
@@ -94,7 +91,7 @@ export class SecurityMiddleware {
 
       // 4. Validate admin session
       const sessionValidation = await this.validateAdminSession(
-        adminProfile.identity_id,
+        adminIdentity.user_id,
         ipAddress,
         userAgent
       );
@@ -108,12 +105,12 @@ export class SecurityMiddleware {
       }
 
       // 5. Get user permissions
-      const permissions = await this.getUserPermissions(adminProfile.identity_id);
+      const permissions = await this.getUserPermissions(adminIdentity.user_id);
 
       // 6. Calculate risk score
       const riskScore = await this.calculateRiskScore({
         userId: user.user.id,
-        adminId: adminProfile.identity_id,
+        adminId: adminIdentity.user_id,
         ipAddress,
         userAgent,
         sessionAge: sessionValidation.sessionAge
@@ -125,7 +122,7 @@ export class SecurityMiddleware {
           event_type: 'security_incident',
           event_category: 'security',
           actor_type: 'admin',
-          // actor_id: adminProfile.identity_id,
+          // actor_id: adminIdentity.user_id,
           action: 'high_risk_access',
           description: `High risk admin access detected (score: ${riskScore})`,
           severity: 'warning',
@@ -139,7 +136,7 @@ export class SecurityMiddleware {
 
       const context: SecurityContext = {
         userId: user.user.id,
-        adminId: adminProfile.identity_id,
+        adminId: adminIdentity.user_id,
         sessionId: sessionValidation.sessionId,
         ipAddress,
         userAgent,

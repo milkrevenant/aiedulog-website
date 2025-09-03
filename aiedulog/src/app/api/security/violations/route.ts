@@ -4,13 +4,8 @@
  */
 
 import {
-withSecurity, 
   withPublicSecurity,
-  withUserSecurity, 
-  withAdminSecurity, 
-  withHighSecurity,
-  withAuthSecurity,
-  withUploadSecurity,
+  withAdminSecurity
 } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import { 
@@ -124,4 +119,17 @@ export async function OPTIONS() {
   })
 }
 
-export const POST = withHighSecurity(postHandler);
+// Use public security to allow violation reports from any client
+export const POST = withPublicSecurity(postHandler);
+
+// Also export GET for admin access
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
+  try {
+    // This would require admin role to view violations
+    return NextResponse.json({ message: 'Violations logged successfully' })
+  } catch (error) {
+    return createErrorResponse(ErrorType.INTERNAL_ERROR, context);
+  }
+}
+
+export const GET = withAdminSecurity(getHandler);

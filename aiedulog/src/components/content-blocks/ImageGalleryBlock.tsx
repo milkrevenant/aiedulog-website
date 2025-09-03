@@ -5,9 +5,10 @@ import {
   Box,
   Typography,
   Container,
-  GridLegacy as Grid,
+  
   useTheme,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import { getLocalizedText } from '@/lib/content-client'
 import type { LanguageCode, ImageGalleryContent } from '@/types/content-management'
 
@@ -64,7 +65,7 @@ export function ImageGalleryBlock({
 
       <Grid container spacing={3}>
         {content.items?.map((image, index) => (
-          <Grid item {...getGridColumns()} key={image.id || index}>
+          <Grid size={getGridColumns()} key={image.id || index}>
             <Box
               onClick={() => handleImageClick(image, index)}
               sx={{

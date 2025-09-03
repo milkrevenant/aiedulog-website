@@ -24,7 +24,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext, { para
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
-      .eq('identity_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {
@@ -70,7 +70,7 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext, { p
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
-      .eq('identity_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (!profile || profile.role !== 'admin') {

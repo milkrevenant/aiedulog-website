@@ -6,7 +6,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   Button,
@@ -33,6 +33,7 @@ import {
   Paper,
   Divider,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -248,7 +249,12 @@ export default function RegularMeetingsPage() {
 
         {/* 통계 카드 */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -265,7 +271,12 @@ export default function RegularMeetingsPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -282,7 +293,12 @@ export default function RegularMeetingsPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -299,7 +315,12 @@ export default function RegularMeetingsPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -323,7 +344,11 @@ export default function RegularMeetingsPage() {
         {/* 모임 목록 */}
         <Grid container spacing={3}>
           {/* 예정된 모임 */}
-          <Grid item xs={12} lg={4}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 4
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography
                 variant="h6"
@@ -388,7 +413,11 @@ export default function RegularMeetingsPage() {
           </Grid>
 
           {/* 진행중 모임 */}
-          <Grid item xs={12} lg={4}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 4
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography
                 variant="h6"
@@ -442,7 +471,11 @@ export default function RegularMeetingsPage() {
           </Grid>
 
           {/* 지난 모임 */}
-          <Grid item xs={12} lg={4}>
+          <Grid
+            size={{
+              xs: 12,
+              lg: 4
+            }}>
             <Paper sx={{ p: 2 }}>
               <Typography
                 variant="h6"
@@ -542,7 +575,7 @@ export default function RegularMeetingsPage() {
               </LocalizationProvider>
 
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="시작 시간"
                     fullWidth
@@ -553,7 +586,7 @@ export default function RegularMeetingsPage() {
                     placeholder="14:00"
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="종료 시간"
                     fullWidth
@@ -656,5 +689,5 @@ export default function RegularMeetingsPage() {
         </Dialog>
       </Container>
     </AuthGuard>
-  )
+  );
 }

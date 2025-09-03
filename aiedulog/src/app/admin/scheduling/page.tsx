@@ -21,7 +21,7 @@ import {
   IconButton,
   Alert,
   CircularProgress,
-  GridLegacy as Grid,
+  
   Table,
   TableBody,
   TableCell,
@@ -44,6 +44,7 @@ import {
   Breadcrumbs,
   Link
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Dashboard,
   People,
@@ -176,7 +177,11 @@ function DashboardTab() {
     <Box>
       {/* Key Metrics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -196,7 +201,11 @@ function DashboardTab() {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -216,7 +225,11 @@ function DashboardTab() {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -236,7 +249,11 @@ function DashboardTab() {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 3
+          }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -256,17 +273,24 @@ function DashboardTab() {
           </Card>
         </Grid>
       </Grid>
-
       {/* Status Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={8}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 8
+          }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 예약 현황
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
+                <Grid
+                  size={{
+                    xs: 6,
+                    md: 3
+                  }}>
                   <Box sx={{ textAlign: 'center', p: 2 }}>
                     <CheckCircle sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
                     <Typography variant="h5" fontWeight="bold">
@@ -277,7 +301,11 @@ function DashboardTab() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid
+                  size={{
+                    xs: 6,
+                    md: 3
+                  }}>
                   <Box sx={{ textAlign: 'center', p: 2 }}>
                     <Schedule sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
                     <Typography variant="h5" fontWeight="bold">
@@ -288,7 +316,11 @@ function DashboardTab() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid
+                  size={{
+                    xs: 6,
+                    md: 3
+                  }}>
                   <Box sx={{ textAlign: 'center', p: 2 }}>
                     <Event sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
                     <Typography variant="h5" fontWeight="bold">
@@ -299,7 +331,11 @@ function DashboardTab() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid
+                  size={{
+                    xs: 6,
+                    md: 3
+                  }}>
                   <Box sx={{ textAlign: 'center', p: 2 }}>
                     <Cancel sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
                     <Typography variant="h5" fontWeight="bold">
@@ -315,7 +351,11 @@ function DashboardTab() {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 4
+          }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
@@ -351,7 +391,6 @@ function DashboardTab() {
           </Card>
         </Grid>
       </Grid>
-
       {/* Recent Appointments */}
       <Card>
         <CardContent>
@@ -467,7 +506,7 @@ function DashboardTab() {
         </CardContent>
       </Card>
     </Box>
-  )
+  );
 }
 
 function InstructorsTab() {
@@ -483,10 +522,15 @@ function InstructorsTab() {
           강사 추가
         </Button>
       </Stack>
-
       <Grid container spacing={3}>
         {instructors.map((instructor) => (
-          <Grid item xs={12} md={6} lg={4} key={instructor.id}>
+          <Grid
+            key={instructor.id}
+            size={{
+              xs: 12,
+              md: 6,
+              lg: 4
+            }}>
             <Card>
               <CardContent>
                 <Stack spacing={2}>
@@ -525,7 +569,7 @@ function InstructorsTab() {
                   </Stack>
 
                   <Grid container spacing={2}>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h6" fontWeight="bold" color="info.main">
                           {instructor.completionRate}%
@@ -535,7 +579,7 @@ function InstructorsTab() {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                       <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h6" fontWeight="bold" color="success.main">
                           {(instructor.revenue / 1000000).toFixed(1)}M
@@ -562,7 +606,7 @@ function InstructorsTab() {
         ))}
       </Grid>
     </Box>
-  )
+  );
 }
 
 function CalendarTab() {
@@ -573,9 +617,12 @@ function CalendarTab() {
       <Typography variant="h6" fontWeight="bold" gutterBottom>
         전체 캘린더
       </Typography>
-      
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 4
+          }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -616,7 +663,11 @@ function CalendarTab() {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={8}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 8
+          }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -641,7 +692,7 @@ function CalendarTab() {
         </Grid>
       </Grid>
     </Box>
-  )
+  );
 }
 
 function SettingsTab() {
@@ -658,9 +709,12 @@ function SettingsTab() {
       <Typography variant="h6" fontWeight="bold" gutterBottom>
         시스템 설정
       </Typography>
-      
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 6
+          }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -718,7 +772,11 @@ function SettingsTab() {
           </Card>
         </Grid>
         
-        <Grid item xs={12} md={6}>
+        <Grid
+          size={{
+            xs: 12,
+            md: 6
+          }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -745,7 +803,7 @@ function SettingsTab() {
         </Grid>
       </Grid>
     </Box>
-  )
+  );
 }
 
 function AdminSchedulingContent() {

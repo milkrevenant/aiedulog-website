@@ -25,6 +25,7 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { Visibility, VisibilityOff, Google, Email, Lock, School } from '@mui/icons-material'
+import { ActivityTracker } from '@/lib/auth/activity-tracker'
 
 function LoginContent() {
   const [email, setEmail] = useState('')
@@ -63,10 +64,16 @@ function LoginContent() {
     setError(null)
 
     try {
+      // 로그인 유지 설정을 ActivityTracker에 저장
+      ActivityTracker.setRememberMe(rememberMe)
+      
       // Use the new identity-based sign in
       const authData = await signIn(email, password)
 
       if (authData) {
+        // 활동 추적 초기화
+        ActivityTracker.initialize()
+        
         // Check for MFA if needed (keeping existing MFA logic for now)
         // This would be enhanced later to work with the identity system
         
@@ -265,11 +272,22 @@ function LoginContent() {
                   control={
                     <Checkbox
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={(e) => {
+                        setRememberMe(e.target.checked)
+                        // 즉시 ActivityTracker에도 반영 (로그인 전에도 설정값 저장)
+                        ActivityTracker.setRememberMe(e.target.checked)
+                      }}
                       size="small"
                     />
                   }
-                  label={<Typography variant="body2">로그인 상태 유지</Typography>}
+                  label={
+                    <Typography variant="body2">
+                      로그인 상태 유지 
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        (체크 시 자동 로그아웃 안함)
+                      </Typography>
+                    </Typography>
+                  }
                 />
                 <Link href="/auth/reset-password" style={{ textDecoration: 'none' }}>
                   <Typography variant="body2" color="primary" sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>

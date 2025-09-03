@@ -5,7 +5,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   Button,
@@ -22,6 +22,7 @@ import {
   ListItemText,
   Paper
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   CheckCircle,
   CalendarToday,
@@ -237,7 +238,6 @@ function ConfirmationPageContent() {
           </Stack>
         </Container>
       </Box>
-
       <Container maxWidth="md" sx={{ py: 4 }}>
         {/* Appointment Details */}
         <Card sx={{ mb: 4 }}>
@@ -276,7 +276,11 @@ function ConfirmationPageContent() {
               {/* Key Details */}
               <Grid container spacing={3}>
                 {/* Date */}
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <CalendarToday color="primary" />
                     <Box>
@@ -291,7 +295,11 @@ function ConfirmationPageContent() {
                 </Grid>
 
                 {/* Time */}
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <AccessTime color="primary" />
                     <Box>
@@ -309,7 +317,11 @@ function ConfirmationPageContent() {
                 </Grid>
 
                 {/* Meeting Type */}
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <MeetingIcon color="primary" />
                     <Box>
@@ -329,7 +341,11 @@ function ConfirmationPageContent() {
                 </Grid>
 
                 {/* Appointment ID */}
-                <Grid item xs={12} sm={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <Event color="primary" />
                     <Box>
@@ -493,7 +509,7 @@ function ConfirmationPageContent() {
         </Alert>
       </Container>
     </Box>
-  )
+  );
 }
 
 export default function ConfirmationPage() {

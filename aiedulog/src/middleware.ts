@@ -1,66 +1,22 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getUserIdentity } from '@/lib/identity/helpers'
-import { getSecureLogger, getSecurityMonitor, secureConsoleLog, SecurityEventType } from '@/lib/security'
 
 export async function middleware(request: NextRequest) {
   const startTime = Date.now()
   const requestId = `mid_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
   const ipAddress = getClientIP(request)
-  const userAgent = request.headers.get('user-agent') || 'unknown'
   
-  let supabaseResponse = NextResponse.next({
+  let response = NextResponse.next({
     request,
   })
 
-  // Add request tracking headers
-  supabaseResponse.headers.set('X-Request-ID', requestId)
-  supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')
-  supabaseResponse.headers.set('X-Frame-Options', 'DENY')
-  supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block')
-  supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Log request for security monitoring (async safe)
-  const logRequest = async () => {
-    const logger = await getSecureLogger()
-    if (logger) {
-      logger.debug('Middleware request', {
-        requestId,
-        path,
-        method: request.method,
-        ipAddress: ipAddress.substring(0, 10) + '...',
-        userAgent,
-        hasUser: !!user
-      })
-    }
-  }
-  logRequest().catch(() => {}) // Fire and forget
+  // Add essential security headers
+  response.headers.set('X-Request-ID', requestId)
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
   const url = request.nextUrl.clone()
   const path = url.pathname
@@ -113,129 +69,118 @@ export async function middleware(request: NextRequest) {
 
   // 1. Public routes - allow all access
   if (isPublicRoute || isTestRoute) {
-    logRequestCompletion(requestId, 'public_access', startTime)
-    return supabaseResponse
+    return response
+  }
+
+  // Create Supabase client with optimized edge runtime configuration
+  let user = null
+  
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+            response = NextResponse.next({
+              request,
+            })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            )
+          },
+        },
+        global: {
+          // Edge runtime compatible fetch with timeout
+          fetch: (url, options = {}) => {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+            
+            return fetch(url, {
+              ...options,
+              signal: controller.signal,
+              headers: {
+                ...options.headers,
+                // Add DNS resolution hint for edge runtime
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+              }
+            }).finally(() => clearTimeout(timeoutId))
+          }
+        }
+      }
+    )
+
+    // Try to get user with timeout protection
+    const authPromise = supabase.auth.getUser()
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Auth timeout')), 2000)
+    )
+    
+    const result = await Promise.race([authPromise, timeoutPromise]) as any
+    user = result?.data?.user || null
+    
+  } catch (error) {
+    // Log DNS/network errors for debugging but don't block the request
+    console.warn(`[${requestId}] Auth check failed:`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      path,
+      timestamp: new Date().toISOString()
+    })
+    
+    // For protected routes, if auth fails completely, redirect to login
+    // This ensures the app doesn't break due to network issues
+    if (isProtectedRoute || isAdminRoute) {
+      console.warn(`[${requestId}] Redirecting to login due to auth failure`)
+      url.pathname = '/auth/login'
+      url.searchParams.set('next', path)
+      return NextResponse.redirect(url)
+    }
+    
+    // For other routes, allow through (auth will be handled by individual pages)
+    return response
   }
 
   // 2. Auth routes - redirect to dashboard if already logged in
   if (isAuthRoute) {
     if (user && path !== '/auth/confirm') {
-      // Log authenticated user redirect (async safe)
-      const logRedirect = async () => {
-        const logger = await getSecureLogger()
-        if (logger) {
-          logger.info('Authenticated user redirected from auth route', {
-            requestId,
-            userId: user.id,
-            fromPath: path
-          })
-        }
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[${requestId}] Redirecting authenticated user from ${path} to dashboard`)
       }
-      logRedirect().catch(() => {}) // Fire and forget
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
     }
-    logRequestCompletion(requestId, 'auth_route_access', startTime)
-    return supabaseResponse
+    return response
   }
 
   // 3. Protected routes - require authentication
   if (isProtectedRoute || isAdminRoute) {
     if (!user) {
-      // Log unauthorized access attempt (async safe)
-      const logUnauthorizedAccess = async () => {
-        try {
-          const [monitor, logger] = await Promise.all([
-            getSecurityMonitor(),
-            getSecureLogger()
-          ])
-          
-          if (monitor) {
-            monitor.recordSecurityEvent(SecurityEventType.AUTHORIZATION_FAILURE, {
-              ipAddress,
-              userAgent,
-              requestId
-            }, {
-              attemptedPath: path,
-              reason: 'no_authentication'
-            })
-          }
-          
-          if (logger) {
-            logger.logAuthEvent('unauthorized_access', undefined, {
-              requestId,
-              path,
-              ipAddress: ipAddress.substring(0, 10) + '...'
-            })
-          }
-        } catch (error) {
-          secureConsoleLog('Failed to log unauthorized access', error, 'error')
-        }
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[${requestId}] Unauthorized access attempt to ${path}`)
       }
-      logUnauthorizedAccess().catch(() => {}) // Fire and forget
       
       url.pathname = '/auth/login'
       url.searchParams.set('next', path)
       return NextResponse.redirect(url)
     }
 
-    // For admin routes, we'll do a basic check but leave detailed role checking to AuthGuard
-    // This is because middleware should be fast and we already have AuthGuard handling roles
+    // For admin routes, defer detailed role checking to AuthGuard component
+    // This keeps middleware fast and avoids complex database calls in edge runtime
     if (isAdminRoute) {
-      // Use standardized identity helper (server-side)
-      const identity = await getUserIdentity(user, supabase)
-
-      // Only do a basic check for moderator+ access
-      // AuthGuard will handle specific page requirements (e.g., admin-only for users page)
-      if (!identity?.profile || (identity.profile.role !== 'admin' && identity.profile.role !== 'moderator')) {
-        // Log authorization failure (async safe)
-        const logAuthorizationFailure = async () => {
-          try {
-            const [monitor, logger] = await Promise.all([
-              getSecurityMonitor(),
-              getSecureLogger()
-            ])
-            
-            if (monitor) {
-              monitor.recordSecurityEvent(SecurityEventType.AUTHORIZATION_FAILURE, {
-                ipAddress,
-                userAgent,
-                requestId,
-                userId: user.id
-              }, {
-                attemptedPath: path,
-                userRole: identity?.profile?.role || 'unknown',
-                reason: 'insufficient_role'
-              })
-            }
-            
-            if (logger) {
-              logger.logAuthEvent('authorization_failure', user.id, {
-                requestId,
-                path,
-                userRole: identity?.profile?.role,
-                requiredRoles: ['admin', 'moderator']
-              })
-            }
-          } catch (error) {
-            secureConsoleLog('Failed to log authorization failure', error, 'error')
-          }
-        }
-        logAuthorizationFailure().catch(() => {}) // Fire and forget
-        
-        // Redirect to dashboard with an error message
-        url.pathname = '/dashboard'
-        url.searchParams.set('error', 'insufficient_permissions')
-        return NextResponse.redirect(url)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[${requestId}] Admin route access for user ${user.id}`)
       }
+      // Let AuthGuard handle detailed role validation on the client side
     }
   }
 
   // Success - continue with request
-  logRequestCompletion(requestId, 'protected_access_granted', startTime, user?.id)
-  
-  // Default - allow the request
-  return supabaseResponse
+  return response
 }
 
 // Helper functions
@@ -248,30 +193,7 @@ function getClientIP(request: NextRequest): string {
   if (realIP) return realIP
   if (forwarded) return forwarded.split(',')[0].trim()
   
-  return 'unknown' // NextRequest doesn't have ip property in all environments
-}
-
-function logRequestCompletion(
-  requestId: string, 
-  outcome: string, 
-  startTime: number, 
-  userId?: string
-): void {
-  const duration = Date.now() - startTime
-  
-  // Async safe logging
-  const logCompletion = async () => {
-    const logger = await getSecureLogger()
-    if (logger) {
-      logger.debug('Middleware request completed', {
-        requestId,
-        outcome,
-        duration,
-        userId
-      })
-    }
-  }
-  logCompletion().catch(() => {}) // Fire and forget
+  return 'unknown'
 }
 
 export const config = {

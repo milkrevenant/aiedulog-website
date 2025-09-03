@@ -124,7 +124,7 @@ export function safeGetEnv(key: string, fallback?: string): string | undefined {
 /**
  * Check if we're in production safely
  */
-export function isProduction(): boolean {
+export function isProductionRuntime(): boolean {
   return safeGetEnv('NODE_ENV') === 'production'
 }
 
@@ -195,7 +195,7 @@ export default {
   console: safeConsole,
   detectRuntime,
   safeGetEnv,
-  isProduction,
+  isProduction: isProductionRuntime,
   isServerSide,
   sanitizeForLogging
 }

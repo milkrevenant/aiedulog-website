@@ -13,7 +13,7 @@ import {
   Container,
   Typography,
   Paper,
-  GridLegacy as Grid,
+  
   Card,
   CircularProgress,
   CardContent,
@@ -31,6 +31,7 @@ import {
   LinearProgress,
   Alert,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   SupervisorAccount,
   Assessment,
@@ -300,7 +301,13 @@ function AdminDashboardContent() {
         {/* 통계 카드 */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {statsCards.map((stat, index) => (
-            <Grid key={index} item xs={12} sm={6} md={3}>
+            <Grid
+              key={index}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3
+              }}>
               <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -342,7 +349,13 @@ function AdminDashboardContent() {
           {adminMenus.map((menu, index) => {
             const hasPermission = can(menu.permission as Permission)
             return (
-              <Grid key={index} item xs={12} sm={6} md={3}>
+              <Grid
+                key={index}
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -390,18 +403,26 @@ function AdminDashboardContent() {
                   </Stack>
                 </Paper>
               </Grid>
-            )
+            );
           })}
         </Grid>
 
         <Grid container spacing={3}>
           {/* 시스템 성능 모니터링 */}
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <Typography>Performance monitoring will be added later</Typography>
           </Grid>
 
           {/* 최근 활동 */}
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 최근 게시글
@@ -430,7 +451,11 @@ function AdminDashboardContent() {
           </Grid>
 
           {/* 빠른 작업 */}
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 빠른 작업
@@ -474,7 +499,7 @@ function AdminDashboardContent() {
         </Grid>
       </Container>
     </>
-  )
+  );
 }
 
 export default function AdminDashboard() {

@@ -9,7 +9,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardHeader,
@@ -37,6 +37,7 @@ import {
   Divider,
   LinearProgress,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Dashboard,
   BarChart,
@@ -389,7 +390,7 @@ function ContentAnalytics() {
 
         {/* Overview Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
@@ -407,7 +408,7 @@ function ContentAnalytics() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               color: 'white',
@@ -425,7 +426,7 @@ function ContentAnalytics() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
               color: 'white',
@@ -443,7 +444,7 @@ function ContentAnalytics() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
               color: 'white',
@@ -461,7 +462,7 @@ function ContentAnalytics() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
               color: 'white',
@@ -479,7 +480,7 @@ function ContentAnalytics() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Card sx={{ 
               background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
               color: '#333',
@@ -500,7 +501,7 @@ function ContentAnalytics() {
 
         {/* Real-time Data */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6" gutterBottom color="primary">
                 Real-time Activity
@@ -514,7 +515,7 @@ function ContentAnalytics() {
             </Paper>
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 3, textAlign: 'center' }}>
               <Typography variant="h6" gutterBottom color="primary">
                 Current Views
@@ -528,7 +529,7 @@ function ContentAnalytics() {
             </Paper>
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom color="primary">
                 Top Active Pages
@@ -633,7 +634,7 @@ function ContentAnalytics() {
               
               <Grid container spacing={3}>
                 {analyticsData.contentPerformance.map((content, index) => (
-                  <Grid item xs={12} md={6} lg={4} key={content.id}>
+                  <Grid size={{ xs: 12, md: 6, lg: 4 }} key={content.id}>
                     <Card sx={{ height: '100%' }}>
                       <CardContent>
                         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -706,7 +707,7 @@ function ContentAnalytics() {
               </Typography>
               
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Card>
                     <CardHeader title="Device Breakdown" />
                     <CardContent>
@@ -731,7 +732,7 @@ function ContentAnalytics() {
                   </Card>
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Card>
                     <CardHeader title="Device Statistics" />
                     <CardContent>

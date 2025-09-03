@@ -28,6 +28,7 @@ import {
 } from './static-bridge'
 
 // Import existing client security (already working)
+import { initializeClientSecurity } from './client-security'
 export { 
   getClientSecurity, 
   initializeClientSecurity,
@@ -35,6 +36,7 @@ export {
 } from './client-security'
 
 // Import existing rate limiter (already working)
+import { rateLimiter } from './rateLimiter'
 export { rateLimiter } from './rateLimiter'
 
 // Re-export all static components
@@ -122,7 +124,6 @@ export function initializeSecurity(): void {
   if (isClient) {
     // Client-side initialization
     try {
-      const { initializeClientSecurity } = require('./client-security')
       initializeClientSecurity({
         devToolsProtection: process.env.NODE_ENV === 'production',
         consoleOverride: process.env.NODE_ENV === 'production',
@@ -369,19 +370,19 @@ export function getSecurityMonitor() {
 }
 
 export function getRateLimiter() {
-  return require('./rateLimiter').rateLimiter
+  return rateLimiter
 }
 
 export function getSecureAuthService() {
-  return require('./secure-auth').secureAuthService
+  return null // TODO: Import secureAuthService when available
 }
 
 export function getSecureDatabase() {
-  return require('./secure-database')
+  return null // TODO: Import secureDatabase when available
 }
 
 export function getApiMiddleware() {
-  return require('./api-middleware')
+  return null // TODO: Import apiMiddleware when available
 }
 
 // Default export for convenience (static)

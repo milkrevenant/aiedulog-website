@@ -180,7 +180,7 @@ export function useAuth() {
     // Use integrated identity helper with supabase client
     const identity = await getUserIdentity(user, supabase)
     
-    if (!identity?.identity_id) {
+    if (!identity?.user_id) {
       throw new Error('User identity not found in integrated system')
     }
     
@@ -190,7 +190,7 @@ export function useAuth() {
         ...updates,
         updated_at: new Date().toISOString()
       })
-      .eq('identity_id', identity.identity_id)
+      .eq('user_id', identity.user_id)
       .select()
       .single()
     
@@ -202,7 +202,7 @@ export function useAuth() {
     // Update local state with the new profile data
     const updatedProfile = {
       ...data,
-      id: identity.identity_id // Ensure consistency with identity_id
+      id: identity.user_id // Ensure consistency with user_id
     }
     setProfile(updatedProfile)
     return updatedProfile

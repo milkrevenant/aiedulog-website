@@ -149,7 +149,7 @@ export default function ProfileSettingsPage() {
       const { error } = await supabase
         .from('user_profiles')
         .update({ avatar_url: publicUrl })
-        .eq('identity_id', profile?.identity_id)
+        .eq('user_id', profile?.user_id)
 
       if (error) {
         console.error('Avatar URL update failed:', error)
@@ -186,7 +186,7 @@ export default function ProfileSettingsPage() {
       const { error } = await supabase
         .from('user_profiles')
         .update({ avatar_url: null })
-        .eq('identity_id', profile?.identity_id)
+        .eq('user_id', profile?.user_id)
 
       if (error) {
         console.error('Avatar removal failed:', error)
@@ -223,7 +223,7 @@ export default function ProfileSettingsPage() {
       const { error } = await supabase
         .from('user_profiles')
         .update({ nickname: nickname.trim() })
-        .eq('identity_id', profile?.identity_id)
+        .eq('user_id', profile?.user_id)
 
       if (error) {
         console.error('Nickname update failed:', error)

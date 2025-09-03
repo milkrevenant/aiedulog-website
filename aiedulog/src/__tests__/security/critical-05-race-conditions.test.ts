@@ -31,7 +31,7 @@ import { MeetingType } from '@/types/appointment-system';
 
 describe('CRITICAL-05: Race Condition Prevention Tests', () => {
   let supabase: any;
-  let testUsers: Record<string, any> = {};
+  const testUsers: Record<string, any> = {};
   let testAppointmentType: any;
 
   beforeAll(async () => {
@@ -112,7 +112,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-15', // Monday
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL,
+        meetingType: MeetingType.ONLINE,
         meetingLink: 'https://zoom.us/test'
       };
 
@@ -152,7 +152,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-16',
         startTime: '14:00:00',
         endTime: '15:00:00',
-        meetingType: MeetingType.IN_PERSON
+        meetingType: MeetingType.OFFLINE
       };
 
       const bookingRequest2: AtomicBookingRequest = {
@@ -162,7 +162,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-16',
         startTime: '14:30:00', // Overlapping time
         endTime: '15:30:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Start both bookings concurrently
@@ -191,7 +191,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-17',
         startTime: '09:00:00',
         endTime: '10:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Create multiple concurrent booking attempts for the same slot
@@ -225,7 +225,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-18',
         startTime: '11:00:00',
         endTime: '12:00:00',
-        meetingType: MeetingType.PHONE
+        meetingType: MeetingType.HYBRID
       };
 
       // Simulate rapid-fire booking attempts that would exploit TOCTOU
@@ -283,7 +283,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-19',
         startTime: '13:00:00',
         endTime: '14:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // First booking should succeed
@@ -307,7 +307,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-20',
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       const result = await AtomicBookingService.createAppointmentAtomic(invalidRequest);
@@ -335,12 +335,14 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-21',
         startTime: '15:00:00',
         endTime: '16:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Mock a system error during appointment creation
       const originalRpc = supabase.rpc;
-      supabase.rpc = jest.fn().mockImplementation((funcName: string, params: any) => {
+      (supabase.rpc as any) = jest.fn().mockImplementation((...args: any[]) => {
+        const funcName = args[0] as string;
+        const params = args[1] as any;
         if (funcName === 'begin_booking_transaction') {
           return originalRpc.call(supabase, funcName, params);
         }
@@ -388,7 +390,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-22',
         startTime: '16:00:00',
         endTime: '17:00:00',
-        meetingType: MeetingType.VIDEO_CALL,
+        meetingType: MeetingType.ONLINE,
         meetingLink: '<script>alert("XSS")</script>https://malicious.com',
         notes: "'; DROP TABLE appointments; --",
         userDetails: {
@@ -424,7 +426,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
             userId: testUsers.user.id,
             instructorId: testUsers.instructor.id,
             appointmentTypeId: testAppointmentType.id,
-            meetingType: MeetingType.VIDEO_CALL
+            meetingType: MeetingType.ONLINE
           },
           appointmentDate: 'invalid-date',
           startTime: '10:00:00',
@@ -435,7 +437,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
             userId: testUsers.user.id,
             instructorId: testUsers.instructor.id,
             appointmentTypeId: testAppointmentType.id,
-            meetingType: MeetingType.VIDEO_CALL
+            meetingType: MeetingType.ONLINE
           },
           appointmentDate: '2025-09-23',
           startTime: 'invalid-time',
@@ -446,7 +448,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
             userId: testUsers.user.id,
             instructorId: testUsers.instructor.id,
             appointmentTypeId: testAppointmentType.id,
-            meetingType: MeetingType.VIDEO_CALL
+            meetingType: MeetingType.ONLINE
           },
           appointmentDate: '2020-01-01', // Past date
           startTime: '10:00:00',
@@ -472,13 +474,13 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-24',
         startTime: '12:00:00',
         endTime: '13:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Mock temporary failures
       let attemptCount = 0;
       const originalCreateAtomic = AtomicBookingService.createAppointmentAtomic;
-      AtomicBookingService.createAppointmentAtomic = jest.fn().mockImplementation((request) => {
+      (AtomicBookingService.createAppointmentAtomic as any) = jest.fn().mockImplementation((request: any) => {
         attemptCount++;
         if (attemptCount < 3) {
           // Simulate temporary lock failure
@@ -515,7 +517,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2020-01-01', // Invalid past date
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       const result = await AtomicBookingService.createAppointmentWithRetry(invalidRequest, 3);
@@ -534,17 +536,17 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-25',
         startTime: '14:00:00',
         endTime: '15:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Mock persistent failures
       const originalCreateAtomic = AtomicBookingService.createAppointmentAtomic;
-      AtomicBookingService.createAppointmentAtomic = jest.fn().mockResolvedValue({
+      (AtomicBookingService.createAppointmentAtomic as any) = jest.fn().mockImplementation(() => Promise.resolve({
         success: false,
         errorCode: 'LOCK_ACQUISITION_FAILED',
         lockAcquired: false,
         error: 'Persistent lock failure'
-      });
+      }));
 
       const result = await AtomicBookingService.createAppointmentWithRetry(bookingRequest, 2);
 
@@ -565,7 +567,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-26',
         startTime: '11:00:00',
         endTime: '12:00:00',
-        meetingType: MeetingType.IN_PERSON,
+        meetingType: MeetingType.OFFLINE,
         meetingLocation: 'Office 123'
       };
 
@@ -597,7 +599,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-27',
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       const result = await AtomicBookingService.createAppointmentAtomic(invalidRequest);
@@ -627,7 +629,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-28',
         startTime: '09:00:00',
         endTime: '10:00:00',
-        meetingType: MeetingType.PHONE
+        meetingType: MeetingType.HYBRID
       };
 
       const result = await AtomicBookingService.createAppointmentAtomic(bookingRequest);
@@ -659,7 +661,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-29',
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Create first appointment
@@ -691,7 +693,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-30',
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       const result = await AtomicBookingService.createAppointmentAtomic(malformedRequest);
@@ -708,7 +710,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-30',
         startTime: '10:00:00',
         endTime: '12:00:00', // 2 hours instead of 1
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       const result = await AtomicBookingService.createAppointmentAtomic(mismatchedRequest);
@@ -726,7 +728,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-09-30',
         startTime: '11:00:00',
         endTime: '10:00:00', // End before start
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       const result = await AtomicBookingService.createAppointmentAtomic(invalidTimeRequest);
@@ -747,7 +749,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-10-01',
         startTime: `${(9 + i).toString().padStart(2, '0')}:00:00`,
         endTime: `${(10 + i).toString().padStart(2, '0')}:00:00`,
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       }));
 
       const startTime = Date.now();
@@ -773,7 +775,7 @@ describe('CRITICAL-05: Race Condition Prevention Tests', () => {
         appointmentDate: '2025-10-02',
         startTime: '10:00:00',
         endTime: '11:00:00',
-        meetingType: MeetingType.VIDEO_CALL
+        meetingType: MeetingType.ONLINE
       };
 
       // Should complete without hanging

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_KR, IBM_Plex_Sans_KR } from 'next/font/google'
 import { Providers } from './providers'
+import ActivityTracker from '@/components/ActivityTracker'
 import './globals.css'
 
 const notoSansKr = Noto_Sans_KR({
@@ -37,7 +38,10 @@ export default function RootLayout({
         />
       </head>
       <body className={`${notoSansKr.variable} ${ibmPlexSansKr.variable} antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <ActivityTracker />
+          {children}
+        </Providers>
       </body>
     </html>
   )

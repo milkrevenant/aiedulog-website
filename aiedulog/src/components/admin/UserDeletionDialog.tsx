@@ -36,7 +36,7 @@ import { createClient } from '@/lib/supabase/client'
 
 interface AdminUser {
   id: string
-  identity_id: string
+  user_id: string
   email: string
   username: string
   nickname: string | null
@@ -90,15 +90,15 @@ export default function UserDeletionDialog({
     setStatsError(null)
     
     try {
-      console.log('Fetching stats for user:', user.identity_id)
+      console.log('Fetching stats for user:', user.user_id)
       
       // Use Promise.allSettled for better error handling
       const results = await Promise.allSettled([
-        supabase.from('posts').select('id', { count: 'exact' }).eq('author_id', user.identity_id),
-        supabase.from('comments').select('id', { count: 'exact' }).eq('author_id', user.identity_id),
-        // Handle both identity_id and legacy user_id for lecture registrations
+        supabase.from('posts').select('id', { count: 'exact' }).eq('author_id', user.user_id),
+        supabase.from('comments').select('id', { count: 'exact' }).eq('author_id', user.user_id),
+        // Handle both user_id and legacy user_id for lecture registrations
         Promise.allSettled([
-          supabase.from('lecture_registrations').select('id', { count: 'exact' }).eq('identity_id', user.identity_id),
+          supabase.from('lecture_registrations').select('id', { count: 'exact' }).eq('user_id', user.user_id),
           supabase.from('lecture_registrations').select('id', { count: 'exact' }).eq('user_id', user.id)
         ]).then(([identityResult, userResult]) => {
           const identityCount = identityResult.status === 'fulfilled' ? identityResult.value.count || 0 : 0
@@ -107,8 +107,8 @@ export default function UserDeletionDialog({
         }),
         // Handle file_uploads with fallback to resources table
         Promise.allSettled([
-          supabase.from('file_uploads').select('id', { count: 'exact' }).eq('uploaded_by', user.identity_id),
-          supabase.from('resources').select('id', { count: 'exact' }).eq('uploader_id', user.identity_id),
+          supabase.from('file_uploads').select('id', { count: 'exact' }).eq('uploaded_by', user.user_id),
+          supabase.from('resources').select('id', { count: 'exact' }).eq('uploader_id', user.user_id),
         ]).then(([uploadsResult, resourcesResult]) => {
           const uploadsCount = uploadsResult.status === 'fulfilled' ? uploadsResult.value.count || 0 : 0
           const resourcesCount = resourcesResult.status === 'fulfilled' ? resourcesResult.value.count || 0 : 0
@@ -181,14 +181,14 @@ export default function UserDeletionDialog({
       try {
         const { data: currentUserIdentity } = await supabase
           .from('auth_methods')
-          .select('identity_id')
+          .select('user_id')
           .eq('provider', 'supabase')
           .eq('provider_user_id', currentUserData.user?.id)
           .single()
 
         await supabase.from('user_deletion_audit').insert([{
-          deleted_user_id: user.identity_id,
-          deleted_by: currentUserIdentity?.identity_id || null,
+          deleted_user_id: user.user_id,
+          deleted_by: currentUserIdentity?.user_id || null,
           deletion_type: deletionType,
           reason,
           user_data: {
@@ -224,14 +224,14 @@ export default function UserDeletionDialog({
       .update({ 
         is_active: false 
       })
-      .eq('identity_id', user!.identity_id)
+      .eq('user_id', user!.user_id)
 
     await supabase
       .from('identities')
       .update({ 
         status: 'deleted' 
       })
-      .eq('id', user!.identity_id)
+      .eq('id', user!.user_id)
 
     // Handle content based on selected action
     if (contentAction === 'anonymize') {
@@ -251,7 +251,7 @@ export default function UserDeletionDialog({
     await supabase
       .from('identities')
       .delete()
-      .eq('id', user!.identity_id)
+      .eq('id', user!.user_id)
   }
 
   const anonymizeUserContent = async () => {
@@ -265,13 +265,13 @@ export default function UserDeletionDialog({
     await supabase
       .from('posts')
       .update(anonymizedData)
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
 
     // Anonymize comments
     await supabase
       .from('comments')
       .update(anonymizedData)
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
   }
 
   const deleteUserContent = async () => {
@@ -279,19 +279,19 @@ export default function UserDeletionDialog({
     await supabase
       .from('posts')
       .delete()
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
 
     // Delete user's standalone comments
     await supabase
       .from('comments')
       .delete()
-      .eq('author_id', user!.identity_id)
+      .eq('author_id', user!.user_id)
 
     // Cancel lecture registrations
     await supabase
       .from('lecture_registrations')
       .update({ status: 'cancelled' })
-      .eq('identity_id', user!.identity_id)
+      .eq('user_id', user!.user_id)
 
     // Handle legacy user_id references
     await supabase

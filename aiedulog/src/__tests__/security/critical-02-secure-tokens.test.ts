@@ -327,7 +327,7 @@ describe('CRITICAL-02: Secure Token Generation Tests', () => {
       }
     });
 
-    test('should not be vulnerable to timestamp prediction attacks', () => {
+    test('should not be vulnerable to timestamp prediction attacks', async () => {
       const token1 = SecureTokenGenerator.generateSessionToken({ includeTimestamp: true });
       
       // Wait a small amount to ensure different timestamps

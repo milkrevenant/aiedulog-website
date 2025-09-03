@@ -37,7 +37,7 @@ import {
   TextField,
   Switch,
   FormControlLabel,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   CardActions,
@@ -73,6 +73,7 @@ import {
   SpeedDialAction,
   Snackbar,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   Edit,
   Delete,
@@ -716,7 +717,12 @@ function MainContentManagement() {
             
             {/* Quick Stats */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {sections.length}
@@ -726,7 +732,12 @@ function MainContentManagement() {
                   </Typography>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {blocks.length}
@@ -736,7 +747,12 @@ function MainContentManagement() {
                   </Typography>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {sections.filter(s => s.status === 'published').length}
@@ -746,7 +762,12 @@ function MainContentManagement() {
                   </Typography>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                  md: 3
+                }}>
                 <Card sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
                   <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
                     {templates.length}
@@ -958,7 +979,13 @@ function MainContentManagement() {
               {/* Sections Grid */}
               <Grid container spacing={3}>
                 {filteredSections.map((section) => (
-                  <Grid item xs={12} md={6} lg={4} key={section.id}>
+                  <Grid
+                    key={section.id}
+                    size={{
+                      xs: 12,
+                      md: 6,
+                      lg: 4
+                    }}>
                     <motion.div
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1115,7 +1142,7 @@ function MainContentManagement() {
                     </Typography>
                     <Grid container spacing={2}>
                       {Object.entries(BLOCK_TYPES).map(([key, config]) => (
-                        <Grid item key={key}>
+                        <Grid key={key}>
                           <Button
                             variant="outlined"
                             onClick={() => handleCreateBlock(key)}
@@ -1194,7 +1221,11 @@ function MainContentManagement() {
                   
                   <Grid container spacing={3}>
                     {/* Animation Settings */}
-                    <Grid item xs={12} md={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        md: 6
+                      }}>
                       <Card sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Animation />
@@ -1222,7 +1253,11 @@ function MainContentManagement() {
                     </Grid>
                     
                     {/* Theme Settings */}
-                    <Grid item xs={12} md={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        md: 6
+                      }}>
                       <Card sx={{ p: 3 }}>
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Palette />
@@ -1248,12 +1283,12 @@ function MainContentManagement() {
                               Background Style
                             </Typography>
                             <Grid container spacing={2}>
-                              <Grid item xs={6}>
+                              <Grid size={6}>
                                 <Card sx={{ p: 2, textAlign: 'center', cursor: 'pointer', background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)' }}>
                                   <Typography variant="body2" sx={{ color: 'white' }}>Gradient</Typography>
                                 </Card>
                               </Grid>
-                              <Grid item xs={6}>
+                              <Grid size={6}>
                                 <Card sx={{ p: 2, textAlign: 'center', cursor: 'pointer', backgroundColor: 'background.paper' }}>
                                   <Typography variant="body2">Solid</Typography>
                                 </Card>
@@ -1290,7 +1325,11 @@ function MainContentManagement() {
               </Alert>
               
               <Grid container spacing={3} sx={{ mt: 3 }}>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <Card sx={{ textAlign: 'center', p: 3 }}>
                     <FileCopy sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Enterprise Templates</Typography>
@@ -1299,7 +1338,11 @@ function MainContentManagement() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <Card sx={{ textAlign: 'center', p: 3 }}>
                     <Preview sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Live Preview</Typography>
@@ -1308,7 +1351,11 @@ function MainContentManagement() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <Card sx={{ textAlign: 'center', p: 3 }}>
                     <Star sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Template Ratings</Typography>
@@ -1338,25 +1385,41 @@ function MainContentManagement() {
               </Alert>
               
               <Grid container spacing={3} sx={{ mt: 3 }}>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                     <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>Real-time</Typography>
                     <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>Live Analytics</Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
                     <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>A/B Testing</Typography>
                     <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>Content Optimization</Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
                     <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>Heatmaps</Typography>
                     <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>User Behavior</Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
                     <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>Export</Typography>
                     <Typography variant="body2" sx={{ color: 'white', opacity: 0.9 }}>PDF Reports</Typography>
@@ -1383,7 +1446,11 @@ function MainContentManagement() {
               </Alert>
               
               <Grid container spacing={3} sx={{ mt: 3 }}>
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Card sx={{ p: 3 }}>
                     <Schedule sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Automated Publishing</Typography>
@@ -1392,7 +1459,11 @@ function MainContentManagement() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Card sx={{ p: 3 }}>
                     <Autorenew sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Recurring Schedules</Typography>
@@ -1422,7 +1493,11 @@ function MainContentManagement() {
               </Alert>
               
               <Grid container spacing={3} sx={{ mt: 3 }}>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center' }}>
                     <SmartToy sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>AI Translation</Typography>
@@ -1431,7 +1506,11 @@ function MainContentManagement() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center' }}>
                     <Assessment sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Quality Control</Typography>
@@ -1440,7 +1519,11 @@ function MainContentManagement() {
                     </Typography>
                   </Card>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <Card sx={{ p: 3, textAlign: 'center' }}>
                     <Language sx={{ fontSize: 48, color: 'warning.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>Multi-Language</Typography>
@@ -1518,7 +1601,7 @@ function MainContentManagement() {
         </SpeedDial>
       </Container>
     </>
-  )
+  );
 }
 
 // Sortable Block Card Component
@@ -1652,7 +1735,11 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
       <form onSubmit={handleSubmit(onSave)}>
         <DialogContent>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="section_key"
                 control={control}
@@ -1669,7 +1756,11 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="status"
                 control={control}
@@ -1687,11 +1778,15 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>Korean Content</Typography>
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="title.ko"
                 control={control}
@@ -1706,7 +1801,11 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="slug.ko"
                 control={control}
@@ -1721,7 +1820,7 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="description.ko"
                 control={control}
@@ -1737,11 +1836,15 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>English Content</Typography>
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="title.en"
                 control={control}
@@ -1755,7 +1858,11 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="slug.en"
                 control={control}
@@ -1770,7 +1877,7 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="description.en"
                 control={control}
@@ -1786,11 +1893,15 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>Settings</Typography>
             </Grid>
             
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Controller
                 name="visibility"
                 control={control}
@@ -1807,7 +1918,11 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Controller
                 name="template"
                 control={control}
@@ -1825,7 +1940,11 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Controller
                 name="sort_order"
                 control={control}
@@ -1841,7 +1960,7 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="is_featured"
                 control={control}
@@ -1868,7 +1987,7 @@ function SectionDialog({ open, onClose, section, onSave, saving, form }: Section
         </DialogActions>
       </form>
     </Dialog>
-  )
+  );
 }
 
 // Block Dialog Component
@@ -1914,17 +2033,20 @@ function BlockDialog({ open, onClose, block, onSave, saving, form }: BlockDialog
           </Box>
         </Stack>
       </DialogTitle>
-      
       <form onSubmit={handleSubmit(onSave)}>
         <DialogContent>
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Alert severity="info">
                 Block content editor will be implemented with a rich content editor (TipTap) for dynamic content management.
               </Alert>
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="block_key"
                 control={control}
@@ -1939,7 +2061,11 @@ function BlockDialog({ open, onClose, block, onSave, saving, form }: BlockDialog
               />
             </Grid>
             
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <Controller
                 name="visibility"
                 control={control}
@@ -1956,7 +2082,7 @@ function BlockDialog({ open, onClose, block, onSave, saving, form }: BlockDialog
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Controller
                 name="is_active"
                 control={control}
@@ -1984,7 +2110,7 @@ function BlockDialog({ open, onClose, block, onSave, saving, form }: BlockDialog
         </DialogActions>
       </form>
     </Dialog>
-  )
+  );
 }
 
 // Preview Dialog Component

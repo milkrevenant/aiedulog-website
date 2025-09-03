@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { AuditService } from './audit-service';
+import { getUserIdentity } from '@/lib/identity/helpers';
 import type {
   AdminRole,
   AdminPermission,
@@ -198,13 +199,9 @@ export class PermissionService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -212,7 +209,7 @@ export class PermissionService {
         .from('admin_roles')
         .insert({
           ...roleData,
-          created_by: adminProfile.identity_id
+          created_by: adminIdentity.user_id
         })
         .select()
         .single();
@@ -269,13 +266,9 @@ export class PermissionService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -299,7 +292,7 @@ export class PermissionService {
         .from('admin_roles')
         .update({
           ...updates,
-          updated_by: adminProfile.identity_id,
+          updated_by: adminIdentity.user_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', roleId)
@@ -349,13 +342,9 @@ export class PermissionService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -392,7 +381,7 @@ export class PermissionService {
           .update({
             role_id: transferUsersToRoleId,
             assigned_at: new Date().toISOString(),
-            assigned_by: adminProfile.identity_id
+            assigned_by: adminIdentity.user_id
           })
           .eq('role_id', roleId)
           .eq('is_active', true);
@@ -461,13 +450,9 @@ export class PermissionService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -476,7 +461,7 @@ export class PermissionService {
         .upsert({
           role_id: roleId,
           permission_id: permissionId,
-          granted_by: adminProfile.identity_id,
+          granted_by: adminIdentity.user_id,
           conditions: conditions || {}
         })
         .select()
@@ -603,20 +588,16 @@ export class PermissionService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
       const { data, error } = await this.supabase.rpc('grant_user_role', {
         p_user_id: request.user_id,
         p_role_name: request.role_name,
-        p_granted_by: adminProfile.identity_id,
+        p_granted_by: adminIdentity.user_id,
         p_expires_at: request.expires_at,
         p_conditions: request.conditions || {}
       });
@@ -658,13 +639,9 @@ export class PermissionService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 

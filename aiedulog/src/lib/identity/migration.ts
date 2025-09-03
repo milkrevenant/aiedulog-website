@@ -15,13 +15,13 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     // 1. 먼저 기존 identity 매핑 확인
     const { data: existingAuth } = await supabase
       .from('auth_methods')
-      .select('identity_id')
+      .select('user_id')
       .eq('provider_user_id', user.id)
       .single()
     
-    if (existingAuth?.identity_id) {
-      console.log('Identity already exists:', existingAuth.identity_id)
-      return existingAuth.identity_id
+    if (existingAuth?.user_id) {
+      console.log('Identity already exists:', existingAuth.user_id)
+      return existingAuth.user_id
     }
     
     // 2. Identity 생성
@@ -101,12 +101,12 @@ export async function getOrCreateIdentity(user: User): Promise<string | null> {
   // 1. Try to get existing identity
   const { data: authMethod } = await supabase
     .from('auth_methods')
-    .select('identity_id')
+    .select('user_id')
     .eq('provider_user_id', user.id)
     .single()
   
-  if (authMethod?.identity_id) {
-    return authMethod.identity_id
+  if (authMethod?.user_id) {
+    return authMethod.user_id
   }
   
   // 2. Create new identity if not exists

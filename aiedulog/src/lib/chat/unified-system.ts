@@ -8,9 +8,9 @@ import { getOrCreateIdentity } from '@/lib/identity/migration'
  * 통합 채팅 시스템 - Identity 기반 완전 구현
  * 
  * 아키텍처:
- * auth.users.id → auth_methods.provider_user_id → auth_methods.identity_id
+ * auth.users.id → auth_methods.provider_user_id → auth_methods.user_id
  *                                                     ↓
- *                                            identities.id → user_profiles.identity_id
+ *                                            identities.id → user_profiles.user_id
  *                                                     ↓
  *                                            chat_messages.sender_id (identity_id 사용)
  *                                            chat_participants.user_id (identity_id 사용)
@@ -72,7 +72,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
     const { data: authMethod, error: authError } = await supabase
       .from('auth_methods')
       .select(`
-        identity_id,
+        user_id,
         identities!inner (
           id,
           user_profiles!inner (
@@ -101,7 +101,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
     }
     
     const profile = authMethod.identities[0].user_profiles[0]
-    const identityId = authMethod.identity_id
+    const identityId = authMethod.user_id
 
     // 이미 profile을 가져왔으므로 직접 사용
     const result = {

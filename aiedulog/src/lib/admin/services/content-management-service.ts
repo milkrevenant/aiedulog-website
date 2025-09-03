@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { AuditService } from './audit-service';
+import { getUserIdentity } from '@/lib/identity/helpers';
 import type {
   ContentModeration,
   ContentModerationRequest,
@@ -140,13 +141,9 @@ export class ContentManagementService {
         throw new Error('Moderator not authenticated');
       }
 
-      const { data: moderatorProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!moderatorProfile) {
+      const moderatorIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!moderatorIdentity) {
         throw new Error('Moderator identity not found');
       }
 
@@ -154,7 +151,7 @@ export class ContentManagementService {
         p_content_type: request.content_type,
         p_content_id: request.content_id,
         p_status: request.status,
-        p_moderator_id: moderatorProfile.identity_id,
+        p_moderator_id: moderatorIdentity.user_id,
         p_reason: request.reason,
         p_actions_taken: request.actions_taken || []
       });
@@ -199,20 +196,16 @@ export class ContentManagementService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
       const versionId = await this.supabase.rpc('create_content_version', {
         p_content_type: contentType,
         p_content_id: contentId,
-        p_admin_id: adminProfile.identity_id,
+        p_admin_id: adminIdentity.user_id,
         p_change_summary: changeSummary,
         p_is_major_version: isMajorVersion
       });
@@ -288,13 +281,9 @@ export class ContentManagementService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -365,7 +354,7 @@ export class ContentManagementService {
         .from('content_versions')
         .update({
           rollback_reason: reason,
-          approved_by: adminProfile.identity_id,
+          approved_by: adminIdentity.user_id,
           approved_at: new Date().toISOString()
         })
         .eq('id', versionId);
@@ -422,13 +411,9 @@ export class ContentManagementService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -468,7 +453,7 @@ export class ContentManagementService {
             table_name: tableName,
             record_id: contentId,
             archived_data: currentContent,
-            archived_by: adminProfile.identity_id,
+            archived_by: adminIdentity.user_id,
             archive_reason: 'content_deletion',
             metadata: { deletion_reason: reason }
           });
@@ -484,7 +469,7 @@ export class ContentManagementService {
         .update({ 
           is_deleted: true,
           deleted_at: new Date().toISOString(),
-          deleted_by: adminProfile.identity_id
+          deleted_by: adminIdentity.user_id
         })
         .eq('id', contentId);
 
@@ -497,11 +482,11 @@ export class ContentManagementService {
           content_type: contentType,
           content_id: contentId,
           status: 'rejected',
-          moderated_by: adminProfile.identity_id,
+          moderated_by: adminIdentity.user_id,
           moderated_at: new Date().toISOString(),
           reason: `Content deleted: ${reason}`,
           severity: 'warning',
-          actions_taken: [{ action: 'deleted', timestamp: new Date().toISOString(), moderator_id: adminProfile.identity_id }]
+          actions_taken: [{ action: 'deleted', timestamp: new Date().toISOString(), moderator_id: adminIdentity.user_id }]
         });
 
       // Create audit log
@@ -552,13 +537,9 @@ export class ContentManagementService {
         throw new Error('Admin not authenticated');
       }
 
-      const { data: adminProfile } = await this.supabase
-        .from('auth_methods')
-        .select('identity_id')
-        .eq('provider_user_id', currentUser.user.id)
-        .single();
-
-      if (!adminProfile) {
+      const adminIdentity = await getUserIdentity(currentUser.user, this.supabase);
+      
+      if (!adminIdentity) {
         throw new Error('Admin identity not found');
       }
 
@@ -599,10 +580,10 @@ export class ContentManagementService {
           content_type: contentType,
           content_id: contentId,
           status: 'approved',
-          moderated_by: adminProfile.identity_id,
+          moderated_by: adminIdentity.user_id,
           moderated_at: new Date().toISOString(),
           reason: `Content restored: ${reason}`,
-          actions_taken: [{ action: 'restored', timestamp: new Date().toISOString(), moderator_id: adminProfile.identity_id }]
+          actions_taken: [{ action: 'restored', timestamp: new Date().toISOString(), moderator_id: adminIdentity.user_id }]
         });
 
       // Create audit log

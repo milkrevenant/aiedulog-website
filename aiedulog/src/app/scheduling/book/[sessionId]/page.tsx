@@ -5,7 +5,7 @@ import {
   Box,
   Container,
   Typography,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   Button,
@@ -38,6 +38,7 @@ import {
   ToggleButton,
   ToggleButtonGroup
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import {
   ArrowBack,
   CalendarToday,
@@ -436,10 +437,13 @@ function UserDetailsForm({
       <Typography variant="h6">
         예약자 정보
       </Typography>
-
       {/* Personal Info */}
       <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6
+          }}>
           <TextField
             fullWidth
             label="이름 *"
@@ -449,7 +453,11 @@ function UserDetailsForm({
             helperText={errors.full_name}
           />
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6
+          }}>
           <TextField
             fullWidth
             label="이메일 *"
@@ -460,7 +468,7 @@ function UserDetailsForm({
             helperText={errors.email}
           />
         </Grid>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <TextField
             fullWidth
             label="연락처 *"
@@ -472,7 +480,6 @@ function UserDetailsForm({
           />
         </Grid>
       </Grid>
-
       {/* Meeting Location for Offline */}
       {session.data.meeting_type === MeetingType.OFFLINE && (
         <TextField
@@ -485,7 +492,6 @@ function UserDetailsForm({
           placeholder="예: 서울시 강남구 역삼동 카페"
         />
       )}
-
       {/* Notes */}
       <TextField
         fullWidth
@@ -496,7 +502,6 @@ function UserDetailsForm({
         onChange={(e) => handleChange('notes', e.target.value)}
         helperText="강사에게 전달할 메시지나 특별한 요청사항이 있으시면 작성해주세요"
       />
-
       {/* Action Buttons */}
       <Stack direction="row" spacing={2} justifyContent="space-between">
         <Button
@@ -515,7 +520,7 @@ function UserDetailsForm({
         </Button>
       </Stack>
     </Stack>
-  )
+  );
 }
 
 function BookingConfirmation({ 
@@ -546,11 +551,9 @@ function BookingConfirmation({
       <Typography variant="h6">
         예약 정보 확인
       </Typography>
-
       <Alert severity="info">
         아래 정보를 확인한 후 예약을 완료해주세요. 예약 완료 후 변경이 어려울 수 있습니다.
       </Alert>
-
       {/* Booking Summary */}
       <Card variant="outlined">
         <CardContent>
@@ -568,7 +571,7 @@ function BookingConfirmation({
 
             {/* Date & Time */}
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <CalendarToday fontSize="small" color="action" />
                   <Box>
@@ -583,7 +586,7 @@ function BookingConfirmation({
                   </Box>
                 </Stack>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <AccessTime fontSize="small" color="action" />
                   <Box>
@@ -669,7 +672,6 @@ function BookingConfirmation({
           </Stack>
         </CardContent>
       </Card>
-
       {/* Terms & Conditions */}
       <Alert severity="warning">
         <Typography variant="body2">
@@ -679,7 +681,6 @@ function BookingConfirmation({
           - 무단 결석 시 환불 불가
         </Typography>
       </Alert>
-
       {/* Action Buttons */}
       <Stack direction="row" spacing={2} justifyContent="space-between">
         <Button
@@ -701,7 +702,7 @@ function BookingConfirmation({
         </Button>
       </Stack>
     </Stack>
-  )
+  );
 }
 
 function BookingFlowContent() {

@@ -203,9 +203,9 @@ export function TextRichBlock({
           />
         ) : (
           // Plain text
-          <div style={{ whiteSpace: 'pre-wrap' }}>
+          (<div style={{ whiteSpace: 'pre-wrap' }}>
             {textContent}
-          </div>
+          </div>)
         )}
       </Box>
     </Container>

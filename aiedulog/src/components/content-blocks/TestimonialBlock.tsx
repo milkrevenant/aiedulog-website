@@ -5,7 +5,7 @@ import {
   Box,
   Typography,
   Container,
-  GridLegacy as Grid,
+  
   Card,
   CardContent,
   Avatar,
@@ -13,6 +13,7 @@ import {
   Stack,
   useTheme,
 } from '@mui/material'
+import Grid from '@mui/material/Grid'
 import { FormatQuote } from '@mui/icons-material'
 import { getLocalizedText } from '@/lib/content-client'
 import type { LanguageCode, TestimonialContent } from '@/types/content-management'
@@ -47,10 +48,14 @@ export function TestimonialBlock({
           {getLocalizedText(content.title, language)}
         </Typography>
       )}
-
       <Grid container spacing={4}>
         {content.items?.map((testimonial, index) => (
-          <Grid item xs={12} md={6} key={testimonial.id || index}>
+          <Grid
+            key={testimonial.id || index}
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <Card
               sx={{
                 height: '100%',
@@ -163,7 +168,6 @@ export function TestimonialBlock({
           </Grid>
         ))}
       </Grid>
-
       {/* Empty state */}
       {(!content.items || content.items.length === 0) && (
         <Box
@@ -179,5 +183,5 @@ export function TestimonialBlock({
         </Box>
       )}
     </Container>
-  )
+  );
 }

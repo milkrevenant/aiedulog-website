@@ -5,15 +5,138 @@ applications:
       phases:
         preBuild:
           commands:
-            - nvm use 20
-            - npm install
+            # Ensure Node 20 is installed and used consistently
+            - echo "Setting up Node.js 20..."
+            - nvm install 20.17.0
+            - nvm use 20.17.0
+            - nvm alias default 20.17.0
+            # Verify Node version
+            - node --version
+            - npm --version
+            # SSM Secrets handling with graceful fallback
+            - echo "Setting up environment variables and secrets..."
+            - |
+              # Attempt to use AWS Systems Manager (SSM) for secrets
+              if command -v aws >/dev/null 2>&1; then
+                echo "AWS CLI available - attempting SSM parameter retrieval..."
+                # Try to get secrets from SSM, but don't fail if not available
+                SSM_URL=$(aws ssm get-parameter --name "/amplify/aiedulog/NEXT_PUBLIC_SUPABASE_URL" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+                if [ -n "$SSM_URL" ]; then
+                  export NEXT_PUBLIC_SUPABASE_URL="$SSM_URL"
+                  echo "✅ Using SSM parameter for Supabase URL"
+                fi
+                
+                SSM_KEY=$(aws ssm get-parameter --name "/amplify/aiedulog/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
+                if [ -n "$SSM_KEY" ]; then
+                  export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SSM_KEY"
+                  echo "✅ Using SSM parameter for Supabase key"
+                fi
+              else
+                echo "ℹ️ AWS CLI not available - using environment variables"
+              fi
+            # Environment variable validation with fallback mechanisms
+            - echo "Validating environment variables..."
+            - |
+              if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+                echo "WARNING: NEXT_PUBLIC_SUPABASE_URL not set"
+                if [ -n "$SUPABASE_PROJECT_URL" ]; then
+                  export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_PROJECT_URL"
+                  echo "Using fallback SUPABASE_PROJECT_URL: $NEXT_PUBLIC_SUPABASE_URL"
+                else
+                  echo "ERROR: No Supabase URL found in any environment variable"
+                  exit 1
+                fi
+              else
+                echo "NEXT_PUBLIC_SUPABASE_URL: $NEXT_PUBLIC_SUPABASE_URL"
+              fi
+            - |
+              if [ -z "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ]; then
+                echo "WARNING: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY not set"
+                if [ -n "$SUPABASE_ANON_KEY" ]; then
+                  export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_ANON_KEY"
+                  echo "Using fallback SUPABASE_ANON_KEY"
+                elif [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+                  export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+                  echo "WARNING: Using service role key as fallback - not recommended for client-side"
+                else
+                  echo "ERROR: No Supabase key found in any environment variable"
+                  exit 1
+                fi
+              else
+                echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY configured"
+              fi
+            # Check for additional optional environment variables
+            - |
+              if [ -n "$NEXTAUTH_SECRET" ]; then
+                echo "NextAuth secret configured"
+              else
+                echo "WARNING: NEXTAUTH_SECRET not set - generating temporary secret"
+                export NEXTAUTH_SECRET=$(openssl rand -base64 32)
+              fi
+            - |
+              if [ -n "$NEXTAUTH_URL" ]; then
+                echo "NextAuth URL: $NEXTAUTH_URL"
+              else
+                echo "WARNING: NEXTAUTH_URL not set - will use default"
+              fi
+            - echo "Environment variables validated successfully"
+            # Optimized cache management to prevent 404 errors
+            - echo "Managing build cache strategically..."
+            - |
+              # Remove only problematic caches, keep beneficial ones
+              rm -rf .next/cache .next/standalone
+              # Clean npm cache issues but preserve node_modules if valid
+              if [ -d "node_modules" ] && [ -f "package-lock.json" ]; then
+                echo "Validating existing node_modules..."
+                # Quick validation - if critical packages exist, skip reinstall
+                if [ -d "node_modules/next" ] && [ -d "node_modules/react" ]; then
+                  echo "Using existing node_modules (cache hit)"
+                  npm ci --prefer-offline --no-audit --ignore-scripts
+                else
+                  echo "Rebuilding node_modules (cache miss)"
+                  rm -rf node_modules
+                  npm ci --prefer-offline --no-audit
+                fi
+              else
+                echo "Fresh install required"
+                npm ci --prefer-offline --no-audit
+              fi
+            # Verify critical files exist
+            - |
+              if [ ! -f "package.json" ]; then
+                echo "ERROR: package.json not found"
+                exit 1
+              fi
+            - |
+              if [ ! -f "next.config.ts" ]; then
+                echo "ERROR: next.config.ts not found"
+                exit 1
+              fi
+            - echo "Critical files verified"
         build:
           commands:
+            - echo "Building application..."
+            - echo "Node version: $(node --version)"
+            - echo "Build environment: $NODE_ENV"
             - npm run build
+            # Verify build output
+            - |
+              if [ ! -d ".next" ]; then
+                echo "ERROR: Build failed - .next directory not created"
+                exit 1
+              fi
+            - echo "Build completed successfully"
       artifacts:
         baseDirectory: .next
         files:
           - '**/*'
       cache:
         paths:
-          - node_modules/**/*
+          # Cache npm packages but not node_modules directly (prevents conflicts)
+          - ~/.npm/**/*
+          # Cache Next.js build artifacts (but avoid .next/cache which causes 404)
+          - .next/trace
+          - .next/server/**/*
+          - .next/static/**/*
+          # Cache package-lock for faster installs
+          - package-lock.json

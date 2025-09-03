@@ -26,7 +26,7 @@ import {
   CircularProgress,
   Tabs,
   Tab,
-  GridLegacy as Grid,
+  
   Paper,
   List,
   ListItem,
@@ -38,7 +38,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions
-} from '@mui/material';
+} from '@mui/material'
+import Grid from '@mui/material/Grid';
 import {
   Notifications,
   Email,
@@ -309,17 +310,19 @@ export default function SchedulingNotificationPanel() {
       <Typography variant="h4" gutterBottom>
         스케줄링 알림 관리
       </Typography>
-
       <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} sx={{ mb: 3 }}>
         <Tab label="알림 설정" icon={<Settings />} />
         <Tab label="알림 테스트" icon={<Send />} />
         <Tab label="템플릿 미리보기" icon={<Preview />} />
       </Tabs>
-
       {/* Tab 1: 알림 설정 */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 8
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -443,7 +446,11 @@ export default function SchedulingNotificationPanel() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -504,11 +511,14 @@ export default function SchedulingNotificationPanel() {
           </Grid>
         </Grid>
       )}
-
       {/* Tab 2: 알림 테스트 */}
       {activeTab === 1 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -590,7 +600,11 @@ export default function SchedulingNotificationPanel() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -632,11 +646,15 @@ export default function SchedulingNotificationPanel() {
           </Grid>
         </Grid>
       )}
-
       {/* Tab 3: 템플릿 미리보기 */}
       {activeTab === 2 && (
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -657,7 +675,12 @@ export default function SchedulingNotificationPanel() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -678,7 +701,12 @@ export default function SchedulingNotificationPanel() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -700,7 +728,6 @@ export default function SchedulingNotificationPanel() {
           </Grid>
         </Grid>
       )}
-
       {/* Preview Dialog */}
       <Dialog open={previewDialog} onClose={() => setPreviewDialog(false)} maxWidth="md" fullWidth>
         <DialogTitle>템플릿 미리보기</DialogTitle>
