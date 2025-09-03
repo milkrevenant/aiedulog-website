@@ -15,7 +15,6 @@ import {
   useTheme,
   alpha,
 } from '@mui/material'
-import { RichTreeView } from '@mui/x-tree-view/RichTreeView'
 import {
   Home,
   Forum,
