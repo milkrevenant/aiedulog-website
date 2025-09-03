@@ -106,12 +106,12 @@ const nextConfig: NextConfig = {
         },
       };
 
-      // Reduce memory usage for large bundles
+      // NOTE: Do NOT alias '@mui/material' or '@mui/icons-material'.
+      // Aliasing the package name to a specific file path breaks subpath imports
+      // like '@mui/material/Grid' and '@mui/material/utils', which MUI and
+      // its icon package rely on. Keep existing aliases intact without MUI.
       config.resolve.alias = {
         ...config.resolve.alias,
-        // Optimize MUI imports
-        '@mui/material': require.resolve('@mui/material'),
-        '@mui/icons-material': require.resolve('@mui/icons-material'),
       };
     }
 
