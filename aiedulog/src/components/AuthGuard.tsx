@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useAuth } from '@/lib/auth/hooks'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Box, Container, Paper, Typography, Button, CircularProgress } from '@mui/material'
 import { LockOutlined } from '@mui/icons-material'
@@ -20,7 +20,14 @@ export default function AuthGuard({
   requireModerator = false,
 }: AuthGuardProps) {
   const router = useRouter()
-  const { user, profile, loading, isAuthenticated, isAdmin, isModerator } = useAuth()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === 'authenticated'
+  const groups = ((session?.user as any)?.groups as string[]) || []
+  const role = groups.includes('admin') ? 'admin'
+    : groups.includes('moderator') ? 'moderator'
+    : 'member'
+  const isAdmin = role === 'admin'
+  const isModerator = role === 'moderator'
 
   // Simple permission check logic
   const isAuthorized = () => {
@@ -43,7 +50,7 @@ export default function AuthGuard({
     }
   }
 
-  if (loading) {
+  if (status === 'loading') {
     return (
       <Box
         sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}
@@ -135,7 +142,7 @@ export default function AuthGuard({
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             {requireAdmin ? '관리자' : '운영진'} 권한이 필요한 페이지입니다.
             <br />
-            현재 권한: {getRoleDisplayName(profile?.role)}
+            현재 권한: {getRoleDisplayName(role)}
           </Typography>
           <Button
             variant="outlined"
