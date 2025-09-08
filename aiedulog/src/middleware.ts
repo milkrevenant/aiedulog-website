@@ -73,11 +73,9 @@ export async function middleware(request: NextRequest) {
 
   // Edge-safe auth presence check using cookies only (no Supabase import)
   // Looks for Supabase auth cookie names; adjust if your project uses different names
-  const hasAuthCookie = request.cookies.has('sb-access-token') ||
-    request.cookies.has('sb:token') ||
-    request.cookies.getAll().some((c) => c.name.startsWith('sb-') && c.name.includes('token'))
-
-  const user = hasAuthCookie ? { id: 'placeholder' } : null
+  // NextAuth session cookie presence check (defensive)
+  const hasNextAuth = request.cookies.getAll().some((c) => c.name.includes('next-auth.session-token') || c.name.includes('__Secure-next-auth.session-token'))
+  const user = hasNextAuth ? { id: 'placeholder' } : null
 
   // 2. Auth routes - redirect to dashboard if already logged in
   if (isAuthRoute) {
@@ -141,6 +139,6 @@ export const config = {
      * - public assets (images, fonts, etc.)
      * - API routes for static assets
      */
-    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$).*)',
+    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|sitemap.xml|robots.txt|api/auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$).*)',
   ],
 }

@@ -15,13 +15,13 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     // 1. 먼저 기존 identity 매핑 확인
     const { data: existingAuth } = await supabase
       .from('auth_methods')
-      .select('user_id')
+      .select('identity_id')
       .eq('provider_user_id', user.id)
       .single()
     
-    if (existingAuth?.user_id) {
-      console.log('Identity already exists:', existingAuth.user_id)
-      return existingAuth.user_id
+    if (existingAuth?.identity_id) {
+      console.log('Identity already exists:', existingAuth.identity_id)
+      return existingAuth.identity_id
     }
     
     // 2. Identity 생성
@@ -62,15 +62,15 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     const { data: existingProfile } = await supabase
       .from('user_profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('identity_id', newIdentity.id)
       .single()
     
     if (existingProfile) {
       // 기존 프로필에 identity_id 업데이트
       await supabase
         .from('user_profiles')
-        .update({ identity_id: newIdentity.id })
-        .eq('id', user.id)
+        .update({ updated_at: new Date().toISOString() })
+        .eq('identity_id', newIdentity.id)
     } else {
       // 새 프로필 생성
       await supabase
@@ -101,12 +101,12 @@ export async function getOrCreateIdentity(user: User): Promise<string | null> {
   // 1. Try to get existing identity
   const { data: authMethod } = await supabase
     .from('auth_methods')
-    .select('user_id')
+    .select('identity_id')
     .eq('provider_user_id', user.id)
     .single()
   
-  if (authMethod?.user_id) {
-    return authMethod.user_id
+  if (authMethod?.identity_id) {
+    return authMethod.identity_id
   }
   
   // 2. Create new identity if not exists

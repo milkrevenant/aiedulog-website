@@ -24,7 +24,7 @@ const securityHeaders = [
   },
   {
     key: 'Content-Security-Policy',
-    value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.stripe.com; frame-src https://js.stripe.com;"
+    value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.stripe.com https://cognito-idp.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazonaws.com https://${process.env.COGNITO_DOMAIN || 'your-domain'}.auth.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazoncognito.com; frame-src https://js.stripe.com https://${process.env.COGNITO_DOMAIN || 'your-domain'}.auth.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazoncognito.com;`
   },
   {
     key: 'Strict-Transport-Security',
@@ -69,8 +69,8 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
 
-  // AWS Amplify output configuration
-  output: process.env.AWS_APP_ID ? 'standalone' : undefined,
+  // Output configuration (Amplify or Docker standalone)
+  output: process.env.AWS_APP_ID || process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
 
   // Production webpack configuration
   webpack: (config: any, { isServer, dev }: { isServer: boolean; dev: boolean }) => {

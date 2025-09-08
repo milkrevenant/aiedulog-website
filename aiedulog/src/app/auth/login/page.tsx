@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useAuth } from '@/lib/auth/hooks'
+import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import MFAVerification from '@/components/MFAVerification'
@@ -43,7 +43,7 @@ function LoginContent() {
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signIn } = useAuth()
+  // Using NextAuth Cognito
   const theme = useTheme()
 
   useEffect(() => {
@@ -68,18 +68,8 @@ function LoginContent() {
       ActivityTracker.setRememberMe(rememberMe)
       
       // Use the new identity-based sign in
-      const authData = await signIn(email, password)
-
-      if (authData) {
-        // 활동 추적 초기화
-        ActivityTracker.initialize()
-        
-        // Check for MFA if needed (keeping existing MFA logic for now)
-        // This would be enhanced later to work with the identity system
-        
-        // Redirect to feed after successful login
-        router.push('/feed')
-      }
+      // Delegate to Cognito Hosted UI (username/password via Hosted UI)
+      await signIn('cognito', { callbackUrl: '/feed' })
     } catch (error: any) {
       console.error('Login error:', error)
       
@@ -123,25 +113,7 @@ function LoginContent() {
     setError(null)
     
     try {
-      // For OAuth, we need to use Supabase client directly as it handles redirects
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      })
-
-      if (error) throw error
-      
-      // OAuth will redirect automatically
-      // The identity creation will be handled in the callback
+      await signIn('cognito', { callbackUrl: '/feed' })
     } catch (error: any) {
       setError('Google 로그인 중 오류가 발생했습니다.')
       setLoading(false)

@@ -72,7 +72,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
     const { data: authMethod, error: authError } = await supabase
       .from('auth_methods')
       .select(`
-        user_id,
+        identity_id,
         identities!inner (
           id,
           user_profiles!inner (
@@ -101,7 +101,7 @@ export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
     }
     
     const profile = authMethod.identities[0].user_profiles[0]
-    const identityId = authMethod.user_id
+    const identityId = (authMethod as any).identity_id
 
     // 이미 profile을 가져왔으므로 직접 사용
     const result = {

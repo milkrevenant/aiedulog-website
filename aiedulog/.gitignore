@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AWS Scripts and Infrastructure (보안)
+scripts/aws/
+scripts/db/
+*.aws
+*.key
