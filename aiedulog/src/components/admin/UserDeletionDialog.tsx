@@ -33,6 +33,7 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 
 interface AdminUser {
   id: string
@@ -75,6 +76,7 @@ export default function UserDeletionDialog({
   const [error, setError] = useState<string | null>(null)
   const [statsError, setStatsError] = useState<string | null>(null)
   const supabase = createClient()
+  const { data: session } = useSession()
 
   // Fetch user content statistics when dialog opens
   React.useEffect(() => {
@@ -169,7 +171,7 @@ export default function UserDeletionDialog({
     setError(null)
     
     try {
-      const { data: currentUserData } = await supabase.auth.getUser()
+      const currentUserSub = (session?.user as any)?.sub || (session?.user as any)?.id
       
       if (deletionType === 'soft') {
         await performSoftDelete()
@@ -182,8 +184,7 @@ export default function UserDeletionDialog({
         const { data: currentUserIdentity } = await supabase
           .from('auth_methods')
           .select('user_id')
-          .eq('provider', 'supabase')
-          .eq('provider_user_id', currentUserData.user?.id)
+          .eq('provider_user_id', currentUserSub)
           .single()
 
         await supabase.from('user_deletion_audit').insert([{

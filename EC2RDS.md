@@ -309,3 +309,120 @@ pm2 restart aiedulog
 ---
 
 *마지막 업데이트: 2025-08-26*
+
+---
+
+## ✅ Cognito + NextAuth + RDS/ECR/EC2 마이그레이션 플랜 (2025-09)
+
+아래 순서대로 진행하면 됩니다. 콘솔에서 해야 하는 것과 명령으로 처리할 것을 분리했습니다.
+
+### 0) 결과물/엔드포인트
+- 헬스체크: `GET /api/health` → 200 OK
+- 로그인: Cognito Hosted UI → NextAuth 세션 쿠키(`next-auth.session-token`)
+- 보호 라우트: `middleware.ts`가 NextAuth 세션으로 접근 제어
+- Docker 이미지: Next.js 15 standalone, ECR에 `aiedulog:prod`
+
+### 1) 콘솔에서 해야 하는 것 (당신)
+1. Cognito User Pool 생성
+   - App client(Web, no secret) 생성
+   - Hosted UI 도메인 prefix 설정(예: `aiedulog-prod`)
+   - OAuth → Authorization code grant, Scopes: `openid email profile`
+   - Callback URL: `https://YOUR_APP_DOMAIN/api/auth/callback/cognito`
+   - Sign-out URL: `https://YOUR_APP_DOMAIN/api/auth/signout`
+   - 값 메모: `COGNITO_REGION, COGNITO_USER_POOL_ID, COGNITO_CLIENT_ID, COGNITO_DOMAIN`
+
+2. RDS PostgreSQL 15 생성 (EC2와 같은 VPC/서브넷)
+   - 보안그룹: 인바운드 5432 → EC2 SG만 허용
+   - 엔드포인트 메모: `RDS-ENDPOINT:5432`
+
+3. (선택) ECR 리포지토리 생성 (이름: `aiedulog`)
+
+4. EC2 인스턴스 준비 (Docker 설치 예정)
+   - 동일 VPC/서브넷, ALB 뒤 배치 가능
+   - 보안그룹: 아웃바운드 허용, 인바운드(테스트용 3000 또는 ALB 통해 80/443)
+
+### 2) SSM 파라미터 저장 (내가 명령 제공, 당신 값만 필요)
+필요한 값: `AWS_REGION, SSM_PREFIX(/aiedulog/prod), NEXTAUTH_URL, NEXTAUTH_SECRET(랜덤 32+), COGNITO_*, APP_DATABASE_URL`
+
+```bash
+export AWS_REGION=ap-northeast-2
+export SSM_PREFIX=/aiedulog/prod
+
+export NEXTAUTH_URL=https://YOUR_APP_DOMAIN
+export NEXTAUTH_SECRET='GENERATE_A_STRONG_SECRET'
+
+export COGNITO_REGION=ap-northeast-2
+export COGNITO_USER_POOL_ID=ap-northeast-2_xxxxx
+export COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx
+export COGNITO_DOMAIN=yourprefix
+
+# RDS URL: postgres://USER:PASS@RDS-ENDPOINT:5432/DB
+export APP_DATABASE_URL='postgres://USER:PASS@RDS-ENDPOINT:5432/DB'
+
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/COGNITO_REGION" --value "$COGNITO_REGION" --type String --overwrite
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/COGNITO_USER_POOL_ID" --value "$COGNITO_USER_POOL_ID" --type String --overwrite
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/COGNITO_CLIENT_ID" --value "$COGNITO_CLIENT_ID" --type String --overwrite
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/COGNITO_DOMAIN" --value "$COGNITO_DOMAIN" --type String --overwrite
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/NEXTAUTH_URL" --value "$NEXTAUTH_URL" --type String --overwrite
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/NEXTAUTH_SECRET" --value "$NEXTAUTH_SECRET" --type SecureString --overwrite
+aws ssm put-parameter --region "$AWS_REGION" --name "$SSM_PREFIX/APP_DATABASE_URL" --value "$APP_DATABASE_URL" --type SecureString --overwrite
+```
+
+### 3) RDS 스키마 적용 (로컬에서 실행)
+덤프/변환본은 이미 준비됨:
+- `aiedulog/aiedulog/supabase-schema.sql`
+- `aiedulog/aiedulog/rds-schema.transformed.sql`
+
+```bash
+export APP_DATABASE_URL='postgres://USER:PASS@RDS-ENDPOINT:5432/DB'
+psql "$APP_DATABASE_URL" -v ON_ERROR_STOP=1 -f aiedulog/aiedulog/rds-schema.transformed.sql
+
+# 간단 확인
+psql "$APP_DATABASE_URL" -c "select now();"
+```
+
+### 4) Docker 이미지 빌드/푸시 (ECR)
+```bash
+export AWS_REGION=ap-northeast-2
+export AWS_ACCOUNT_ID=123456789012
+export TAG=prod
+
+bash aiedulog/aiedulog/scripts/aws/ecr-build-push.sh
+# 결과: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/aiedulog:$TAG
+```
+
+### 5) EC2에서 컨테이너 실행
+```bash
+export AWS_REGION=ap-northeast-2
+export SSM_PREFIX=/aiedulog/prod
+export ECR_IMAGE=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/aiedulog:prod
+
+# EC2에서 실행 (SSH 접속 후)
+bash aiedulog/aiedulog/scripts/aws/ec2-run.sh
+```
+
+### 6) 검증
+- 헬스체크: `https://YOUR_APP_DOMAIN/api/health` → 200 OK
+- 로그인: `https://YOUR_APP_DOMAIN/api/auth/signin` → Cognito Hosted UI → `/dashboard`
+- 보호 경로(관리자/운영진) 접근 제어 확인
+
+### 7) 트러블슈팅 요약
+- 쿠키/세션: `next-auth.session-token` 존재 확인
+- CSP: `next.config.ts`에 Cognito 도메인 반영(커넥트/프레임)
+- 네트워크: EC2→RDS 5432 인바운드 허용, ALB HealthCheck `/api/health`
+- 로그: `docker logs -f aiedulog` 또는 CloudWatch
+
+### 8) 관련 파일(본 리포지토리)
+- `aiedulog/aiedulog/src/app/api/auth/[...nextauth]/route.ts` (Cognito)
+- `aiedulog/aiedulog/src/app/providers.tsx` (SessionProvider)
+- `aiedulog/aiedulog/src/components/AuthGuard.tsx` (권한)
+- `aiedulog/aiedulog/src/middleware.ts` (세션 검사/제외 경로)
+- `aiedulog/aiedulog/next.config.ts` (CSP/standalone)
+- `aiedulog/aiedulog/src/lib/services/db.ts` (RDS 연결)
+- `aiedulog/aiedulog/src/app/api/health/route.ts` (헬스)
+- `aiedulog/aiedulog/supabase-schema.sql`, `aiedulog/aiedulog/rds-schema.transformed.sql`
+- `aiedulog/aiedulog/scripts/aws/ecr-build-push.sh`, `aiedulog/aiedulog/scripts/aws/ec2-run.sh`
+
+---
+
+최소 입력값을 제공해 주시면 위 명령들을 순차 실행하고, 검증 완료 시점에 변경사항을 일괄 커밋/푸시합니다.

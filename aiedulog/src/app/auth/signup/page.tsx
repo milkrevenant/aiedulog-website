@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { getUserIdentity } from '@/lib/identity/helpers'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
 import {
   Box,
   Container,
@@ -12,7 +11,6 @@ import {
   TextField,
   Button,
   Typography,
-  Divider,
   Alert,
   Stack,
   IconButton,
@@ -28,7 +26,6 @@ import {
   Select,
   MenuItem,
   Chip,
-  FormHelperText,
 } from '@mui/material'
 import {
   Visibility,
@@ -42,9 +39,8 @@ import {
   ArrowForward,
   Check,
 } from '@mui/icons-material'
-import { SecureStorage } from '@/lib/utils/secure-storage'
 
-const steps = ['기본 정보', '추가 정보', '이메일 인증']
+const steps = ['기본 정보', '추가 정보', '완료']
 
 interface SignUpData {
   email: string
@@ -65,7 +61,6 @@ export default function SignUpPage() {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>(
     'idle'
   )
-  const [emailCheckTimer, setEmailCheckTimer] = useState<NodeJS.Timeout | null>(null)
 
   const [formData, setFormData] = useState<SignUpData>({
     email: '',
@@ -78,7 +73,6 @@ export default function SignUpPage() {
   })
 
   const router = useRouter()
-  const supabase = createClient()
   const theme = useTheme()
 
   const interestOptions = [
@@ -95,15 +89,13 @@ export default function SignUpPage() {
   const handleNext = async () => {
     setError(null)
 
-    // 각 단계별 유효성 검사
     if (activeStep === 0) {
-      // 기본 정보 검증
       if (!formData.email || !formData.password || !formData.confirmPassword) {
         setError('모든 필드를 입력해주세요.')
         return
       }
-      if (emailStatus === 'taken') {
-        setError('이미 가입된 이메일입니다.')
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email)) {
+        setError('유효한 이메일을 입력해주세요.')
         return
       }
       if (formData.password.length < 6) {
@@ -115,7 +107,6 @@ export default function SignUpPage() {
         return
       }
     } else if (activeStep === 1) {
-      // 추가 정보 검증
       if (!formData.name || !formData.school) {
         setError('모든 필드를 입력해주세요.')
         return
@@ -127,109 +118,21 @@ export default function SignUpPage() {
     }
 
     if (activeStep === steps.length - 1) {
-      // 회원가입 실행
       await handleSignUp()
     } else {
-      setActiveStep((prevActiveStep) => prevActiveStep + 1)
+      setActiveStep((prev) => prev + 1)
     }
   }
 
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1)
-  }
+  const handleBack = () => setActiveStep((prev) => prev - 1)
 
   const handleSignUp = async () => {
-    setLoading(true)
-    setError(null)
-
     try {
-      // Supabase Auth 회원가입
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            name: formData.name,
-            school: formData.school,
-          },
-        },
-      })
-
-      if (authError) throw authError
-
-      // 이미 존재하는 이메일 체크 (identities가 비어있으면 기존 사용자)
-      if (authData?.user && (!authData.user.identities || authData.user.identities.length === 0)) {
-        throw new Error('이미 가입된 이메일입니다.')
-      }
-
-      if (authData.user) {
-        // 2. 완전하게 통합된 Identity 시스템을 통한 사용자 프로필 생성
-        try {
-          // Step 1: Create identity record
-          const { data: identityData, error: identityError } = await supabase
-            .from('identities')
-            .upsert({
-              id: authData.user.id,
-              status: 'active'
-            })
-            .select()
-            .single()
-
-          if (identityError) {
-            console.error('Failed to create/update identity:', identityError)
-          }
-
-          // Step 2: Create comprehensive user profile
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .upsert({
-              identity_id: authData.user.id,
-              email: formData.email,
-              username: formData.email.split('@')[0],
-              full_name: formData.name,
-              nickname: formData.name || formData.email.split('@')[0],
-              school: formData.school,
-              role: 'member', // All new users start as members
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-
-          if (profileError) {
-            console.error('프로필 생성 실패 (identity system):', profileError)
-            throw new Error('프로필 생성에 실패했습니다. 다시 시도해 주세요.')
-          }
-
-          // Step 3: Create auth_methods record
-          const { error: authMethodError } = await supabase
-            .from('auth_methods')
-            .upsert({
-              identity_id: authData.user.id,
-              provider: 'email',
-              provider_user_id: authData.user.id,
-              email_confirmed_at: null // Will be updated when email is confirmed
-            })
-
-          if (authMethodError) {
-            console.warn('Failed to create auth_methods record:', authMethodError)
-            // Continue as profile is created successfully
-          }
-
-          console.log('User signup completed with integrated identity system')
-        } catch (error) {
-          console.error('통합 Identity 시스템 오류:', error)
-          throw error
-        }
-      }
-
-      // 3. 이메일 저장 (재발송용) 및 성공 페이지로 이동
-      if (typeof window !== 'undefined') {
-        SecureStorage.setItem('signupEmail', formData.email)
-      }
-      router.push('/auth/signup-success')
-    } catch (error: any) {
-      setError(error.message)
+      setLoading(true)
+      // 실제 계정 생성/인증은 Cognito Hosted UI에서 진행
+      await signIn('cognito', { callbackUrl: '/feed' })
+    } catch (e: any) {
+      setError(e?.message || '회원가입 중 오류가 발생했습니다')
     } finally {
       setLoading(false)
     }
@@ -244,55 +147,17 @@ export default function SignUpPage() {
     }))
   }
 
-  // 이메일 중복 체크 함수
-  const checkEmailAvailability = async (email: string) => {
-    if (!email || !email.includes('@')) {
-      setEmailStatus('idle')
-      return
-    }
-
-    setEmailStatus('checking')
-
-    try {
-      // 임시로 signUp 시도하여 중복 체크
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: 'temporary-check-password-123456', // 임시 비밀번호
-      })
-
-      if (error) {
-        setEmailStatus('idle')
-        return
-      }
-
-      // identities가 비어있으면 이미 존재하는 이메일
-      if (data?.user && (!data.user.identities || data.user.identities.length === 0)) {
-        setEmailStatus('taken')
-      } else {
-        setEmailStatus('available')
-        // 임시 가입 취소 (실제로는 이메일 인증을 하지 않으면 계정이 활성화되지 않음)
-      }
-    } catch (err) {
-      setEmailStatus('idle')
-    }
-  }
-
-  // 이메일 입력 핸들러
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const email = e.target.value
     setFormData({ ...formData, email })
-
-    // 이전 타이머 취소
-    if (emailCheckTimer) {
-      clearTimeout(emailCheckTimer)
+    if (!email) {
+      setEmailStatus('idle')
+    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setEmailStatus('idle')
+    } else {
+      // 서버 중복 확인은 Cognito에서 처리. 여기서는 단순 표시만.
+      setEmailStatus('available')
     }
-
-    // 500ms 후에 중복 체크 (디바운싱)
-    const timer = setTimeout(() => {
-      checkEmailAvailability(email)
-    }, 500)
-
-    setEmailCheckTimer(timer)
   }
 
   return (
@@ -316,7 +181,6 @@ export default function SignUpPage() {
             bgcolor: 'background.paper',
           }}
         >
-          {/* Logo & Title */}
           <Stack spacing={2} alignItems="center" sx={{ mb: 4 }}>
             <Box
               sx={{
@@ -339,7 +203,6 @@ export default function SignUpPage() {
             </Typography>
           </Stack>
 
-          {/* Stepper */}
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
               <Step key={label}>
@@ -348,7 +211,6 @@ export default function SignUpPage() {
             ))}
           </Stepper>
 
-          {/* Form Content */}
           {activeStep === 0 && (
             <Stack spacing={3}>
               <TextField
@@ -360,34 +222,15 @@ export default function SignUpPage() {
                 required
                 variant="outlined"
                 error={emailStatus === 'taken'}
-                helperText={
-                  emailStatus === 'checking'
-                    ? '이메일 확인 중...'
-                    : emailStatus === 'taken'
-                      ? '이미 가입된 이메일입니다.'
-                      : emailStatus === 'available'
-                        ? '사용 가능한 이메일입니다.'
-                        : ''
-                }
+                helperText={emailStatus === 'available' ? '사용 가능한 이메일입니다.' : ''}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
                       <Email sx={{ color: 'text.secondary' }} />
                     </InputAdornment>
                   ),
-                  endAdornment: emailStatus !== 'idle' && (
-                    <InputAdornment position="end">
-                      {emailStatus === 'checking' && <CircularProgress size={20} />}
-                      {emailStatus === 'available' && <Check sx={{ color: 'success.main' }} />}
-                      {emailStatus === 'taken' && <Typography color="error">✕</Typography>}
-                    </InputAdornment>
-                  ),
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
               <TextField
@@ -413,11 +256,7 @@ export default function SignUpPage() {
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
               <TextField
@@ -436,20 +275,19 @@ export default function SignUpPage() {
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                      >
+                      <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
                         {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
+                error={formData.confirmPassword !== '' && formData.password !== formData.confirmPassword}
+                helperText={
+                  formData.confirmPassword !== '' && formData.password !== formData.confirmPassword
+                    ? '비밀번호가 일치하지 않습니다'
+                    : ''
+                }
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Stack>
           )}
@@ -470,11 +308,7 @@ export default function SignUpPage() {
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
               <TextField
@@ -491,11 +325,7 @@ export default function SignUpPage() {
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
 
               <FormControl fullWidth required>
@@ -504,14 +334,6 @@ export default function SignUpPage() {
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                   label="역할"
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <Work sx={{ color: 'text.secondary', ml: 1.5 }} />
-                    </InputAdornment>
-                  }
-                  sx={{
-                    borderRadius: 2,
-                  }}
                 >
                   <MenuItem value="teacher">교사</MenuItem>
                   <MenuItem value="student">학생</MenuItem>
@@ -541,31 +363,12 @@ export default function SignUpPage() {
           )}
 
           {activeStep === 2 && (
-            <Stack spacing={3} alignItems="center">
-              <Box
-                sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  bgcolor: alpha(theme.palette.success.main, 0.1),
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Check sx={{ fontSize: 40, color: 'success.main' }} />
-              </Box>
-              <Typography variant="h6" textAlign="center">
-                이메일 인증을 진행해주세요
+            <Stack spacing={2} alignItems="center">
+              <Check sx={{ fontSize: 40, color: 'success.main' }} />
+              <Typography>입력하신 정보를 바탕으로 가입을 진행합니다.</Typography>
+              <Typography variant="body2" color="text.secondary">
+                다음 단계에서 Cognito 로그인/가입 화면으로 이동합니다.
               </Typography>
-              <Typography variant="body2" color="text.secondary" textAlign="center">
-                {formData.email}로 인증 메일을 발송했습니다.
-                <br />
-                이메일을 확인하고 인증 링크를 클릭해주세요.
-              </Typography>
-              <Alert severity="info" sx={{ width: '100%' }}>
-                메일이 도착하지 않았다면 스팸 폴더를 확인해주세요.
-              </Alert>
             </Stack>
           )}
 
@@ -575,84 +378,37 @@ export default function SignUpPage() {
             </Alert>
           )}
 
-          {/* Action Buttons */}
           <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
-            {activeStep > 0 && activeStep < 2 && (
-              <Button
-                onClick={handleBack}
-                startIcon={<ArrowBack />}
-                sx={{ flex: 1, borderRadius: 10 }}
-              >
+            {activeStep > 0 && (
+              <Button onClick={handleBack} startIcon={<ArrowBack />} sx={{ flex: 1, borderRadius: 10 }}>
                 이전
               </Button>
             )}
-            {activeStep < 2 && (
-              <Button
-                onClick={handleNext}
-                variant="contained"
-                endIcon={activeStep === steps.length - 1 ? <Check /> : <ArrowForward />}
-                disabled={loading}
-                sx={{ flex: 1, borderRadius: 10 }}
-              >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : activeStep === steps.length - 1 ? (
-                  '가입 완료'
-                ) : (
-                  '다음'
-                )}
-              </Button>
-            )}
-            {activeStep === 2 && (
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={() => router.push('/auth/login')}
-                sx={{ borderRadius: 10 }}
-              >
-                로그인 페이지로 이동
-              </Button>
-            )}
+            <Button
+              onClick={handleNext}
+              variant="contained"
+              endIcon={activeStep === steps.length - 1 ? <Check /> : <ArrowForward />}
+              disabled={loading}
+              sx={{ flex: 1, borderRadius: 10 }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : activeStep === steps.length - 1 ? '가입 진행' : '다음'}
+            </Button>
           </Stack>
 
-          {/* Switch to Login */}
           {activeStep === 0 && (
             <Box sx={{ mt: 4, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 이미 계정이 있으신가요?{' '}
                 <Link href="/auth/login">
-                  <Typography
-                    component="span"
-                    variant="body2"
-                    color="primary"
-                    sx={{ cursor: 'pointer', fontWeight: 600 }}
-                  >
+                  <Typography component="span" variant="body2" color="primary" sx={{ cursor: 'pointer', fontWeight: 600 }}>
                     로그인
                   </Typography>
                 </Link>
               </Typography>
             </Box>
           )}
-
-          {/* Footer Links */}
-          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
-            <Link href="/terms">
-              <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
-                이용약관
-              </Typography>
-            </Link>
-            <Typography variant="caption" color="text.secondary">
-              •
-            </Typography>
-            <Link href="/privacy">
-              <Typography variant="caption" color="text.secondary" sx={{ cursor: 'pointer' }}>
-                개인정보처리방침
-              </Typography>
-            </Link>
-          </Stack>
         </Paper>
 
-        {/* Back to Home */}
         <Box sx={{ mt: 3, textAlign: 'center' }}>
           <Link href="/main">
             <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>

@@ -1,21 +1,16 @@
 import type { Metadata } from 'next'
-import { Noto_Sans_KR, IBM_Plex_Sans_KR } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Providers } from './providers'
 import ActivityTracker from '@/components/ActivityTracker'
 import './globals.css'
 
-const notoSansKr = Noto_Sans_KR({
-  weight: ['300', '400', '500', '700'],
-  subsets: ['latin'],
+const nunito = localFont({
+  src: [
+    { path: '../../public/fonts/Nunito/Nunito-Regular-XRXI3I6Li01BKofiOc5wtlZ2di8HDIkhdTA3j6zbXWjgevT5.woff2', weight: '400', style: 'normal' },
+    { path: '../../public/fonts/Nunito/Nunito-Regular-XRXI3I6Li01BKofiOc5wtlZ2di8HDIkhdTQ3j6zbXWjgeg.woff2', weight: '400', style: 'normal' },
+  ],
+  variable: '--font-primary',
   display: 'swap',
-  variable: '--font-noto-sans',
-})
-
-const ibmPlexSansKr = IBM_Plex_Sans_KR({
-  weight: ['300', '400', '500', '600', '700'],
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-ibm-plex',
 })
 
 export const metadata: Metadata = {
@@ -39,7 +34,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${notoSansKr.variable} ${ibmPlexSansKr.variable} antialiased`}>
+      <body className={`${nunito.variable} antialiased`}>
         <Providers>
           <ActivityTracker />
           {children}

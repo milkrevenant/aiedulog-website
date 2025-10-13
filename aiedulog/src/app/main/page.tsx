@@ -57,9 +57,8 @@ import { useState, useRef, useEffect } from 'react'
 import NotificationIcon from '@/components/NotificationIcon'
 import FeedSidebar from '@/components/FeedSidebar'
 import DynamicFooter from '@/components/DynamicFooter'
-import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
-import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
 export default function Home() {
@@ -71,42 +70,25 @@ export default function Home() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const [mobileAboutOpen, setMobileAboutOpen] = useState(false)
   const [mobileShareOpen, setMobileShareOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const supabase = createClient()
+  const { data: session } = useSession()
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-
-      if (user) {
-        // 표준화된 identity helper 사용
-        const identity = await getUserIdentity(user)
-        setProfile(identity?.profile || null)
-      }
-    }
-    getUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-
+    const syncFromSession = async () => {
       if (session?.user) {
-        // Identity 시스템을 통한 profile 조회
-        const identity = await getUserIdentity(session.user, supabase)
+        const authUser = session.user as any
+        setUser(authUser)
+        const identity = await getUserIdentity(authUser)
         setProfile(identity?.profile || null)
       } else {
+        setUser(null)
         setProfile(null)
       }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
+    }
+    syncFromSession()
+  }, [session])
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, menu: string) => {
     // 타이머가 있으면 취소

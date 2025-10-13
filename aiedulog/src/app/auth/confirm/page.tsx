@@ -1,66 +1,20 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { Box, Button, CircularProgress, Typography, Paper, Container, Stack } from '@mui/material'
+import { signIn } from 'next-auth/react'
 
 export default function EmailConfirmPage() {
-  const router = useRouter()
-  const supabase = createClient()
-
-  useEffect(() => {
-    const confirmEmail = async () => {
-      // Get hash parameters
-      const hashParams = new URLSearchParams(window.location.hash.slice(1))
-      const token_hash = hashParams.get('token_hash')
-      const type = hashParams.get('type')
-      const error = hashParams.get('error')
-      const errorCode = hashParams.get('error_code')
-      const errorDescription = hashParams.get('error_description')
-
-      // Check for errors
-      if (error || errorCode) {
-        console.error('Email confirmation error:', errorCode, errorDescription)
-        router.push(`/auth/login?error=${encodeURIComponent(errorDescription || 'Email confirmation failed')}`)
-        return
-      }
-
-      // Verify the token
-      if (token_hash && type) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash,
-          type: type as 'signup' | 'recovery' | 'invite' | 'email'
-        })
-
-        if (verifyError) {
-          console.error('Verification error:', verifyError)
-          router.push(`/auth/login?error=${encodeURIComponent(verifyError.message)}`)
-        } else {
-          // Success! Redirect to dashboard
-          router.push('/dashboard')
-        }
-      } else {
-        // No token, redirect to login
-        router.push('/auth/login')
-      }
-    }
-
-    confirmEmail()
-  }, [router, supabase])
-
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-      }}
-    >
-      <CircularProgress />
-      <Typography sx={{ mt: 2 }}>이메일 확인 중...</Typography>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50', py: 4 }}>
+      <Container maxWidth="sm">
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+          <Stack spacing={2} alignItems="center">
+            <Typography variant="h4" fontWeight={700}>이메일 확인</Typography>
+            <Typography variant="body2" color="text.secondary">이메일 확인 단계는 Cognito Hosted UI에서 처리됩니다.</Typography>
+            <Button variant="contained" onClick={() => signIn('cognito', { callbackUrl: '/feed' })}>로그인으로 이동</Button>
+          </Stack>
+        </Paper>
+      </Container>
     </Box>
   )
 }

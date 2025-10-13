@@ -1,0 +1,399 @@
+================================================================================
+AWS 계정간 마이그레이션 가이드 (A계정 → B계정)
+================================================================================
+
+목표: A계정 (Amplify + Supabase) → B계정 (EC2/Lightsail + RDS + Cognito)
+전략: 무중단 블루-그린 배포 + 점진적 트래픽 전환
+기간: 2-3주
+
+================================================================================
+마이그레이션 방식 선택
+================================================================================
+
+방식 1: EC2 + RDS (프로덕션 권장)
+  - 비용: $106/월
+  - 장점: Auto Scaling, Multi-AZ, 고가용성
+  - 단점: 복잡한 설정
+  - 적합: 트래픽 많음, 확장성 필요
+
+방식 2: Lightsail (빠른 시작)
+  - 비용: $36/월
+  - 장점: 5분 설정, 간단함, 비용 절약
+  - 단점: 확장성 제한
+  - 적합: 트래픽 적음, MVP
+
+현재 비용 (A계정): $41/월
+
+================================================================================
+공통 준비 단계
+================================================================================
+
+1. B계정 AWS 준비
+   - AWS 계정 생성 및 결제정보 등록
+   - IAM 사용자 생성 (AdministratorAccess)
+   - AWS CLI 설정: aws configure
+
+2. 데이터 백업 (Supabase)
+
+pg_dump "postgresql://postgres:PASSWORD@db.supabase.co:5432/postgres" \
+  --no-owner --no-privileges --clean --if-exists \
+  --exclude-schema=auth --exclude-schema=storage --exclude-schema=realtime \
+  > supabase_backup_$(date +%Y%m%d).sql
+
+3. 환경변수 준비
+
+기존 (A계정 Supabase):
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJhbGci...
+
+신규 (B계정):
+APP_DATABASE_URL=postgresql://postgres:PASSWORD@RDS_ENDPOINT:5432/aiedulog
+COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx
+COGNITO_CLIENT_SECRET=xxxxxxxxxxxxxxxxxx
+NEXTAUTH_URL=https://aiedulog.com
+NEXTAUTH_SECRET=랜덤시크릿키
+NODE_ENV=production
+
+================================================================================
+방식 1: EC2 + RDS 마이그레이션 (프로덕션)
+================================================================================
+
+--- 1단계: 인프라 구축 ---
+
+1.1 VPC 생성
+
+aws ec2 create-vpc --cidr-block 10.0.0.0/16 \
+  --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=aiedulog-vpc}]'
+
+aws ec2 create-subnet --vpc-id vpc-xxxxx \
+  --cidr-block 10.0.1.0/24 --availability-zone ap-northeast-2a
+
+aws ec2 create-subnet --vpc-id vpc-xxxxx \
+  --cidr-block 10.0.2.0/24 --availability-zone ap-northeast-2c
+
+1.2 RDS PostgreSQL 생성
+
+aws rds create-db-subnet-group \
+  --db-subnet-group-name aiedulog-subnet-group \
+  --db-subnet-group-description "AiEduLog DB Subnet" \
+  --subnet-ids subnet-xxxxx subnet-yyyyy
+
+aws rds create-db-instance \
+  --db-instance-identifier aiedulog-production \
+  --db-instance-class db.t3.micro \
+  --engine postgres \
+  --engine-version 15.4 \
+  --allocated-storage 20 \
+  --storage-type gp3 \
+  --db-name aiedulog \
+  --master-username postgres \
+  --master-user-password "SecurePassword123!" \
+  --db-subnet-group-name aiedulog-subnet-group \
+  --vpc-security-group-ids sg-xxxxx \
+  --backup-retention-period 7 \
+  --multi-az \
+  --storage-encrypted \
+  --deletion-protection
+
+# 대기 (10-15분)
+aws rds wait db-instance-available --db-instance-identifier aiedulog-production
+
+1.3 Cognito User Pool 생성
+
+aws cognito-idp create-user-pool \
+  --pool-name aiedulog-users \
+  --policies '{"PasswordPolicy":{"MinimumLength":8,"RequireUppercase":true,"RequireLowercase":true,"RequireNumbers":true}}' \
+  --username-configuration '{"CaseSensitive":false}' \
+  --verification-message-template '{"DefaultEmailOption":"CONFIRM_WITH_CODE","EmailMessage":"인증 코드: {####}","EmailSubject":"AiEduLog 계정 인증"}'
+
+aws cognito-idp create-user-pool-client \
+  --user-pool-id ap-northeast-2_xxxxxxxxx \
+  --client-name aiedulog-web-client \
+  --generate-secret \
+  --explicit-auth-flows ALLOW_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH
+
+1.4 EC2 Launch Template
+
+aws ec2 create-launch-template \
+  --launch-template-name aiedulog-template \
+  --version-description "Production Template" \
+  --launch-template-data '{
+    "ImageId":"ami-0c76973fbe0ee100c",
+    "InstanceType":"t3.medium",
+    "SecurityGroupIds":["sg-xxxxx"]
+  }'
+
+1.5 Application Load Balancer
+
+aws elbv2 create-load-balancer \
+  --name aiedulog-alb \
+  --subnets subnet-xxxxx subnet-yyyyy \
+  --security-groups sg-xxxxx \
+  --scheme internet-facing \
+  --type application
+
+--- 2단계: 데이터 마이그레이션 ---
+
+# RDS 엔드포인트 확인
+RDS_ENDPOINT=$(aws rds describe-db-instances \
+  --db-instance-identifier aiedulog-production \
+  --query 'DBInstances[0].Endpoint.Address' \
+  --output text)
+
+# 데이터 복원
+psql -h $RDS_ENDPOINT -U postgres -d aiedulog < supabase_backup_YYYYMMDD.sql
+
+# 검증
+psql -h $RDS_ENDPOINT -U postgres -d aiedulog -c "
+  SELECT 'posts' as table_name, COUNT(*) FROM posts
+  UNION ALL SELECT 'user_profiles', COUNT(*) FROM user_profiles;
+"
+
+--- 3단계: 애플리케이션 배포 ---
+
+# EC2에 SSH 접속 후
+git clone https://github.com/milkrevenant/aiedulog-website.git
+cd aiedulog-website/aiedulog
+
+# 환경변수 설정
+cat > .env.production <<EOF
+APP_DATABASE_URL=postgresql://postgres:PASSWORD@${RDS_ENDPOINT}:5432/aiedulog
+COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx
+NEXTAUTH_URL=https://aiedulog.com
+NEXTAUTH_SECRET=랜덤키
+NODE_ENV=production
+EOF
+
+# 빌드 및 실행
+npm install
+npm run build
+pm2 start npm --name "aiedulog" -- start
+pm2 save
+
+--- 4단계: DNS 점진적 전환 ---
+
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+  --names aiedulog-alb \
+  --query 'LoadBalancers[0].DNSName' \
+  --output text)
+
+# Phase 1: 10% 트래픽
+aws route53 change-resource-record-sets --hosted-zone-id Z123456789 --change-batch '{
+  "Changes":[{
+    "Action":"UPSERT",
+    "ResourceRecordSet":{
+      "Name":"aiedulog.com",
+      "Type":"A",
+      "SetIdentifier":"amplify-old",
+      "Weight":90,
+      "AliasTarget":{
+        "DNSName":"d12345abcdef.amplifyapp.com",
+        "EvaluateTargetHealth":false,
+        "HostedZoneId":"Z2FDTNDATAQYW2"
+      }
+    }
+  },{
+    "Action":"UPSERT",
+    "ResourceRecordSet":{
+      "Name":"aiedulog.com",
+      "Type":"A",
+      "SetIdentifier":"ec2-new",
+      "Weight":10,
+      "AliasTarget":{
+        "DNSName":"'${ALB_DNS}'",
+        "EvaluateTargetHealth":true,
+        "HostedZoneId":"ZWKZPGTI48KDX"
+      }
+    }
+  }]
+}'
+
+# 모니터링 (1-2시간)
+# 이상 없으면 Weight 50:50 → 100:0 으로 점진 전환
+
+================================================================================
+방식 2: Lightsail 마이그레이션 (빠른 시작)
+================================================================================
+
+--- 1단계: Lightsail 인프라 ---
+
+1.1 인스턴스 생성
+
+aws lightsail create-instances \
+  --region ap-northeast-2 \
+  --instance-names aiedulog-app \
+  --availability-zone ap-northeast-2a \
+  --blueprint-id ubuntu_22_04 \
+  --bundle-id medium_2_0
+
+1.2 정적 IP
+
+aws lightsail allocate-static-ip --static-ip-name aiedulog-static-ip
+aws lightsail attach-static-ip \
+  --static-ip-name aiedulog-static-ip \
+  --instance-name aiedulog-app
+
+1.3 데이터베이스
+
+aws lightsail create-relational-database \
+  --region ap-northeast-2 \
+  --relational-database-name aiedulog-db \
+  --relational-database-blueprint-id postgres_15 \
+  --relational-database-bundle-id micro_2_0 \
+  --master-database-name aiedulog \
+  --master-username postgres \
+  --master-user-password "SecurePassword123!" \
+  --backup-retention-enabled \
+  --preferred-backup-window "03:00-04:00"
+
+1.4 방화벽
+
+aws lightsail put-instance-public-ports \
+  --instance-name aiedulog-app \
+  --port-infos fromPort=80,toPort=80,protocol=TCP \
+               fromPort=443,toPort=443,protocol=TCP \
+               fromPort=3000,toPort=3000,protocol=TCP
+
+--- 2단계: 데이터 마이그레이션 ---
+
+LIGHTSAIL_DB=$(aws lightsail get-relational-database \
+  --relational-database-name aiedulog-db \
+  --query 'relationalDatabase.masterEndpoint.address' \
+  --output text)
+
+psql -h $LIGHTSAIL_DB -U postgres -d aiedulog < supabase_backup_YYYYMMDD.sql
+
+--- 3단계: 애플리케이션 배포 ---
+
+# Lightsail 인스턴스 SSH 접속
+LIGHTSAIL_IP=$(aws lightsail get-static-ip \
+  --static-ip-name aiedulog-static-ip \
+  --query 'staticIp.ipAddress' \
+  --output text)
+
+ssh -i aiedulog-key.pem ubuntu@$LIGHTSAIL_IP
+
+# 인스턴스 내부
+sudo apt update && sudo apt install -y docker.io nginx certbot python3-certbot-nginx
+git clone https://github.com/milkrevenant/aiedulog-website.git
+cd aiedulog-website/aiedulog
+
+# Docker 빌드
+sudo docker build -t aiedulog:latest .
+sudo docker run -d --name aiedulog-app -p 3000:3000 \
+  --env-file .env.production \
+  --restart unless-stopped \
+  aiedulog:latest
+
+# Nginx 설정
+sudo tee /etc/nginx/sites-available/aiedulog <<EOF
+server {
+    listen 80;
+    server_name aiedulog.com;
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name aiedulog.com;
+
+    ssl_certificate /etc/letsencrypt/live/aiedulog.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/aiedulog.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}
+EOF
+
+sudo ln -s /etc/nginx/sites-available/aiedulog /etc/nginx/sites-enabled/
+sudo certbot --nginx -d aiedulog.com
+sudo nginx -t && sudo systemctl reload nginx
+
+--- 4단계: DNS 전환 ---
+
+aws route53 change-resource-record-sets --hosted-zone-id Z123456789 --change-batch "{
+  \"Changes\":[{
+    \"Action\":\"UPSERT\",
+    \"ResourceRecordSet\":{
+      \"Name\":\"aiedulog.com\",
+      \"Type\":\"A\",
+      \"TTL\":300,
+      \"ResourceRecords\":[{\"Value\":\"${LIGHTSAIL_IP}\"}]
+    }
+  }]
+}"
+
+================================================================================
+롤백 절차
+================================================================================
+
+긴급 롤백 (A계정으로 복귀):
+
+aws route53 change-resource-record-sets --hosted-zone-id Z123456789 --change-batch '{
+  "Changes":[{
+    "Action":"UPSERT",
+    "ResourceRecordSet":{
+      "Name":"aiedulog.com",
+      "Type":"A",
+      "SetIdentifier":"amplify-emergency",
+      "Weight":100,
+      "AliasTarget":{
+        "DNSName":"d12345abcdef.amplifyapp.com",
+        "EvaluateTargetHealth":false,
+        "HostedZoneId":"Z2FDTNDATAQYW2"
+      }
+    }
+  }]
+}'
+
+================================================================================
+모니터링 체크리스트
+================================================================================
+
+- HTTP 응답시간 < 2초
+- 에러율 < 1%
+- 데이터베이스 연결 정상
+- SSL 인증서 유효
+- 동시접속 처리 가능
+
+================================================================================
+비용 비교
+================================================================================
+
+현재 (A계정):
+  Amplify $15 + Supabase $25 + Route53 $1 = $41/월
+
+옵션 1 (EC2 + RDS):
+  EC2 $60 + RDS $15 + ALB $20 + 기타 $11 = $106/월
+
+옵션 2 (Lightsail):
+  Lightsail Instance $20 + DB $15 + Route53 $1 = $36/월 ✅
+
+================================================================================
+실행 일정
+================================================================================
+
+Week 1-2: 인프라 준비
+  Day 1-2: B계정 설정 및 VPC/RDS/Cognito 생성
+  Day 3-4: EC2/Lightsail 인스턴스 설정
+  Day 5-7: 데이터 마이그레이션 테스트
+  Day 8-10: 애플리케이션 배포 및 테스트
+
+Week 3: 점진적 전환
+  Day 15: 최종 데이터 백업 및 복원
+  Day 16: 10% 트래픽 전환
+  Day 17-18: 50% 트래픽 전환
+  Day 19-20: 100% 트래픽 전환
+  Day 21: A계정 리소스 정리
+
+================================================================================
+작성일: 2025-10-13
+작성자: Claude Code Assistant
+버전: v2.0 (EC2 + Lightsail 통합)
+================================================================================

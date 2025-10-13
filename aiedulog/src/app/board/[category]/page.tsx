@@ -184,7 +184,7 @@ export default function BoardPage() {
 
         if (legacyError) throw legacyError
         
-        const postsWithStats = legacyData.map((post) => ({
+        const postsWithStats = legacyData.map((post: any) => ({
           ...post,
           author: {
             name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
@@ -203,7 +203,7 @@ export default function BoardPage() {
       }
 
       if (data) {
-        const postsWithStats = data.map((post) => {
+        const postsWithStats = data.map((post: any) => {
           const userProfile = post.identities?.user_profiles?.[0]
           return {
             ...post,

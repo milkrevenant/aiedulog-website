@@ -46,20 +46,20 @@ export async function getNotifications(limit = 20, offset = 0) {
 }
 
 // 읽지 않은 알림 수 가져오기
-export async function getUnreadNotificationCount() {
+export async function getUnreadNotificationCount(providerUserId?: string) {
   const supabase = createClient()
 
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return 0
+    if (!providerUserId) {
+      // Without Supabase auth, require explicit providerUserId (e.g., Cognito sub)
+      return 0
+    }
 
     // First get the user's user_id from auth_methods table
     const { data: authMethod, error: authError } = await supabase
       .from('auth_methods')
       .select('user_id')
-      .eq('provider_user_id', user.id)
+      .eq('provider_user_id', providerUserId)
       .single()
     
     if (authError || !authMethod) {
@@ -104,13 +104,17 @@ export async function markNotificationAsRead(notificationId: string) {
 }
 
 // 모든 알림 읽음 처리
-export async function markAllNotificationsAsRead() {
+export async function markAllNotificationsAsRead(providerUserId?: string) {
   const supabase = createClient()
+  if (!providerUserId) throw new Error('User not authenticated')
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
+  // Map provider user (e.g., Cognito sub) to internal user_id
+  const { data: authMethod, error: authError } = await supabase
+    .from('auth_methods')
+    .select('user_id')
+    .eq('provider_user_id', providerUserId)
+    .single()
+  if (authError || !authMethod) throw new Error('User not found')
 
   const { error } = await supabase
     .from('notifications')
@@ -118,7 +122,7 @@ export async function markAllNotificationsAsRead() {
       is_read: true,
       read_at: new Date().toISOString(),
     })
-    .eq('user_id', user.id)
+    .eq('user_id', authMethod.user_id)
     .eq('is_read', false)
 
   if (error) {

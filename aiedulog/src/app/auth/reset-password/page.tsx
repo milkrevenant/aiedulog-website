@@ -1,18 +1,9 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { translateAuthError } from '@/lib/utils/errorTranslator'
-import { 
-  validatePasswordStrength,
-  requestPasswordReset,
-  updatePassword,
-  getClientIP,
-  isValidEmail,
-  formatRateLimitTime
-} from '@/lib/auth/enhanced-password-reset'
+import { signIn } from 'next-auth/react'
 import {
   Box,
   Container,
@@ -47,75 +38,28 @@ function ResetPasswordContent() {
   const [mode, setMode] = useState<'request' | 'update'>('request')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [checkingSession, setCheckingSession] = useState(true)
-  const [passwordStrength, setPasswordStrength] = useState<ReturnType<typeof validatePasswordStrength> | null>(null)
-  
+  const [passwordScore, setPasswordScore] = useState<number>(0)
+
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const theme = useTheme()
-  
 
-  useEffect(() => {
-    const checkMode = async () => {
-      // Check URL params for mode
-      const modeParam = searchParams.get('mode')
-      
-      if (modeParam === 'update') {
-        // We're in update mode, check if we have a valid session
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session) {
-          setMode('update')
-        } else {
-          // No valid session for password update
-          setError('세션이 만료되었습니다. 다시 비밀번호 재설정을 요청해주세요.')
-          setMode('request')
-        }
-      }
-      
-      setCheckingSession(false)
-    }
-    
-    checkMode()
-  }, [searchParams, supabase])
+  // Determine mode from URL (?mode=update)
+  const modeParam = searchParams.get('mode')
+  if (modeParam === 'update' && mode !== 'update') {
+    setMode('update')
+  }
 
   const handlePasswordResetRequest = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
     setSuccess(null)
-
-    // Validate email format
-    if (!isValidEmail(email)) {
-      setError('올바른 이메일 주소를 입력해주세요.')
-      setLoading(false)
-      return
-    }
-
-    // Note: Rate limiting is now handled server-side in requestPasswordReset
-
     try {
-      const result = await requestPasswordReset({
-        email,
-        ipAddress: getClientIP(),
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined
-      })
-
-      if (!result.allowed) {
-        if (result.remainingTime) {
-          setError(formatRateLimitTime(result.remainingTime / 1000))
-        } else {
-          setError(result.message)
-        }
-        setLoading(false)
-        return
-      }
-
-      setSuccess(result.message || '비밀번호 재설정 링크를 이메일로 전송했습니다. 이메일을 확인해주세요.')
-      setEmail('')
-    } catch (error: any) {
-      setError(translateAuthError(error))
+      // Delegate to Cognito Hosted UI (includes "Forgot password" link)
+      await signIn('cognito', { callbackUrl: '/feed' })
+    } catch (err: any) {
+      setError('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }
@@ -126,50 +70,14 @@ function ResetPasswordContent() {
     setLoading(true)
     setError(null)
     setSuccess(null)
-
     try {
-      const result = await updatePassword({
-        password,
-        confirmPassword,
-        ipAddress: getClientIP()
-      })
-
-      if (!result.allowed) {
-        setError(result.message)
-        if (result.requiresMFA) {
-          // Handle MFA requirement if needed
-          setError(result.message + ' (2단계 인증이 필요합니다)')
-        }
-        setLoading(false)
-        return
-      }
-
-      setSuccess(result.message || '비밀번호가 성공적으로 변경되었습니다.')
-      
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push('/auth/login?message=password_reset_success')
-      }, 2000)
-    } catch (error: any) {
-      setError(translateAuthError(error))
+      // Password change is handled in Cognito flows
+      await signIn('cognito', { callbackUrl: '/feed' })
+    } catch (err: any) {
+      setError('비밀번호 변경 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (checkingSession && mode === 'update') {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    )
   }
 
   return (
@@ -206,20 +114,19 @@ function ResetPasswordContent() {
                 </Typography>
               </Stack>
             </Link>
-            
+
             <Typography variant="h4" fontWeight="bold" gutterBottom>
               {mode === 'request' ? '비밀번호 찾기' : '새 비밀번호 설정'}
             </Typography>
             <Typography variant="body1" color="text.secondary">
               {mode === 'request' 
-                ? '가입하신 이메일을 입력하시면 비밀번호 재설정 링크를 보내드립니다.'
-                : '새로운 비밀번호를 입력해주세요.'}
+                ? '가입하신 이메일을 입력하시면 Cognito 화면에서 재설정을 진행합니다.'
+                : 'Cognito에서 비밀번호 변경 과정을 완료해주세요.'}
             </Typography>
           </Box>
 
           {mode === 'request' ? (
-            // Password Reset Request Form
-            (<Box component="form" onSubmit={handlePasswordResetRequest} sx={{ width: '100%' }}>
+            <Box component="form" onSubmit={handlePasswordResetRequest} sx={{ width: '100%' }}>
               <Stack spacing={3}>
                 <TextField
                   fullWidth
@@ -236,13 +143,6 @@ function ResetPasswordContent() {
                         <Email sx={{ color: 'action.active' }} />
                       </InputAdornment>
                     ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: 'primary.main',
-                      },
-                    },
                   }}
                 />
 
@@ -268,39 +168,18 @@ function ResetPasswordContent() {
                   variant="contained"
                   size="large"
                   disabled={loading || !email}
-                  sx={{
-                    py: 1.5,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                    fontWeight: 'bold',
-                  }}
+                  sx={{ py: 1.5, borderRadius: 2, textTransform: 'none', fontSize: '1rem', fontWeight: 'bold' }}
                 >
                   {loading ? (
                     <CircularProgress size={24} color="inherit" />
                   ) : (
-                    '재설정 링크 받기'
+                    '재설정 진행'
                   )}
                 </Button>
-
-                <Typography variant="body2" color="text.secondary" align="center">
-                  이메일이 오지 않나요?{' '}
-                  <Link 
-                    href="/auth/signup" 
-                    style={{ 
-                      color: theme.palette.primary.main,
-                      textDecoration: 'none',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    새로 가입하기
-                  </Link>
-                </Typography>
               </Stack>
-            </Box>)
+            </Box>
           ) : (
-            // Password Update Form
-            (<Box component="form" onSubmit={handlePasswordUpdate} sx={{ width: '100%' }}>
+            <Box component="form" onSubmit={handlePasswordUpdate} sx={{ width: '100%' }}>
               <Stack spacing={3}>
                 <TextField
                   fullWidth
@@ -309,11 +188,7 @@ function ResetPasswordContent() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value)
-                    if (e.target.value) {
-                      setPasswordStrength(validatePasswordStrength(e.target.value))
-                    } else {
-                      setPasswordStrength(null)
-                    }
+                    setPasswordScore(Math.min(4, Math.floor((e.target.value.length || 0) / 3)))
                   }}
                   required
                   autoComplete="new-password"
@@ -326,56 +201,22 @@ function ResetPasswordContent() {
                     ),
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
+                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
                     ),
                   }}
-                  helperText={passwordStrength ? passwordStrength.feedback.join(' ') : "최소 8자 이상 입력해주세요"}
+                  helperText={password ? '안전한 비밀번호를 사용하세요.' : '최소 8자 이상 입력해주세요'}
                 />
 
-                {passwordStrength && password && (
+                {password && (
                   <Box sx={{ width: '100%', mt: -2, mb: 2 }}>
                     <LinearProgress 
                       variant="determinate" 
-                      value={(passwordStrength.score / 4) * 100}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                        bgcolor: 'grey.200',
-                        '& .MuiLinearProgress-bar': {
-                          borderRadius: 3,
-                          bgcolor: 
-                            passwordStrength.score <= 1 ? 'error.main' :
-                            passwordStrength.score === 2 ? 'warning.main' :
-                            passwordStrength.score === 3 ? 'info.main' :
-                            'success.main'
-                        }
-                      }}
+                      value={(passwordScore / 4) * 100}
+                      sx={{ height: 6, borderRadius: 3 }}
                     />
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        color: 
-                          passwordStrength.score <= 1 ? 'error.main' :
-                          passwordStrength.score === 2 ? 'warning.main' :
-                          passwordStrength.score === 3 ? 'info.main' :
-                          'success.main',
-                        mt: 0.5,
-                        display: 'block'
-                      }}
-                    >
-                      비밀번호 강도: {
-                        passwordStrength.score <= 1 ? '약함' :
-                        passwordStrength.score === 2 ? '보통' :
-                        passwordStrength.score === 3 ? '강함' :
-                        '매우 강함'
-                      }
-                    </Typography>
                   </Box>
                 )}
 
@@ -395,10 +236,7 @@ function ResetPasswordContent() {
                     ),
                     endAdornment: (
                       <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          edge="end"
-                        >
+                        <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
                           {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
@@ -434,27 +272,17 @@ function ResetPasswordContent() {
                   variant="contained"
                   size="large"
                   disabled={loading || !password || !confirmPassword || password !== confirmPassword}
-                  sx={{
-                    py: 1.5,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                    fontWeight: 'bold',
-                  }}
+                  sx={{ py: 1.5, borderRadius: 2, textTransform: 'none', fontSize: '1rem', fontWeight: 'bold' }}
                 >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    '비밀번호 변경'
-                  )}
+                  {loading ? <CircularProgress size={24} color="inherit" /> : '비밀번호 변경 진행'}
                 </Button>
               </Stack>
-            </Box>)
+            </Box>
           )}
         </Paper>
       </Container>
     </Box>
-  );
+  )
 }
 
 export default function ResetPasswordPage() {

@@ -5,7 +5,6 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 import { SessionProvider } from 'next-auth/react'
 import { theme } from './theme/theme'
-import { AuthProvider } from '@/lib/auth/context'
 import { useEffect } from 'react'
 import { initializeClientSecurity } from '@/lib/security/client-security'
 import SchedulingNavigation from '@/components/SchedulingNavigation'
@@ -31,10 +30,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SessionProvider>
-          <AuthProvider>
-            {children}
-            <SchedulingNavigation />
-          </AuthProvider>
+          {children}
+          <SchedulingNavigation />
         </SessionProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>

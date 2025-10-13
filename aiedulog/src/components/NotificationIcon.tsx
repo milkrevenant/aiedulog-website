@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { getUnreadNotificationCount } from '@/lib/notifications'
 import { IconButton, Badge, Menu, MenuItem, Typography, Box, Divider, Button } from '@mui/material'
 import NotificationsIcon from '@mui/icons-material/Notifications'
@@ -35,6 +36,7 @@ const iconComponents: Record<string, React.ElementType> = {
 export default function NotificationIcon() {
   const router = useRouter()
   const supabase = createClient()
+  const { data: session } = useSession()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -43,7 +45,8 @@ export default function NotificationIcon() {
   // 읽지 않은 알림 수 가져오기
   const fetchUnreadCount = async () => {
     try {
-      const count = await getUnreadNotificationCount()
+      const providerUserId = (session?.user as any)?.sub || (session?.user as any)?.id
+      const count = await getUnreadNotificationCount(providerUserId)
       setUnreadCount(count)
     } catch (error) {
       console.error('Failed to fetch unread count:', error)
@@ -110,7 +113,7 @@ export default function NotificationIcon() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [session])
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget)

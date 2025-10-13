@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useSession } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
@@ -39,7 +39,7 @@ import {
 import AppHeader from '@/components/AppHeader'
 
 export default function ProfileSettingsPage() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -57,39 +57,36 @@ export default function ProfileSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { data: session, status } = useSession()
   const theme = useTheme()
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
+    const syncUser = async () => {
+      if (status === 'loading') return
+      if (status === 'unauthenticated') {
         router.push('/auth/login')
         return
       }
+      const authUser = session?.user as any
+      setUser(authUser || null)
+      setEmail((authUser?.email as string) || '')
 
-      setUser(user)
-      setEmail(user.email || '')
-
-      // Use standardized identity helper - complete integration
-      const identity = await getUserIdentity(user, supabase)
-      
-      if (identity?.profile) {
-        setProfile(identity.profile)
-        setAvatarUrl(identity.profile.avatar_url || null)
-        setNickname(identity.profile.nickname || identity.profile.email?.split('@')[0] || '')
-      } else {
-        // If no identity profile found, this should not happen in a properly migrated system
-        console.error('No identity profile found for user:', user.id)
-        setError('프로필을 불러올 수 없습니다. 관리자에게 문의하세요.')
+      if (authUser) {
+        const identity = await getUserIdentity(authUser, supabase)
+        if (identity?.profile) {
+          setProfile(identity.profile)
+          setAvatarUrl(identity.profile.avatar_url || null)
+          setNickname(identity.profile.nickname || identity.profile.email?.split('@')[0] || '')
+        } else {
+          console.error('No identity profile found for user:', authUser?.id || authUser?.sub)
+          setError('프로필을 불러올 수 없습니다. 관리자에게 문의하세요.')
+        }
       }
 
       setLoading(false)
     }
-    getUser()
-  }, [router, supabase])
+    syncUser()
+  }, [status, session, router, supabase])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -126,13 +123,13 @@ export default function ProfileSettingsPage() {
       if (avatarUrl) {
         const oldPath = avatarUrl.split('/').pop()
         if (oldPath) {
-          await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`])
+          await supabase.storage.from('avatars').remove([`${(user as any).sub || user.id}/${oldPath}`])
         }
       }
 
       // 새 아바타 업로드
       const fileExt = selectedFile.name.split('.').pop()
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`
+      const fileName = `${(user as any).sub || user.id}/${Date.now()}.${fileExt}`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
@@ -179,7 +176,7 @@ export default function ProfileSettingsPage() {
       // Storage에서 삭제
       const path = avatarUrl.split('/').pop()
       if (path) {
-        await supabase.storage.from('avatars').remove([`${user.id}/${path}`])
+        await supabase.storage.from('avatars').remove([`${(user as any).sub || user.id}/${path}`])
       }
 
       // 프로필 업데이트 - 완전히 통합된 Identity 시스템 사용

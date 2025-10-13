@@ -22,8 +22,7 @@ import {
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   AccountCircle,
@@ -44,41 +43,24 @@ export default function Navbar() {
   const router = useRouter()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null)
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
-  const supabase = createClient()
+  const { data: session } = useSession()
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-
-      if (user) {
-        // Use identity helper for consistent user data retrieval
-        const identity = await getUserIdentity(user)
-        setProfile(identity?.profile || null)
-      }
-    }
-    getUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-
+    const syncFromSession = async () => {
       if (session?.user) {
-        // Use identity helper for consistent user data retrieval
-        const identity = await getUserIdentity(session.user)
+        const authUser = session.user as any
+        setUser(authUser)
+        const identity = await getUserIdentity(authUser)
         setProfile(identity?.profile || null)
       } else {
+        setUser(null)
         setProfile(null)
       }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
+    }
+    syncFromSession()
+  }, [session])
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -97,9 +79,8 @@ export default function Navbar() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await nextAuthSignOut({ callbackUrl: '/' })
     handleClose()
-    window.location.href = '/'
   }
 
   const menuItems = [
