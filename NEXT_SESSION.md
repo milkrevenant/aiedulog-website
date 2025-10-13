@@ -431,3 +431,65 @@ Object.defineProperty(window, 'location', {
 *Updated: 2025-08-25*
 *Status: Test Infrastructure Complete → Business Logic Enhancement Phase*
 *Priority: MEDIUM - Refinement and enhancement in next session*
+---
+
+## 📅 2025-10-01 – AWS Migration Status (Canonical)
+- **Account/Region**: 516725542518 / ap-northeast-2
+- **EC2**: `aiedulog-prod-ec2` (t3.micro) running, SG `aiedulog-prod-ec2-sg`
+- **ALB**: `alb-aiedulog-web` active, DNS `alb-aiedulog-web-1157033698.ap-northeast-2.elb.amazonaws.com`
+- **Cognito**: User Pool `ap-northeast-2_aMs5e49zf` present
+- **RDS**: `aiedulog-prod-db` (Postgres 17.4) – status `creating`
+  - DB Subnet Group: `aiedulog-rds-subnets` (az: 2a/2b/2d)
+  - RDS SG: `sg-0aa1bb6eac2280155` (ingress 5432 from `aiedulog-prod-ec2-sg`)
+- **SSM params**: `/aiedulog/prod/NEXTAUTH_URL`, `/NEXTAUTH_SECRET`, `/COGNITO_REGION`, `/COGNITO_USER_POOL_ID`, `/COGNITO_CLIENT_ID`, `/COGNITO_CLIENT_SECRET`
+
+### ✅ Today’s Actions
+1) Created RDS security group (private, EC2-only ingress)
+2) Created DB subnet group across multiple AZs
+3) Started private RDS instance with deletion protection + CW logs
+4) Stored/verified NextAuth + Cognito params in SSM (SecureString where appropriate)
+
+### 🎯 Next Steps
+- Wait for RDS `available` → store `/aiedulog/prod/APP_DATABASE_URL` (SecureString)
+- Apply schema and run connectivity check (psql `select now();`)
+- Confirm ALB target health on `/api/health`
+- Proceed with ECR build/push → run container on EC2 behind ALB
+- Gradually remove server-side Supabase usages; update `images.remotePatterns`
+
+### 🔁 Auth Migration to Cognito (In-Progress)
+- Replace all `supabase.auth` usages with NextAuth/Cognito session
+- Standardize user ID to Cognito `sub` across app and APIs
+- Update `usePermission` to read `session.user.groups` → role mapping
+- Ensure `AuthGuard` relies solely on NextAuth session and groups
+- Remove `auth.user_id`/`auth.uid()` references in queries and helpers
+- Add `next/font/local` with `.woff2` for KR fonts (no network fetch)
+- Retry Docker build (node:20-slim) after auth + fonts changes
+
+Note: This file is the canonical session log. Previous duplicate (`aiedulog/NEXT_SESSION.md`) has been consolidated and removed.
+
+## 📅 2025-10-02 – Dev Infra Progress (Hands-on)
+- **RDS (dev)**: `aiedulog-dev-db` available
+  - Endpoint: `aiedulog-dev-db.c72yk0k24dsh.ap-northeast-2.rds.amazonaws.com`
+  - Secrets stored in SSM (dev):
+    - `/aiedulog/dev/DB_PASSWORD` (SecureString)
+    - `/aiedulog/dev/APP_DATABASE_URL` (SecureString)
+- **Health Check**: Added `GET /api/health` for ALB target health
+- **Docker/ECR**:
+  - Installed Colima + Docker CLI locally; set DNS 8.8.8.8/1.1.1.1; expanded disk to 40GB
+  - Switched Dockerfile base to `node:20-slim`; added CA certs to avoid musl/SWC fetches
+  - Fixed TS implicit-any build errors in `admin/users/page.tsx`, `board/[category]/page.tsx`
+  - Ongoing: ECR build/push (TAG=dev) with Colima context
+- **Auth Migration (Cognito)**:
+  - Replaced `usePermission` to read NextAuth session groups → role mapping
+  - Removed Supabase MFA fallback from login; refined error UX persists
+  - Kept all auth UI interactions (login/signup/reset/confirm) while delegating to Cognito Hosted UI
+  - Localized fonts via `next/font/local` (no external fetch) and updated `layout.tsx`
+
+### 🎯 Immediate Next Steps (Dev)
+- Finish removing remaining `supabase.auth` references across app modules
+- Complete Docker ECR build/push (dev) → run on EC2 via `scripts/aws/ec2-run.sh`
+- If local network remains flaky, trigger GitHub Actions or build on EC2 for push
+- Validate `/api/health` target health through ALB target group
+- Begin reducing server-side Supabase dependencies (data + storage) per migration plan
+
+*Updated: 2025-10-02*

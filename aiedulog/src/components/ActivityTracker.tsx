@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@/lib/auth/hooks'
+import { useSession } from 'next-auth/react'
 import { ActivityTracker } from '@/lib/auth/activity-tracker'
 import { 
   Dialog, 
@@ -26,7 +26,8 @@ import { AccessTime, ExitToApp, Refresh } from '@mui/icons-material'
  * - 세션 연장 기능
  */
 export default function ActivityTrackerComponent() {
-  const { signOut, isAuthenticated } = useAuth()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === 'authenticated'
   const [showWarning, setShowWarning] = useState(false)
   const [countdown, setCountdown] = useState(300) // 5분 (300초)
   
@@ -52,11 +53,12 @@ export default function ActivityTrackerComponent() {
   const logoutNow = useCallback(async () => {
     try {
       ActivityTracker.clear()
-      await signOut()
+      // NextAuth signOut via fetch
+      await fetch('/api/auth/signout', { method: 'POST' })
     } catch (error) {
       console.error('로그아웃 실패:', error)
     }
-  }, [signOut])
+  }, [])
   
   useEffect(() => {
     if (!isAuthenticated) return

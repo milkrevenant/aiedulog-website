@@ -265,7 +265,7 @@ async function main() {
   // Database status check
   colorLog(colors.blue + colors.bold, '🗄️  DATABASE STATUS')
   console.log('To verify database health, run:')
-  console.log('  node scripts/fix-system-issues.js')
+  console.log('  npm run health:check')
   console.log()
   console.log('If you see "No profile found" errors, execute:')
   console.log('  Copy scripts/run-migration.sql into Supabase SQL Editor')

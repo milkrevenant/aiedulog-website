@@ -1,104 +1,60 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import {
   Box,
   Paper,
   Typography,
-  TextField,
   Button,
   Stack,
   Alert,
   CircularProgress,
   Link,
   Divider,
-  IconButton,
   useTheme,
   alpha,
 } from '@mui/material'
-import { Lock, Smartphone, Fingerprint, Key, ArrowBack, CheckCircle } from '@mui/icons-material'
+import { Smartphone, Key, ArrowBack, CheckCircle } from '@mui/icons-material'
 
 interface MFAVerificationProps {
-  factorId: string
+  // factorId kept for backward compatibility; unused in Cognito Hosted UI flow
+  factorId?: string
   onSuccess: () => void
   onCancel?: () => void
   showBackupOption?: boolean
 }
 
 export default function MFAVerification({
-  factorId,
   onSuccess,
   onCancel,
-  showBackupOption = true,
+  showBackupOption = false,
 }: MFAVerificationProps) {
-  const [code, setCode] = useState('')
-  const [useBackupCode, setUseBackupCode] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [challengeId, setChallengeId] = useState<string | null>(null)
-
-  const supabase = createClient()
   const theme = useTheme()
+  const { status } = useSession()
 
-  // Initialize challenge when component mounts
-  useState(() => {
-    initializeChallenge()
-  })
-
-  const initializeChallenge = async () => {
-    try {
-      const { data, error } = await supabase.auth.mfa.challenge({
-        factorId,
-      })
-
-      if (error) throw error
-      setChallengeId(data.id)
-    } catch (error: any) {
-      setError('인증 초기화 실패: ' + error.message)
-    }
-  }
-
-  const handleVerify = async () => {
-    if (!code || code.length !== 6 || !challengeId) return
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const { data, error } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code,
-      })
-
-      if (error) throw error
-
+  // If user has completed Cognito MFA and returned with a valid session, proceed
+  useEffect(() => {
+    if (status === 'authenticated') {
       onSuccess()
-    } catch (error: any) {
-      setError('인증 코드가 올바르지 않습니다. 다시 시도해주세요.')
-      setCode('')
-      // Re-initialize challenge for retry
-      initializeChallenge()
-    } finally {
+    }
+  }, [status, onSuccess])
+
+  const handleRetrySignIn = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      await signIn('cognito', { callbackUrl: '/feed' })
+    } catch (e: any) {
+      setError('로그인 재시도 중 오류가 발생했습니다. 다시 시도해주세요.')
       setLoading(false)
     }
   }
 
-  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6)
-    setCode(value)
-
-    // Auto-submit when 6 digits are entered
-    if (value.length === 6 && challengeId) {
-      handleVerify()
-    }
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && code.length === 6 && challengeId) {
-      handleVerify()
-    }
+  const handleContinue = () => {
+    onSuccess()
   }
 
   return (
@@ -128,11 +84,7 @@ export default function MFAVerification({
               mb: 2,
             }}
           >
-            {useBackupCode ? (
-              <Key sx={{ fontSize: 32, color: 'primary.main' }} />
-            ) : (
-              <Smartphone sx={{ fontSize: 32, color: 'primary.main' }} />
-            )}
+            <Smartphone sx={{ fontSize: 32, color: 'primary.main' }} />
           </Box>
 
           <Typography variant="h5" gutterBottom fontWeight={600}>
@@ -140,39 +92,9 @@ export default function MFAVerification({
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
-            {useBackupCode
-              ? '백업 코드 중 하나를 입력하세요'
-              : '인증 앱에 표시된 6자리 코드를 입력하세요'}
+            Cognito MFA 인증이 필요합니다. 새 창 또는 리디렉션된 화면에서 인증을 완료한 뒤 아래 버튼을 사용해 계속 진행하거나, 문제가 있으면 다시 시도하세요.
           </Typography>
         </Box>
-
-        {/* Code Input */}
-        <TextField
-          fullWidth
-          value={code}
-          onChange={handleCodeChange}
-          onKeyPress={handleKeyPress}
-          placeholder={useBackupCode ? '백업 코드' : '000000'}
-          label={useBackupCode ? '백업 코드' : '인증 코드'}
-          variant="outlined"
-          disabled={loading}
-          inputProps={{
-            maxLength: useBackupCode ? 20 : 6,
-            style: useBackupCode
-              ? {}
-              : {
-                  fontSize: '1.5rem',
-                  letterSpacing: '0.5em',
-                  textAlign: 'center',
-                  fontWeight: 600,
-                },
-          }}
-          sx={{
-            '& input': {
-              py: 2,
-            },
-          }}
-        />
 
         {/* Error Alert */}
         {error && (
@@ -187,38 +109,31 @@ export default function MFAVerification({
             fullWidth
             variant="contained"
             size="large"
-            onClick={handleVerify}
-            disabled={loading || (useBackupCode ? !code : code.length !== 6) || !challengeId}
-            startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}
+            onClick={handleContinue}
+            disabled={loading}
+            startIcon={<CheckCircle />}
           >
-            {loading ? '확인 중...' : '확인'}
+            계속
           </Button>
 
-          {showBackupOption && (
-            <>
-              <Divider>
-                <Typography variant="caption" color="text.secondary">
-                  또는
-                </Typography>
-              </Divider>
+          <Divider>
+            <Typography variant="caption" color="text.secondary">
+              또는
+            </Typography>
+          </Divider>
 
-              <Button
-                fullWidth
-                variant="text"
-                onClick={() => {
-                  setUseBackupCode(!useBackupCode)
-                  setCode('')
-                  setError(null)
-                }}
-                startIcon={useBackupCode ? <Smartphone /> : <Key />}
-              >
-                {useBackupCode ? '인증 앱 사용' : '백업 코드 사용'}
-              </Button>
-            </>
-          )}
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleRetrySignIn}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : <Key />}
+          >
+            {loading ? '다시 시도 중...' : '다시 로그인'}
+          </Button>
 
           {onCancel && (
-            <Button fullWidth variant="outlined" onClick={onCancel} startIcon={<ArrowBack />}>
+            <Button fullWidth variant="text" onClick={onCancel} startIcon={<ArrowBack />}>
               취소
             </Button>
           )}

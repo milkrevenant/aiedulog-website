@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { getUserIdentity } from '@/lib/identity/helpers'
@@ -100,7 +101,8 @@ interface Lecture {
 export default function LecturesBoardPage() {
   const router = useRouter()
   const supabase = createClient()
-  const [user, setUser] = useState<User | null>(null)
+  const { data: session } = useSession()
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [lectures, setLectures] = useState<Lecture[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,14 +124,11 @@ export default function LecturesBoardPage() {
   }, [])
 
   const checkUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    setUser(user)
-    if (user) {
-      fetchUserRegistrations(user.id)
-      // Use standardized identity helper
-      const identity = await getUserIdentity(user)
+    const authUser = session?.user as any
+    setUser(authUser || null)
+    if (authUser) {
+      fetchUserRegistrations((authUser as any).sub || authUser.id)
+      const identity = await getUserIdentity(authUser)
       setProfile(identity?.profile || null)
     }
   }

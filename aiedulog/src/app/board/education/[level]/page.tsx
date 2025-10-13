@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useSession } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
@@ -107,7 +107,7 @@ const formatFileSize = (bytes: number) => {
 export default function EducationLevelPage() {
   const params = useParams()
   const level = params.level as string
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [posts, setPosts] = useState<any[]>([])
@@ -128,6 +128,7 @@ export default function EducationLevelPage() {
 
   const router = useRouter()
   const supabase = createClient()
+  const { data: session, status } = useSession()
   const theme = useTheme()
 
   const currentLevel = levelInfo[level as keyof typeof levelInfo] || {
@@ -193,25 +194,22 @@ export default function EducationLevelPage() {
   }, [supabase, user?.id, level])
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
+    const syncUser = async () => {
+      if (status === 'loading') return
+      if (status === 'unauthenticated') {
         router.push('/auth/login')
         return
       }
-
-      setUser(user)
-
-      // Use standardized identity helper
-      const identity = await getUserIdentity(user)
-      setProfile(identity?.profile || null)
+      const authUser = session?.user as any
+      setUser(authUser || null)
+      if (authUser) {
+        const identity = await getUserIdentity(authUser)
+        setProfile(identity?.profile || null)
+      }
       setLoading(false)
     }
-    getUser()
-  }, [router, supabase])
+    syncUser()
+  }, [status, session, router])
 
   useEffect(() => {
     if (user) {

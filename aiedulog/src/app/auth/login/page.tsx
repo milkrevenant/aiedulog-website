@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import MFAVerification from '@/components/MFAVerification'
 import { translateAuthError, getErrorSuggestion } from '@/lib/utils/errorTranslator'
 import {
   Box,
@@ -35,9 +34,6 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const [showMFA, setShowMFA] = useState(false)
-  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
-  const [tempUserId, setTempUserId] = useState<string | null>(null)
   const [errorSuggestion, setErrorSuggestion] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
@@ -72,40 +68,11 @@ function LoginContent() {
       await signIn('cognito', { callbackUrl: '/feed' })
     } catch (error: any) {
       console.error('Login error:', error)
-      
-      // Handle MFA case
-      if (error.message?.includes('mfa') || error.message?.includes('factor')) {
-        // For now, fall back to direct Supabase client for MFA
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        
-        const { data: factors } = await supabase.auth.mfa.listFactors()
-        if (factors?.totp && factors.totp.length > 0) {
-          setMfaFactorId(factors.totp[0].id)
-          setShowMFA(true)
-          setLoading(false)
-          return
-        }
-      }
-      
       const translatedError = translateAuthError(error)
       setError(translatedError)
       setErrorSuggestion(getErrorSuggestion(error.message || error))
       setLoading(false)
     }
-  }
-
-  const handleMFASuccess = () => {
-    // MFA 인증 성공 후 피드로 이동
-    router.push('/feed')
-  }
-
-  const handleMFACancel = () => {
-    // MFA 취소 시 로그인 화면으로 돌아가기
-    setShowMFA(false)
-    setMfaFactorId(null)
-    setPassword('')
-    setError('2단계 인증이 취소되었습니다.')
   }
 
   const handleGoogleLogin = async () => {
@@ -120,27 +87,6 @@ function LoginContent() {
     }
   }
 
-  // MFA 화면 표시
-  if (showMFA && mfaFactorId) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-        }}
-      >
-        <Container maxWidth="sm">
-          <MFAVerification
-            factorId={mfaFactorId}
-            onSuccess={handleMFASuccess}
-            onCancel={handleMFACancel}
-          />
-        </Container>
-      </Box>
-    )
-  }
 
   return (
     <Box

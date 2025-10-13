@@ -141,7 +141,7 @@ function UsersManagementContent() {
       }
 
       // Get user IDs from profiles
-      const userIds = profilesData?.map(profile => profile.user_id) || []
+      const userIds = profilesData?.map((profile: { user_id: string }) => profile.user_id) || []
       
       // Get auth methods data  
       const { data: authMethodsData } = userIds.length > 0 ? await supabase
@@ -150,8 +150,8 @@ function UsersManagementContent() {
         .in('user_id', userIds) : { data: [] }
 
       // Create auth methods lookup map
-      const authMethodsMap = new Map()
-      authMethodsData?.forEach(auth => {
+      const authMethodsMap = new Map<string, { user_id: string; provider?: string; last_sign_in_at?: string | null; email_confirmed_at?: string | null }>()
+      authMethodsData?.forEach((auth: { user_id: string; provider?: string; last_sign_in_at?: string | null; email_confirmed_at?: string | null }) => {
         authMethodsMap.set(auth.user_id, auth)
       })
 
@@ -186,16 +186,16 @@ function UsersManagementContent() {
 
       // Apply client-side filtering (more efficient than complex DB queries)
       if (filterRole !== 'all') {
-        usersData = usersData.filter(user => user && user.role === filterRole)
+        usersData = usersData.filter((user: any) => user && user.role === filterRole)
       }
 
       if (filterStatus !== 'all') {
-        usersData = usersData.filter(user => user && user.is_active === (filterStatus === 'active'))
+        usersData = usersData.filter((user: any) => user && user.is_active === (filterStatus === 'active'))
       }
 
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
-        usersData = usersData.filter(user => 
+        usersData = usersData.filter((user: any) => 
           user && (
             user.username?.toLowerCase().includes(searchLower) ||
             user.email?.toLowerCase().includes(searchLower) ||
@@ -205,7 +205,7 @@ function UsersManagementContent() {
         )
       }
 
-      setUsers(usersData.filter(user => user !== null))
+      setUsers(usersData.filter((user: any) => user !== null))
     } catch (err: any) {
       console.error('Failed to fetch users:', err)
       setError(`사용자 목록을 불러오는데 실패했습니다: ${err.message}`)

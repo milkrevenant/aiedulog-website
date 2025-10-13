@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { usePermission } from '@/hooks/usePermission'
 import { Permission } from '@/lib/auth/permissions'
@@ -66,6 +67,7 @@ interface Statistics {
 function AdminDashboardContent() {
   const router = useRouter()
   const supabase = createClient()
+  const { data: session } = useSession()
   const { user, can, isAdmin, isModerator, loading: authLoading } = usePermission()
   const [profile, setProfile] = useState<any>(null)
   const [authUser, setAuthUser] = useState<any>(null)
@@ -85,9 +87,7 @@ function AdminDashboardContent() {
   // 통합 identity 시스템을 통한 사용자 프로필 가져오기
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const {
-        data: { user: authUserData },
-      } = await supabase.auth.getUser()
+      const authUserData = session?.user as any
       setAuthUser(authUserData)
 
       if (authUserData) {
@@ -105,7 +105,7 @@ function AdminDashboardContent() {
     }
 
     fetchUserProfile()
-  }, [supabase])
+  }, [session, supabase])
 
   // 통계 데이터 가져오기
   useEffect(() => {

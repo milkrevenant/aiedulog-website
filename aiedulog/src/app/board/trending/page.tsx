@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { getUserIdentity } from '@/lib/identity/helpers'
@@ -68,7 +69,7 @@ interface TrendingComment {
 }
 
 export default function TrendingPage() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [tabValue, setTabValue] = useState(0)
@@ -77,26 +78,24 @@ export default function TrendingPage() {
 
   const router = useRouter()
   const supabase = createClient()
+  const { data: session, status } = useSession()
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
+    const syncUser = async () => {
+      if (status === 'loading') return
+      if (status === 'unauthenticated') {
         router.push('/auth/login')
         return
       }
-
-      setUser(user)
-
-      // Use standardized identity helper
-      const identity = await getUserIdentity(user)
-      setProfile(identity?.profile || null)
+      const authUser = session?.user as any
+      if (authUser) {
+        setUser(authUser)
+        const identity = await getUserIdentity(authUser)
+        setProfile(identity?.profile || null)
+      }
     }
-    getUser()
-  }, [router, supabase])
+    syncUser()
+  }, [status, session, router])
 
   useEffect(() => {
     if (user) {

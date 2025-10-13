@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import { useSession } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
@@ -82,7 +82,7 @@ export default function JobBoardPage() {
   const supabase = createClient()
   const theme = useTheme()
 
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [posts, setPosts] = useState<any[]>([])
@@ -159,25 +159,19 @@ export default function JobBoardPage() {
     }
   }, [supabase, user?.id, subCategory])
 
+  const { data: session } = useSession()
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      // 로그인하지 않아도 게시글 조회는 가능
-      setUser(user)
-
-      if (user) {
-        // Use standardized identity helper
-        const identity = await getUserIdentity(user)
+    const syncUser = async () => {
+      const authUser = session?.user as any
+      setUser(authUser || null)
+      if (authUser) {
+        const identity = await getUserIdentity(authUser)
         setProfile(identity?.profile || null)
       }
-
       setLoading(false)
     }
-    getUser()
-  }, [router, supabase])
+    syncUser()
+  }, [session])
 
   useEffect(() => {
     // 로그인 여부와 관계없이 게시글 로드

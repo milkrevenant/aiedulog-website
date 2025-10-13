@@ -2,138 +2,18 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { getUserIdentity } from '@/lib/identity/helpers'
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { Box, CircularProgress, Typography, Button } from '@mui/material'
+import { signIn } from 'next-auth/react'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        // Get the hash fragment from the URL
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        const queryParams = new URLSearchParams(window.location.search)
-        
-        // Check both hash and query params
-        const access_token = hashParams.get('access_token') || queryParams.get('access_token')
-        const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token')
-        const token_type = hashParams.get('token_type') || queryParams.get('token_type')
-        const type = hashParams.get('type') || queryParams.get('type')
-        const error = hashParams.get('error') || queryParams.get('error')
-        const error_description = hashParams.get('error_description') || queryParams.get('error_description')
-        
-        // Handle errors
-        if (error) {
-          console.error('Auth callback error:', error, error_description)
-          router.push(`/auth/login?error=${encodeURIComponent(error_description || error || 'Authentication failed')}`)
-          return
-        }
-
-        // Handle password recovery
-        if (type === 'recovery' && access_token) {
-          // Set the session with the recovery token
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token,
-            refresh_token: refresh_token || '',
-          })
-
-          if (sessionError) {
-            console.error('Error setting recovery session:', sessionError)
-            router.push(`/auth/login?error=${encodeURIComponent('Recovery link expired or invalid')}`)
-            return
-          }
-
-          // Redirect to password reset page in update mode
-          router.push('/auth/reset-password?mode=update')
-          return
-        }
-
-        // Handle email confirmation
-        if (type === 'signup' && access_token) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token,
-            refresh_token: refresh_token || '',
-          })
-
-          if (sessionError) {
-            console.error('Error setting session:', sessionError)
-            router.push('/auth/login?error=Email verification failed')
-            return
-          }
-
-          router.push('/dashboard')
-          return
-        }
-
-        // Handle OAuth callback
-        const code = queryParams.get('code')
-        if (code) {
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-          
-          if (exchangeError) {
-            console.error('Error exchanging code:', exchangeError)
-            router.push('/auth/login?error=Login failed')
-            return
-          }
-
-          // Check if this is a new user using integrated identity system
-          if (data?.user) {
-            try {
-              // Attempt to get existing identity first
-              let identity = await getUserIdentity(data.user, supabase)
-              
-              if (!identity) {
-                console.log('Creating new user identity using ensure_user_identity function')
-                
-                // Use the database function to ensure identity exists
-                const { data: identityId, error: identityError } = await supabase
-                  .rpc('ensure_user_identity', {
-                    new_auth_user_id: data.user.id,
-                    user_email: data.user.email || ''
-                  })
-
-                if (identityError) {
-                  console.error('Failed to ensure user identity:', identityError)
-                  // Continue to login even if identity creation failed
-                } else if (identityId) {
-                  console.log('Successfully created/found identity:', identityId)
-                  
-                  // Try to get the identity again after creation
-                  identity = await getUserIdentity(data.user, supabase)
-                  if (!identity) {
-                    console.warn('Identity created but could not be retrieved')
-                  }
-                } else {
-                  console.error('ensure_user_identity returned null')
-                }
-              } else {
-                console.log('Existing identity found:', identity.user_id)
-              }
-            } catch (err) {
-              console.error('Error in identity management:', err)
-              // Continue to login even if identity management failed
-            }
-          }
-
-          router.push('/feed')
-          return
-        }
-
-        // No valid callback parameters found
-        console.error('Invalid callback parameters')
-        router.push('/auth/login')
-        
-      } catch (error) {
-        console.error('Callback error:', error)
-        router.push('/auth/login?error=An error occurred')
-      }
-    }
-
-    handleCallback()
-  }, [router, supabase])
+    // 이 경로는 Supabase 시절 콜백을 위한 것이었음.
+    // 현재는 NextAuth API(/api/auth/callback/cognito)가 콜백을 처리하므로
+    // Cognito Hosted UI로 이동시키거나 홈으로 보냅니다.
+    signIn('cognito', { callbackUrl: '/feed' })
+  }, [router])
 
   return (
     <Box
@@ -148,8 +28,11 @@ export default function AuthCallbackPage() {
     >
       <CircularProgress />
       <Typography variant="body1" color="text.secondary">
-        인증 처리 중...
+        로그인 페이지로 이동 중...
       </Typography>
+      <Button onClick={() => signIn('cognito', { callbackUrl: '/feed' })} variant="contained">
+        바로 이동
+      </Button>
     </Box>
   )
 }

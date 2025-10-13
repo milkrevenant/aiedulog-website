@@ -1,219 +1,70 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { getUserIdentity } from '@/lib/identity/helpers'
+import { useSession as useNextAuthSession } from 'next-auth/react'
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
+
+type BasicUser = {
+  id: string
+  email?: string | null
+}
 
 export function useUser() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-  const supabase = createClient()
-  const router = useRouter()
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function getUser() {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error) throw error
-        
-        if (isMounted) {
-          setUser(user)
-          setError(null)
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err as Error)
-          setUser(null)
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setUser(session.user)
-          setError(null)
-          router.refresh()
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setError(null)
-          router.refresh()
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          setUser(session.user)
-          setError(null)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [supabase, router])
-
-  return { user, loading, error }
+  const { data: session, status } = useNextAuthSession()
+  const loading = status === 'loading'
+  const user: BasicUser | null = session?.user
+    ? { id: (session.user as any).id || 'nextauth-user', email: session.user.email }
+    : null
+  return { user, loading, error: null as Error | null }
 }
 
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function getSession() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (isMounted) {
-          setSession(session)
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    getSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (isMounted) {
-          setSession(session)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [supabase])
-
-  return { session, loading }
+  const { data: session, status } = useNextAuthSession()
+  const loading = status === 'loading'
+  return { session: session as any, loading }
 }
 
 export function useAuth() {
-  const { user, loading: userLoading, error: userError } = useUser()
+  const { user, loading: userLoading } = useUser()
   const { session, loading: sessionLoading } = useSession()
   const [profile, setProfile] = useState<any>(null)
-  const [profileLoading, setProfileLoading] = useState(false)
-  const supabase = createClient()
   const router = useRouter()
 
   useEffect(() => {
-    if (user && !profile) {
-      setProfileLoading(true)
-      // Use fully integrated identity helper with supabase client
-      getUserIdentity(user, supabase)
-        .then((identity) => {
-          if (identity?.profile) {
-            setProfile(identity.profile)
-          } else {
-            console.warn('No profile found for authenticated user:', user.id)
-            setProfile(null)
-          }
-          setProfileLoading(false)
-        })
-        .catch((error) => {
-          console.error('Failed to get user identity via integrated system:', error)
-          setProfile(null)
-          setProfileLoading(false)
-        })
-    } else if (!user) {
+    if (session?.user) {
+      // Map NextAuth session to simple profile (roles via groups)
+      const groups: string[] = ((session.user as any).groups as string[]) || []
+      const role = groups.includes('admin') ? 'admin' : groups.includes('moderator') ? 'moderator' : 'member'
+      setProfile({ role })
+    } else {
       setProfile(null)
     }
-  }, [user, profile, supabase])
+  }, [session])
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    
-    if (error) throw error
-    
-    router.refresh()
-    return data
+  const signIn = async () => {
+    await nextAuthSignIn('cognito', { callbackUrl: '/feed' })
   }
 
-  const signUp = async (email: string, password: string, metadata?: any) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: metadata,
-      },
-    })
-    
-    if (error) throw error
-    
-    return data
+  const signUp = async () => {
+    await nextAuthSignIn('cognito', { callbackUrl: '/feed' })
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    
-    if (error) throw error
-    
-    setProfile(null)
+    await nextAuthSignOut({ callbackUrl: '/auth/login' })
     router.push('/auth/login')
   }
 
-  const updateProfile = async (updates: any) => {
-    if (!user) throw new Error('No user logged in')
-    
-    // Use integrated identity helper with supabase client
-    const identity = await getUserIdentity(user, supabase)
-    
-    if (!identity?.user_id) {
-      throw new Error('User identity not found in integrated system')
-    }
-    
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', identity.user_id)
-      .select()
-      .single()
-    
-    if (error) {
-      console.error('Profile update failed via identity system:', error)
-      throw new Error(`Profile update failed: ${error.message}`)
-    }
-    
-    // Update local state with the new profile data
-    const updatedProfile = {
-      ...data,
-      id: identity.user_id // Ensure consistency with user_id
-    }
-    setProfile(updatedProfile)
-    return updatedProfile
+  const updateProfile = async (_updates: any) => {
+    throw new Error('updateProfile is not implemented for NextAuth-only mode')
   }
 
   return {
     user,
     session,
     profile,
-    loading: userLoading || sessionLoading || profileLoading,
-    error: userError,
+    loading: userLoading || sessionLoading,
+    error: null as Error | null,
     signIn,
     signUp,
     signOut,

@@ -111,7 +111,13 @@
       "Bash(psql:*)",
       "Bash(supabase status:*)",
       "Bash(npm:*)",
-      "Bash(nvm use:*)"
+      "Bash(nvm use:*)",
+      "Bash(open http://localhost:3000/feed)",
+      "Bash(ping:*)",
+      "Read(/tmp/**)",
+      "Bash(python3:*)",
+      "Bash(bash:*)",
+      "Bash(./scripts/validate-amplify.sh:*)"
     ],
     "deny": [],
     "ask": [],

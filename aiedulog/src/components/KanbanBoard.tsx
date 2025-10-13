@@ -39,6 +39,7 @@ import {
   Flag,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
+import { useSession } from 'next-auth/react'
 
 interface Task {
   id: string
@@ -97,6 +98,7 @@ export default function KanbanBoard({ boardId }: { boardId: string }) {
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null)
 
   const supabase = createClient()
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchTasks()
@@ -185,11 +187,8 @@ export default function KanbanBoard({ boardId }: { boardId: string }) {
   const handleCreateTask = async () => {
     console.log('Creating task with boardId:', boardId)
     
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
+    const authUser: any = session?.user
+    if (!authUser) {
       console.error('No user authenticated')
       alert('로그인이 필요합니다.')
       return
@@ -205,7 +204,7 @@ export default function KanbanBoard({ boardId }: { boardId: string }) {
         due_date: taskForm.due_date || null,
         status: 'todo',
         position: tasks.filter((t) => t.status === 'todo').length,
-        created_by: user.id,
+        created_by: (authUser as any).sub || (authUser as any).id,
       })
       .select()
       .single()

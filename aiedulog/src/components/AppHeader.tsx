@@ -30,7 +30,7 @@ import {
   Close,
   CalendarToday,
 } from '@mui/icons-material'
-import { createClient } from '@/lib/supabase/client'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import NotificationIcon from '@/components/NotificationIcon'
 
@@ -47,29 +47,24 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const router = useRouter()
   const theme = useTheme()
-  const supabase = createClient()
+  const { data: session } = useSession()
 
   // Fetch user and profile if not provided via props
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!propsUser) {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser()
-        if (authUser) {
-          setUser(authUser)
+      if (!propsUser && session?.user) {
+        const authUser = session.user as any
+        setUser(authUser)
 
-          // Use standardized identity helper
-          const identity = await getUserIdentity(authUser)
-          if (identity?.profile) {
-            setProfile(identity.profile)
-          }
+        const identity = await getUserIdentity(authUser)
+        if (identity?.profile) {
+          setProfile(identity.profile)
         }
       }
     }
 
     fetchUserData()
-  }, [propsUser, propsProfile])
+  }, [propsUser, propsProfile, session])
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -80,9 +75,8 @@ export default function AppHeader({ user: propsUser, profile: propsProfile }: Ap
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await nextAuthSignOut({ callbackUrl: '/main' })
     handleClose()
-    router.push('/main')
   }
 
   return (

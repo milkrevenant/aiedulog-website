@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { hasPermission, UserRole, Permission } from '@/lib/auth/permissions'
-import { getUserIdentity } from '@/lib/identity/helpers'
+import { useSession } from 'next-auth/react'
 
 interface UserProfile {
   id: string
@@ -19,59 +18,29 @@ interface UserProfile {
 
 export function usePermission() {
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const { data: session, status } = useSession()
+  const loading = status === 'loading'
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser()
+    if (status === 'authenticated' && session?.user) {
+      const groups = ((session.user as any).groups as string[]) || []
+      const role: UserRole = groups.includes('admin') ? 'admin'
+        : groups.includes('moderator') ? 'moderator'
+        : 'member'
 
-        if (authUser) {
-          // Use identity helper for consistent user data retrieval
-          const identity = await getUserIdentity(authUser)
-          
-          if (identity && identity.profile) {
-            const profile = identity.profile
-            
-            setUser({
-              id: authUser.id,
-              identity_id: identity.user_id,
-              email: profile.email,
-              role: profile.role as UserRole,
-              full_name: profile.full_name,
-              nickname: profile.nickname,
-              avatar_url: profile.avatar_url,
-              school: profile.school,
-              subject: profile.subject
-            })
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user profile:', error)
-      } finally {
-        setLoading(false)
-      }
+      setUser({
+        id: (session.user as any).id || (session.user as any).sub || '',
+        identity_id: (session.user as any).sub || '',
+        email: session.user.email || '',
+        role,
+        full_name: (session.user as any).name,
+        nickname: (session.user as any).nickname,
+        avatar_url: (session.user as any).image,
+      })
+    } else if (status === 'unauthenticated') {
+      setUser(null)
     }
-
-    fetchUserProfile()
-
-    // Auth 상태 변경 감지
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        // Use the same logic as fetchUserProfile for consistency
-        await fetchUserProfile()
-      } else {
-        setUser(null)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [session, status])
 
   // 권한 확인 함수
   const can = (permission: Permission): boolean => {
