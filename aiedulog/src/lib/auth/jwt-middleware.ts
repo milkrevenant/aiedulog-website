@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { headers } from 'next/headers';
+import { queryWithAuth } from '@/lib/db/rds-client';
 
 // Types
 export interface UserSession {
@@ -146,26 +147,27 @@ export class JWTAuthMiddleware {
    * Look up user profile by Cognito subject ID
    */
   private static async getUserProfileByCognitoSub(cognitoSub: string) {
-    // This would query your RDS database
-    // Implementation depends on your database client (pg, Prisma, etc.)
+    // Fetch the mapped user profile (role, flags) using the new RDS connection.
     try {
-      // Example with pg client:
-      /*
-      const { rows } = await db.query(
-        `SELECT user_id, email, role, is_active, full_name 
-         FROM user_profiles 
-         WHERE user_id IN (
-           SELECT user_id FROM auth_methods 
-           WHERE provider = 'cognito' AND auth_provider_id = $1
-         )`,
+      const { rows } = await queryWithAuth<{
+        user_id: string;
+        email: string | null;
+        role: string | null;
+        is_active: boolean | null;
+      }>(
+        `SELECT up.user_id, up.email, up.role, up.is_active
+         FROM user_profiles up
+         WHERE up.user_id IN (
+           SELECT user_id
+           FROM auth_methods
+           WHERE provider = 'cognito'
+             AND auth_provider_id = $1
+         )
+         LIMIT 1`,
         [cognitoSub]
       );
-      
+
       return rows[0] || null;
-      */
-      
-      // Placeholder for now
-      return null;
     } catch (error) {
       console.error('Failed to lookup user profile:', error);
       return null;
