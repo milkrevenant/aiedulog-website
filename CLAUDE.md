@@ -1,9 +1,8 @@
 # Claude Code 프로젝트 설정
 
-## 🔑 Supabase API 키 정보
-- **새로운 키 형식만 사용** (sb_publishable_... / sb_secret_... 형식)
-- 레거시 JWT 키 (anon/service_role) 사용 안함!
-- 환경변수명: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+**⭐ 시작 전 필독**: `STATUS.md` - 프로젝트 현재 상태 확인
+
+---
 
 ## 💻 Development Environment
 - **Primary**: Mac (usual development)
@@ -19,10 +18,14 @@
 
 ## 🚀 Starting the Project
 ```bash
-# Check and kill port 3000 first (OS-specific)
-# Windows: powershell -Command "Stop-Process -Id [PID] -Force"
-# Mac/Linux: kill -9 [PID] or lsof -ti:3000 | xargs kill -9
+# 1. 현재 상태 확인
+cat STATUS.md
 
+# 2. Port 3000 확인 및 정리
+# Mac/Linux: lsof -ti:3000 | xargs kill -9
+# Windows: powershell -Command "Stop-Process -Id [PID] -Force"
+
+# 3. 개발 서버 시작
 cd aiedulog
 npm install  # Required when switching OS
 npm run dev  # Always use port 3000 only
@@ -30,15 +33,16 @@ npm run dev  # Always use port 3000 only
 
 ## 📁 프로젝트 구조
 - 메인 프로젝트: `/aiedulog`
-- 진행 상황: `PROGRESS.md`
-- 할 일 목록: `TODO.md`
-- 다음 세션 가이드: `NEXT_SESSION.md`
+- **현재 상태**: `STATUS.md` ⭐ 여기서 시작!
+- 문서: `docs/README_DOCS.md`
+- GitHub: https://github.com/milkrevenant/aiedulog-website
 
-## ⚙️ stack
-- Next.js 15.4.6 (App Router)
-- Supabase (PostgreSQL)
-- Material UI v6 + Material 3
-- TypeScript
+## ⚙️ Tech Stack
+- **Framework**: Next.js 15.4.6 (App Router)
+- **Database**: PostgreSQL (로컬 개발) / AWS RDS (프로덕션 준비됨)
+- **Auth**: AWS Cognito + NextAuth.js
+- **UI**: Material UI v7 + Material 3
+- **Language**: TypeScript 5.x
 
 ## 📋 ESLint Rules
 Follow these rules when writing code:
@@ -48,16 +52,43 @@ Follow these rules when writing code:
 - **Alt text recommended** - Add alt text to images when possible (not required)
 - **Allow anonymous default export** - Anonymous component exports are permitted
 
-## 🎯 progress
-- Phase 1-2: ✅ 100% 완료
-- Phase 3: 🔄 60% 진행 중
-- 최근 완료: 파일 업로드 시스템
+## 🎯 Current Status
+- **빌드**: ✅ 성공 (타입 에러 0개)
+- **코드**: ✅ 111개 파일 RDS 패턴 적용 완료
+- **인프라**: ✅ EC2 + RDS 구축됨
+- **배포**: ⏳ 대기 중 (로컬 개발 중)
+- **자세한 현황**: `STATUS.md` 참고
 
-## 📝 caution
-1. Supabase 키는 이미 새 형식 사용 중
+## 📝 Important Notes
+1. **현재 로컬 PostgreSQL 사용** (RDS 전환 대기)
 2. Windows/Mac 환경 전환 시 npm install 필수
-3. 개발 서버 포트: 3000 또는 3001 (자동 할당)
+3. 개발 서버 포트: 3000 고정
+4. **다음 작업 시작 전 반드시 `STATUS.md` 읽기!**
 
-## 🔗 Related Links
-- GitHub: https://github.com/milkrevenant/aiedulog-website
-- Supabase: https://supabase.com/dashboard/project/[your-project-id]
+## 🔗 Quick Links
+- **프로젝트 현황**: `STATUS.md` ⭐
+- **문서 목록**: `docs/README_DOCS.md`
+- **GitHub**: https://github.com/milkrevenant/aiedulog-website
+- **AWS Console**: https://ap-northeast-2.console.aws.amazon.com/
+
+## 🚀 Next Session 시작 방법
+```bash
+# 1. 상태 확인
+cat STATUS.md
+
+# 2. Git 최신 상태 확인
+git status
+git log --oneline -5
+
+# 3. 작업 선택 (STATUS.md 참고)
+# - Option A: RDS 전환 (30분)
+# - Option B: EC2 배포 (2-3시간)
+# - Option C: 기능 개발 계속
+
+# 4. 개발 서버 시작
+npm run dev
+```
+
+---
+
+**마지막 업데이트**: 2025-10-21
