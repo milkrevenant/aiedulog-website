@@ -15,7 +15,7 @@ import { UserManagementService } from './user-management-service';
 import { ContentManagementService } from './content-management-service';
 import { PermissionService } from './permission-service';
 import { GdprService } from './gdpr-service';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { getUserIdentity } from '@/lib/identity/helpers';
 import type { 
   AdminDashboardStats, 
@@ -25,7 +25,17 @@ import type {
 } from '../types';
 
 export class AdminService {
-  private supabase = createClient();
+  private supabase: any;
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
   
   // Service instances
   public audit = new AuditService();
@@ -40,7 +50,7 @@ export class AdminService {
   async initialize(): Promise<ApiResponse<{ initialized: boolean; version: string }>> {
     try {
       // Verify admin user authentication and permissions
-      const { data: user } = await this.supabase.auth.getUser();
+      const { data: user } = await (await this.getClient()).auth.getUser();
       if (!user.user) {
         throw new Error('Admin not authenticated');
       }
@@ -312,7 +322,7 @@ export class AdminService {
 
       // Task 2: Cleanup expired sessions and locks
       try {
-        await this.supabase.rpc('cleanup_expired_data');
+        await (await this.getClient()).rpc('cleanup_expired_data');
         tasksCompleted.push('expired_data_cleanup');
       } catch (error) {
         tasksFailed.push('expired_data_cleanup');
@@ -515,7 +525,7 @@ export class AdminService {
 
   private async checkAuthHealth(): Promise<'healthy' | 'warning' | 'error'> {
     try {
-      const { data } = await this.supabase.auth.getUser();
+      const { data } = await (await this.getClient()).auth.getUser();
       return data.user ? 'healthy' : 'warning';
     } catch (error) {
       return 'error';

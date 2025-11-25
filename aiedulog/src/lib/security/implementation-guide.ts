@@ -77,10 +77,16 @@ export async function performSecurityCheck(
     }
   }
 
+  const result = data as {
+    allowed?: boolean
+    requires_mfa?: boolean
+    reasons?: string[]
+  }
+
   return {
-    allowed: data.allowed,
-    requiresMFA: data.requires_mfa,
-    reasons: data.reasons || []
+    allowed: result.allowed ?? false,
+    requiresMFA: result.requires_mfa,
+    reasons: result.reasons || []
   }
 }
 
@@ -294,9 +300,11 @@ export async function checkMFAStatus(userId?: string): Promise<{
     return { hasMFA: false, factorCount: 0 }
   }
 
+  const result = data as { has_mfa?: boolean; factor_count?: number }
+
   return {
-    hasMFA: data.has_mfa,
-    factorCount: data.factor_count
+    hasMFA: result.has_mfa ?? false,
+    factorCount: result.factor_count ?? 0
   }
 }
 
@@ -380,7 +388,15 @@ export async function secureLogin(
   }
 
   // 4. Check for suspicious activity
-  const userId = data.user.id
+  const authData = (data || {}) as { user?: { id?: string } | null }
+  const userId = authData.user?.id || null
+
+  if (!userId) {
+    return {
+      success: false,
+      message: '사용자 정보를 확인할 수 없습니다.'
+    }
+  }
   const isSuspicious = await checkSuspiciousActivity(userId, ipAddress)
   
   if (isSuspicious) {

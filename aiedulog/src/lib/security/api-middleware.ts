@@ -263,7 +263,7 @@ class SecurityAnalyzer {
     try {
       // Dynamically import server client to avoid build issues
       const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {

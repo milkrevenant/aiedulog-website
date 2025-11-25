@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { 
-  getFooterCategories, 
-  createFooterCategory, 
-  validateFooterCategoryData 
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers'
+import {
+  getFooterCategories,
+  createFooterCategory,
+  validateFooterCategoryData
 } from '@/lib/footer-management'
 import { FooterCategoryFormData } from '@/types/footer-management'
 import { withAdminSecurity } from '@/lib/security/api-wrapper'
@@ -12,22 +12,10 @@ import { SecurityContext } from '@/lib/security/core-security'
 // GET /api/admin/footer/categories - Get all footer categories
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
     const categories = await getFooterCategories()
@@ -44,22 +32,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 // POST /api/admin/footer/categories - Create new footer category
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
-    
-    // Check if user is authenticated and is admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
     const body: FooterCategoryFormData = await request.json()

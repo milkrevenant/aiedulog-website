@@ -15,24 +15,30 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers'
+import { createRDSClient } from '@/lib/db/rds-client'
+import { TableRow } from '@/lib/db/types'
+
+type MainContentSectionRow = TableRow<'main_content_sections'>
+type ContentBlockRow = TableRow<'content_blocks'>
 
 // GET - Fetch all content sections or specific section
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
   const { searchParams } = new URL(request.url)
   const sectionKey = searchParams.get('section')
-  
+
   try {
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
+
+    const rds = createRDSClient()
 
     if (sectionKey) {
       // Fetch specific section with its content blocks
-      const { data: section, error: sectionError } = await supabase
+      const { data: sectionRows, error: sectionError } = await rds
         .from('main_content_sections')
         .select(`
           *,
@@ -42,7 +48,8 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
           )
         `)
         .eq('section_key', sectionKey)
-        .single()
+
+      const section = sectionRows?.[0]
       
       if (sectionError) {
         // If table doesn't exist yet, return empty data
@@ -58,7 +65,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       return NextResponse.json({ section })
     } else {
       // Fetch all sections
-      const { data: sections, error: sectionsError } = await supabase
+      const { data: sections, error: sectionsError } = await rds
         .from('main_content_sections')
         .select('*')
         .order('created_at', { ascending: true })
@@ -87,52 +94,48 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 
 // POST - Create new content section or content block
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
-  
   try {
-    // Check authentication and admin role
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 })
     }
-    
-    // TODO: Check if user has admin/moderator role
-    // const hasPermission = await checkAdminPermission(user.id, supabase)
-    
+
+    const rds = createRDSClient()
     const body = await request.json()
     const { type, data } = body
-    
+
     if (type === 'section') {
       // Create new section
-      const { data: section, error } = await supabase
+      const { data: sectionRows, error } = await rds
         .from('main_content_sections')
         .insert({
           ...data,
-          created_by: user.id
-        })
-        .select()
-        .single()
-      
+          created_by: auth.user.id
+        }, { select: '*' })
+
+      const section = sectionRows?.[0]
+
       if (error) {
         if (error.code === '42P01') {
-          return NextResponse.json({ 
-            error: 'Content management tables not yet created. Please apply migration first.' 
+          return NextResponse.json({
+            error: 'Content management tables not yet created. Please apply migration first.'
           }, { status: 503 })
         }
         throw error
       }
-      
+
       return NextResponse.json({ section })
     } else if (type === 'block') {
       // Create new content block
-      const { data: block, error } = await supabase
+      const { data: blockRows, error } = await rds
         .from('content_blocks')
         .insert({
           ...data,
-          created_by: user.id
-        })
-        .select()
-        .single()
+          created_by: auth.user.id
+        }, { select: '*' })
+
+      const block = blockRows?.[0]
       
       if (error) {
         if (error.code === '42P01') {
@@ -158,51 +161,50 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
 // PUT - Update content section or block
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
-  
   try {
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
-    
+
+    const rds = createRDSClient()
     const body = await request.json()
     const { type, id, data } = body
-    
+
     if (type === 'section') {
       // Update section
-      const { data: section, error } = await supabase
+      const { data: sectionRows, error } = await rds
         .from('main_content_sections')
+        .eq('id', id)
         .update({
           ...data,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single()
-      
+        }, { select: '*' })
+
+      const section = sectionRows?.[0]
+
       if (error) {
         if (error.code === '42P01') {
-          return NextResponse.json({ 
-            error: 'Content management tables not yet created. Please apply migration first.' 
+          return NextResponse.json({
+            error: 'Content management tables not yet created. Please apply migration first.'
           }, { status: 503 })
         }
         throw error
       }
-      
+
       return NextResponse.json({ section })
     } else if (type === 'block') {
       // Update content block
-      const { data: block, error } = await supabase
+      const { data: blockRows, error } = await rds
         .from('content_blocks')
+        .eq('id', id)
         .update({
           ...data,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single()
+        }, { select: '*' })
+
+      const block = blockRows?.[0]
       
       if (error) {
         if (error.code === '42P01') {
@@ -228,25 +230,26 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
 
 // DELETE - Delete content block
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
   const { searchParams } = new URL(request.url)
   const blockId = searchParams.get('id')
-  
+
   try {
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
-    
+
+    const rds = createRDSClient()
+
     if (!blockId) {
       return NextResponse.json({ error: 'Block ID required' }, { status: 400 })
     }
-    
-    const { error } = await supabase
+
+    const { error } = await rds
       .from('content_blocks')
-      .delete()
       .eq('id', blockId)
+      .delete()
     
     if (error) {
       if (error.code === '42P01') {

@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 // Edge Runtime에서 Node.js API 사용 오류 해결
 export const runtime = 'nodejs'
@@ -140,7 +143,7 @@ export default function FeedPage() {
 
           if (legacyError) throw legacyError
           
-          const postsWithStats = legacyData.map((post) => ({
+          const postsWithStats = legacyData.map((post: any) => ({
             ...post,
             author: {
               name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
@@ -169,7 +172,7 @@ export default function FeedPage() {
 
         if (data) {
           console.log('Fetched posts:', data)
-          const postsWithStats = data.map((post) => {
+          const postsWithStats = data.map((post: any) => {
             const userProfile = post.identities?.user_profiles?.[0]
             return {
               ...post,

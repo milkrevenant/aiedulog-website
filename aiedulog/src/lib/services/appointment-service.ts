@@ -1,5 +1,7 @@
 /**
  * Appointment Service Library
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Comprehensive business logic for appointment booking system
  * 
  * This service provides reusable functions for:
@@ -32,7 +34,7 @@ export class AppointmentService {
 
   private async getSupabase() {
     if (!this.supabase) {
-      this.supabase = await createClient();
+      this.supabase = createClient();
     }
     return this.supabase;
   }

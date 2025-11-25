@@ -1,5 +1,7 @@
 /**
  * Atomic Booking Service - Race Condition Prevention
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * FIXES: CRITICAL-05 - Business Logic Manipulation (CVSS 8.3)
  * 
@@ -277,7 +279,7 @@ export class AtomicBookingService {
   private static async validateBookingRequest(
     request: AtomicBookingRequest
   ): Promise<{ valid: boolean; error?: string }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Validate user exists and is active
     const { data: user, error: userError } = await supabase
@@ -358,7 +360,7 @@ export class AtomicBookingService {
     error?: string;
     conflictDetails?: any;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
     
     // Generate lock key based on instructor, date, and time
     const lockKey = `booking_${request.instructorId}_${request.appointmentDate}_${request.startTime}_${request.endTime}`;
@@ -429,7 +431,7 @@ export class AtomicBookingService {
     reason?: string;
     conflictDetails?: any;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     try {
       // Use the atomic availability check function
@@ -481,7 +483,7 @@ export class AtomicBookingService {
     appointmentId?: string;
     error?: string;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     try {
       // Get appointment type details
@@ -519,13 +521,16 @@ export class AtomicBookingService {
         updated_at: new Date().toISOString()
       };
 
-      const { data: appointment, error: createError } = await supabase
+      const { data: appointmentRows, error: createError } = await supabase
         .from('appointments')
-        .insert(appointmentData)
-        .select('id')
-        .single();
+        .insert(appointmentData, { select: 'id' });
 
-      if (createError) {
+      const appointmentRecord = Array.isArray(appointmentRows)
+        ? appointmentRows[0]
+        : appointmentRows;
+      const appointmentId = (appointmentRecord as { id?: string | null } | null | undefined)?.id || null;
+
+      if (createError || !appointmentId) {
         console.error('Appointment creation error:', createError);
         return {
           success: false,
@@ -535,7 +540,7 @@ export class AtomicBookingService {
 
       return {
         success: true,
-        appointmentId: appointment.id
+        appointmentId
       };
 
     } catch (error) {
@@ -554,7 +559,7 @@ export class AtomicBookingService {
     success: boolean;
     error?: string;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     try {
       const { data: commitResult, error: commitError } = await supabase
@@ -596,7 +601,7 @@ export class AtomicBookingService {
     success: boolean;
     error?: string;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     try {
       const { data: rollbackResult, error: rollbackError } = await supabase
@@ -638,7 +643,7 @@ export class AtomicBookingService {
     }>;
     reason: string;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     try {
       const { data: conflicts, error } = await supabase
@@ -658,15 +663,27 @@ export class AtomicBookingService {
         };
       }
 
+      const conflictEntries: Array<{
+        id?: string
+        start_time?: string
+        end_time?: string
+        status?: string
+      }> = (conflicts || []) as Array<{
+        id?: string
+        start_time?: string
+        end_time?: string
+        status?: string
+      }>
+
       return {
-        conflictingAppointments: (conflicts || []).map(conflict => ({
-          id: conflict.id,
-          startTime: conflict.start_time,
-          endTime: conflict.end_time,
-          status: conflict.status
+        conflictingAppointments: conflictEntries.map(conflict => ({
+          id: conflict.id || 'unknown',
+          startTime: conflict.start_time || '',
+          endTime: conflict.end_time || '',
+          status: conflict.status || 'unknown'
         })),
-        reason: conflicts && conflicts.length > 0 
-          ? `${conflicts.length} conflicting appointment(s) found`
+        reason: conflictEntries.length > 0 
+          ? `${conflictEntries.length} conflicting appointment(s) found`
           : 'Time slot conflicts with existing appointments'
       };
 
@@ -690,7 +707,7 @@ export class AtomicBookingService {
     errorMessage?: string
   ): Promise<string | undefined> {
     try {
-      const supabase = await createClient();
+      const supabase = createClient();
 
       const { data: auditLog, error } = await supabase
         .from('security_audit_log')
@@ -712,11 +729,15 @@ export class AtomicBookingService {
             transaction_id: transactionId,
             timestamp: new Date().toISOString()
           }
-        })
-        .select('id')
-        .single();
+        }, { select: 'id' });
 
-      return auditLog?.id;
+      if (error) {
+        throw error;
+      }
+
+      const auditRecord = Array.isArray(auditLog) ? auditLog[0] : auditLog;
+      const auditId = (auditRecord as { id?: string | null } | null | undefined)?.id;
+      return auditId ?? undefined;
     } catch (error) {
       console.error('Audit logging failed:', error);
       return undefined;
@@ -767,7 +788,7 @@ export class AtomicBookingService {
     cleaned: number;
     errors: string[];
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
     const errors: string[] = [];
 
     try {
@@ -779,8 +800,18 @@ export class AtomicBookingService {
         return { cleaned: 0, errors };
       }
 
+      const cleanedRaw = Array.isArray(cleanupResult)
+        ? cleanupResult[0] ?? 0
+        : cleanupResult ?? 0;
+
+      const cleanedCount = typeof cleanedRaw === 'number'
+        ? cleanedRaw
+        : typeof cleanedRaw === 'object' && cleanedRaw !== null
+          ? Number((cleanedRaw as { cleaned?: number; count?: number }).cleaned ?? (cleanedRaw as { cleaned?: number; count?: number }).count ?? 0)
+          : 0;
+
       return {
-        cleaned: cleanupResult || 0,
+        cleaned: Number.isFinite(cleanedCount) ? cleanedCount : 0,
         errors
       };
 
@@ -801,7 +832,7 @@ export class AtomicBookingService {
     expiresAt?: Date;
     error?: string;
   }> {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     try {
       const { data: transaction, error } = await supabase

@@ -1,5 +1,7 @@
 /**
  * Authentication utilities for API endpoints
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  */
 
 import { NextRequest } from 'next/server';
@@ -16,7 +18,7 @@ export interface AuthUser {
  */
 export async function getUserFromRequest(request: NextRequest): Promise<AuthUser | null> {
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
     
     // Get the session from the request
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -67,3 +69,4 @@ export function getAuthHeader(request: NextRequest): string | null {
 export * from './context';
 export * from './hooks';
 export * from './permissions';
+export type { AppUser } from './types';

@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withAdminSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
+import { TableRow } from '@/lib/db/types';
 import {
   AppointmentStats,
   ApiResponse
 } from '@/types/appointment-system';
 
+type AppointmentRow = TableRow<'appointments'>;
+type AppointmentTypeRow = TableRow<'appointment_types'>;
+type IdentitySummary = Pick<TableRow<'identities'>, 'id'> & {
+  full_name?: string | null;
+};
+
+type AppointmentWithType = AppointmentRow & {
+  appointment_type?: Pick<AppointmentTypeRow, 'price'> | null;
+  instructor?: IdentitySummary | null;
+};
+
 /**
  * GET /api/admin/appointments/stats - Get comprehensive appointment statistics
+ *
+ * MIGRATION: Migrated to RDS with requireAdmin() (2025-10-14)
  * Security: Admin access only
- * 
+ *
  * Query Parameters:
  * - period: string (optional) - 'week', 'month', 'quarter', 'year' (default: 'month')
  * - instructor_id: string (optional) - Filter by specific instructor
@@ -22,8 +37,14 @@ const getHandler = async (
   context: SecurityContext
 ): Promise<NextResponse> => {
   try {
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const rds = createRDSClient();
     const { searchParams } = new URL(request.url);
-    const supabase = await createClient();
     
     const period = searchParams.get('period') || 'month';
     const instructorId = searchParams.get('instructor_id');
@@ -62,7 +83,7 @@ const getHandler = async (
     const endDateStr = endDate.toISOString().split('T')[0];
     
     // Build base query
-    let baseQuery = supabase
+    let baseQuery = rds
       .from('appointments')
       .select('*')
       .gte('appointment_date', startDateStr)
@@ -84,16 +105,18 @@ const getHandler = async (
     }
     
     // Calculate basic stats
-    const totalAppointments = appointments?.length || 0;
-    const confirmedAppointments = appointments?.filter(a => a.status === 'confirmed').length || 0;
-    const pendingAppointments = appointments?.filter(a => a.status === 'pending').length || 0;
-    const cancelledAppointments = appointments?.filter(a => a.status === 'cancelled').length || 0;
-    const completedAppointments = appointments?.filter(a => a.status === 'completed').length || 0;
-    const noShowAppointments = appointments?.filter(a => a.status === 'no_show').length || 0;
+    const appointmentRows = (appointments ?? []) as AppointmentRow[];
+
+    const totalAppointments = appointmentRows.length;
+    const confirmedAppointments = appointmentRows.filter(a => a.status === 'confirmed').length;
+    const pendingAppointments = appointmentRows.filter(a => a.status === 'pending').length;
+    const cancelledAppointments = appointmentRows.filter(a => a.status === 'cancelled').length;
+    const completedAppointments = appointmentRows.filter(a => a.status === 'completed').length;
+    const noShowAppointments = appointmentRows.filter(a => a.status === 'no_show').length;
     
     // Get popular time slots
     const timeSlotCounts = new Map<string, number>();
-    appointments?.forEach((appointment: any) => {
+    appointmentRows.forEach(appointment => {
       const timeSlot = appointment.start_time.substring(0, 5); // HH:mm format
       timeSlotCounts.set(timeSlot, (timeSlotCounts.get(timeSlot) || 0) + 1);
     });
@@ -105,20 +128,20 @@ const getHandler = async (
     
     // Get instructor performance data
     const instructorPerformancePromises = await getInstructorPerformance(
-      supabase, 
-      startDateStr, 
-      endDateStr, 
+      rds,
+      startDateStr,
+      endDateStr,
       instructorId || undefined
     );
-    
+
     // Get revenue data (if appointment types have prices)
-    const revenueData = await getRevenueData(supabase, appointments || []);
-    
+    const revenueData = await getRevenueData(rds, appointmentRows);
+
     // Get current month revenue for comparison
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const currentMonthEnd = now.toISOString().split('T')[0];
-    
-    let currentMonthQuery = supabase
+
+    let currentMonthQuery = rds
       .from('appointments')
       .select(`
         *,
@@ -133,9 +156,10 @@ const getHandler = async (
     }
     
     const { data: currentMonthAppointments } = await currentMonthQuery;
-    const currentMonthRevenue = currentMonthAppointments?.reduce((total, appointment) => {
+    const typedCurrentMonthAppointments = (currentMonthAppointments ?? []) as AppointmentWithType[];
+    const currentMonthRevenue = typedCurrentMonthAppointments.reduce((total, appointment) => {
       return total + (appointment.appointment_type?.price || 0);
-    }, 0) || 0;
+    }, 0);
     
     const stats: AppointmentStats = {
       total_appointments: totalAppointments,
@@ -175,13 +199,13 @@ const getHandler = async (
  * Get instructor performance data
  */
 async function getInstructorPerformance(
-  supabase: any, 
-  startDate: string, 
-  endDate: string, 
+  rds: any,
+  startDate: string,
+  endDate: string,
   instructorId?: string
 ): Promise<any[]> {
   try {
-    let query = supabase
+    let query = rds
       .from('appointments')
       .select(`
         instructor_id,
@@ -197,8 +221,9 @@ async function getInstructorPerformance(
     }
     
     const { data: appointmentData, error } = await query;
+    const typedAppointments = (appointmentData ?? []) as AppointmentWithType[];
     
-    if (error || !appointmentData) {
+    if (error) {
       console.error('Error fetching instructor performance data:', error);
       return [];
     }
@@ -206,7 +231,7 @@ async function getInstructorPerformance(
     // Group by instructor
     const instructorStats = new Map();
     
-    appointmentData.forEach((appointment: any) => {
+    typedAppointments.forEach(appointment => {
       const instructorIdKey = appointment.instructor_id;
       
       if (!instructorStats.has(instructorIdKey)) {
@@ -248,18 +273,21 @@ async function getInstructorPerformance(
 /**
  * Calculate revenue data
  */
-async function getRevenueData(supabase: any, appointments: any[]): Promise<{ total: number }> {
+async function getRevenueData(
+  rds: any,
+  appointments: AppointmentRow[]
+): Promise<{ total: number }> {
   try {
     // Get appointment type prices for completed appointments
     const completedAppointments = appointments.filter(a => a.status === 'completed');
-    
+
     if (completedAppointments.length === 0) {
       return { total: 0 };
     }
-    
+
     const appointmentTypeIds = [...new Set(completedAppointments.map(a => a.appointment_type_id))];
-    
-    const { data: appointmentTypes, error } = await supabase
+
+    const { data: appointmentTypes, error } = await rds
       .from('appointment_types')
       .select('id, price')
       .in('id', appointmentTypeIds);
@@ -271,7 +299,7 @@ async function getRevenueData(supabase: any, appointments: any[]): Promise<{ tot
     
     // Create price lookup
     const priceMap = new Map();
-    appointmentTypes?.forEach((type: any) => {
+    (appointmentTypes ?? []).forEach((type: AppointmentTypeRow) => {
       priceMap.set(type.id, type.price || 0);
     });
     

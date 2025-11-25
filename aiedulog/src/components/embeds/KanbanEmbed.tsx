@@ -143,7 +143,7 @@ export default function KanbanEmbed({
 
       if (identityError) throw identityError
 
-      const mappedUsers = identityData?.map(profile => ({
+      const mappedUsers = identityData?.map((profile: any) => ({
         id: profile.user_id,
         email: profile.email,
         nickname: profile.nickname,

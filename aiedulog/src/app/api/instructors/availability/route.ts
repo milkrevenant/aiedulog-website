@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withUserSecurity, withAdminSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext, SecurityRole } from '@/lib/security/core-security';
 import {
@@ -11,6 +11,8 @@ import {
 
 /**
  * GET /api/instructors/availability - Get instructor availability rules
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: User can view their own rules, admins can view all
  * 
  * Query Parameters:
@@ -23,13 +25,13 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     const instructorId = searchParams.get('instructor_id');
     const dayOfWeek = searchParams.get('day_of_week');
     
     // Build query
-    let query = supabase
+    let query = rds
       .from('instructor_availability')
       .select(`
         *,
@@ -97,7 +99,7 @@ const postHandler = async (
 ): Promise<NextResponse> => {
   try {
     const body: CreateAvailabilityRequest = await request.json();
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Validate required fields
     if (!body.instructor_id || body.day_of_week === undefined || !body.start_time || !body.end_time) {
@@ -141,7 +143,7 @@ const postHandler = async (
     }
     
     // Verify instructor exists and is active
-    const { data: instructor, error: instructorError } = await supabase
+    const { data: instructor, error: instructorError } = await rds
       .from('identities')
       .select('id, role, status')
       .eq('id', body.instructor_id)
@@ -169,7 +171,7 @@ const postHandler = async (
     }
     
     // Check for conflicting availability rules
-    const { data: existingRules, error: conflictError } = await supabase
+    const { data: existingRules, error: conflictError } = await rds
       .from('instructor_availability')
       .select('id, start_time, end_time')
       .eq('instructor_id', body.instructor_id)
@@ -186,7 +188,7 @@ const postHandler = async (
     
     // Check for time overlaps
     if (existingRules) {
-      const hasOverlap = existingRules.some(rule => 
+      const hasOverlap = existingRules.some((rule: any) =>
         (body.start_time < rule.end_time && body.end_time > rule.start_time)
       );
       
@@ -209,18 +211,20 @@ const postHandler = async (
       max_bookings_per_day: body.max_bookings_per_day || 8
     };
     
-    const { data: newAvailability, error: createError } = await supabase
+    const { data: newAvailabilities, error: createError } = await rds
       .from('instructor_availability')
-      .insert([availabilityData])
-      .select(`
-        *,
-        instructor:identities!instructor_availability_instructor_id_fkey(
-          id,
-          full_name,
-          email
-        )
-      `)
-      .single();
+      .insert([availabilityData], {
+        select: `
+          *,
+          instructor:identities!instructor_availability_instructor_id_fkey(
+            id,
+            full_name,
+            email
+          )
+        `
+      });
+
+    const newAvailability = newAvailabilities?.[0] || null;
     
     if (createError) {
       console.error('Error creating availability rule:', createError);

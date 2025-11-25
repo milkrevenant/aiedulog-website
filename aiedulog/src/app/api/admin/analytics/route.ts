@@ -15,22 +15,28 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { ContentAnalyticsService } from '@/lib/content-management';
+import { TableRow } from '@/lib/db/types';
+
+type ContentAnalyticsRow = TableRow<'content_analytics'>;
 
 /**
  * GET /api/admin/analytics
+ *
+ * MIGRATION: Migrated to RDS with requireAdmin() (2025-10-14)
  * Get content analytics data
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+
+    const rds = createRDSClient();
 
     const searchParams = request.nextUrl.searchParams;
     const content_type = searchParams.get('content_type') as 'section' | 'block' | undefined;
@@ -70,11 +76,11 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
           locationStatsResult,
           realtimeStatsResult
         ] = await Promise.all([
-          getTotalViews(supabase, query),
-          getUniqueUsers(supabase, query),
-          getDeviceStats(supabase, query),
-          getLocationStats(supabase, query),
-          getRealtimeStats(supabase)
+          getTotalViews(rds, query),
+          getUniqueUsers(rds, query),
+          getDeviceStats(rds, query),
+          getLocationStats(rds, query),
+          getRealtimeStats(rds)
         ]);
 
         return NextResponse.json({
@@ -91,7 +97,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       }
 
       case 'content_performance': {
-        const performanceData = await getContentPerformance(supabase, query);
+        const performanceData = await getContentPerformance(rds, query);
         return NextResponse.json({
           success: true,
           performance: performanceData.data || []
@@ -99,7 +105,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       }
 
       case 'time_series': {
-        const timeSeriesData = await getTimeSeriesData(supabase, query);
+        const timeSeriesData = await getTimeSeriesData(rds, query);
         return NextResponse.json({
           success: true,
           timeSeries: timeSeriesData.data || []
@@ -107,7 +113,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       }
 
       case 'audience': {
-        const audienceData = await getAudienceAnalytics(supabase, query);
+        const audienceData = await getAudienceAnalytics(rds, query);
         return NextResponse.json({
           success: true,
           audience: audienceData.data || {}
@@ -130,7 +136,6 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
     const body = await request.json();
 
     const {
@@ -171,9 +176,9 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
 // Helper functions for analytics queries
 
-async function getTotalViews(supabase: any, query: any) {
+async function getTotalViews(rds: any, query: any) {
   try {
-    let dbQuery = supabase
+    let dbQuery = rds
       .from('content_analytics')
       .select('id', { count: 'exact', head: true })
       .eq('event_type', 'view');
@@ -202,10 +207,10 @@ async function getTotalViews(supabase: any, query: any) {
   }
 }
 
-async function getUniqueUsers(supabase: any, query: any) {
+async function getUniqueUsers(rds: any, query: any) {
   try {
     // This is a simplified query - in production, you'd want to use a more sophisticated approach
-    const { data, error } = await supabase
+    const { data, error } = await rds
       .from('content_analytics')
       .select('session_id')
       .eq('event_type', 'view')
@@ -220,9 +225,9 @@ async function getUniqueUsers(supabase: any, query: any) {
   }
 }
 
-async function getDeviceStats(supabase: any, query: any) {
+async function getDeviceStats(rds: any, query: any) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await rds
       .from('content_analytics')
       .select('device_type, count(*)')
       .not('device_type', 'is', null)
@@ -243,9 +248,9 @@ async function getDeviceStats(supabase: any, query: any) {
   }
 }
 
-async function getLocationStats(supabase: any, query: any) {
+async function getLocationStats(rds: any, query: any) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await rds
       .from('content_analytics')
       .select('location_data, count(*)')
       .not('location_data', 'is', null)
@@ -269,12 +274,12 @@ async function getLocationStats(supabase: any, query: any) {
   }
 }
 
-async function getRealtimeStats(supabase: any) {
+async function getRealtimeStats(rds: any) {
   try {
     // Get active users (sessions in last 30 minutes)
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    
-    const { data: recentData, error } = await supabase
+
+    const { data: recentData, error } = await rds
       .from('content_analytics')
       .select('session_id, content_id, content_type')
       .gte('created_at', thirtyMinutesAgo);
@@ -324,10 +329,10 @@ async function getRealtimeStats(supabase: any) {
   }
 }
 
-async function getContentPerformance(supabase: any, query: any) {
+async function getContentPerformance(rds: any, query: any) {
   try {
     // Get performance metrics for each content item
-    const { data, error } = await supabase
+    const { data, error } = await rds
       .from('content_analytics')
       .select(`
         content_id,
@@ -383,15 +388,15 @@ async function getContentPerformance(supabase: any, query: any) {
   }
 }
 
-async function getTimeSeriesData(supabase: any, query: any) {
+async function getTimeSeriesData(rds: any, query: any) {
   try {
-    const groupByClause = query.group_by === 'week' 
-      ? "date_trunc('week', created_at)" 
+    const groupByClause = query.group_by === 'week'
+      ? "date_trunc('week', created_at)"
       : query.group_by === 'month'
       ? "date_trunc('month', created_at)"
       : "date_trunc('day', created_at)";
 
-    const { data, error } = await supabase
+    const { data, error } = await rds
       .from('content_analytics')
       .select(`
         ${groupByClause} as date,
@@ -436,13 +441,13 @@ async function getTimeSeriesData(supabase: any, query: any) {
   }
 }
 
-async function getAudienceAnalytics(supabase: any, query: any) {
+async function getAudienceAnalytics(rds: any, query: any) {
   try {
     // Get device, location, and behavioral data
     const [deviceData, locationData, behaviorData] = await Promise.all([
-      getDeviceStats(supabase, query),
-      getLocationStats(supabase, query),
-      getBehaviorStats(supabase, query)
+      getDeviceStats(rds, query),
+      getLocationStats(rds, query),
+      getBehaviorStats(rds, query)
     ]);
 
     return {
@@ -458,7 +463,7 @@ async function getAudienceAnalytics(supabase: any, query: any) {
   }
 }
 
-async function getBehaviorStats(supabase: any, query: any) {
+async function getBehaviorStats(rds: any, query: any) {
   try {
     // This is a placeholder for behavioral analytics
     // In a real implementation, you'd analyze user journeys, session duration, etc.

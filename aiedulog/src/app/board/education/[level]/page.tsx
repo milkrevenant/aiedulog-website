@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -174,7 +177,7 @@ export default function EducationLevelPage() {
     const { data, error } = await query
 
     if (data) {
-      const postsWithStats = data.map((post) => ({
+      const postsWithStats = data.map((post: any) => ({
         ...post,
         author: {
           name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',

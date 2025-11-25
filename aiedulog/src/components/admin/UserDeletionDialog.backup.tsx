@@ -30,7 +30,7 @@ import {
   Comment as CommentIcon,
   Assignment as AssignmentIcon,
 } from '@mui/icons-material'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 interface AdminUser {
   id: string
@@ -156,19 +156,19 @@ export default function UserDeletionDialog({
     // Mark user as deleted
     await supabase
       .from('user_profiles')
+      .eq('identity_id', user!.user_id)
       .update({ 
         deleted_at: new Date().toISOString(),
         is_active: false 
       })
-      .eq('identity_id', user!.user_id)
 
     await supabase
       .from('identities')
+      .eq('id', user!.user_id)
       .update({ 
         deleted_at: new Date().toISOString(),
         status: 'deleted' 
       })
-      .eq('id', user!.user_id)
 
     // Handle content based on selected action
     if (contentAction === 'anonymize') {
@@ -187,8 +187,8 @@ export default function UserDeletionDialog({
     // Delete user (cascade will handle related records)
     await supabase
       .from('identities')
-      .delete()
       .eq('id', user!.user_id)
+      .delete()
   }
 
   const anonymizeUserContent = async () => {
@@ -201,34 +201,34 @@ export default function UserDeletionDialog({
     // Anonymize posts
     await supabase
       .from('posts')
-      .update(anonymizedData)
       .eq('author_id', user!.user_id)
+      .update(anonymizedData)
 
     // Anonymize comments
     await supabase
       .from('comments')
-      .update(anonymizedData)
       .eq('author_id', user!.user_id)
+      .update(anonymizedData)
   }
 
   const deleteUserContent = async () => {
     // Delete user's posts (comments will cascade)
     await supabase
       .from('posts')
-      .delete()
       .eq('author_id', user!.user_id)
+      .delete()
 
     // Delete user's standalone comments
     await supabase
       .from('comments')
-      .delete()
       .eq('author_id', user!.user_id)
+      .delete()
 
     // Cancel lecture registrations
     await supabase
       .from('lecture_registrations')
-      .update({ status: 'cancelled' })
       .eq('user_id', user!.user_id)
+      .update({ status: 'cancelled' })
   }
 
   if (!user) return null

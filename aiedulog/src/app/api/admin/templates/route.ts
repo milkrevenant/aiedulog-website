@@ -15,21 +15,22 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { TemplateEngine, TemplateValidator } from '@/lib/templates';
 
 /**
  * GET /api/admin/templates
+ *
+ * MIGRATION: Migrated to RDS with requireAdmin() (2025-10-14)
  * Get all templates with filtering options
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -68,12 +69,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();
@@ -122,18 +121,19 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       default: {
         // Create template directly
         const validation = TemplateValidator.validateTemplate(
-          templateData.template_data, 
+          templateData.template_data,
           templateData.template_type
         );
 
         if (!validation.isValid) {
-          return NextResponse.json({ 
+          return NextResponse.json({
             error: 'Template validation failed',
-            validation 
+            validation
           }, { status: 400 });
         }
 
-        const { data: template, error } = await supabase
+        const rds = createRDSClient();
+        const { data: templateRows, error } = await rds
           .from('content_templates')
           .insert({
             template_key: templateData.template_key,
@@ -145,14 +145,14 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
             preview_image_url: templateData.preview_image_url,
             is_public: templateData.is_public || false,
             usage_count: 0
-          })
-          .select()
-          .single();
+          }, { select: '*' });
 
         if (error) {
           console.error('Error creating template:', error);
           return NextResponse.json({ error: 'Failed to create template' }, { status: 500 });
         }
+
+        const template = templateRows?.[0];
 
         return NextResponse.json({
           success: true,
@@ -173,12 +173,10 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const body = await request.json();
@@ -203,20 +201,21 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
       }
     }
 
-    const { data: template, error } = await supabase
+    const rds = createRDSClient();
+    const { data: templateRows, error } = await rds
       .from('content_templates')
+      .eq('id', id)
       .update({
         ...updateData,
         updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single();
+      }, { select: '*' });
 
     if (error) {
       console.error('Error updating template:', error);
       return NextResponse.json({ error: 'Failed to update template' }, { status: 500 });
     }
+
+    const template = templateRows?.[0];
 
     return NextResponse.json({
       success: true,
@@ -235,12 +234,10 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const searchParams = request.nextUrl.searchParams;

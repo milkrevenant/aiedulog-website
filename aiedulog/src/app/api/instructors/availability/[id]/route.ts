@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withUserSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext, SecurityRole } from '@/lib/security/core-security';
 import {
@@ -15,6 +15,8 @@ interface RouteParams {
 
 /**
  * GET /api/instructors/availability/[id] - Get specific availability rule
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: User can view their own rules, admins can view all
  */
 const getHandler = async (
@@ -24,9 +26,9 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { id } = params;
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
-    const { data: availability, error } = await supabase
+    const { data: availability, error } = await rds
       .from('instructor_availability')
       .select(`
         *,
@@ -83,10 +85,10 @@ const putHandler = async (
   try {
     const { id } = params;
     const body = await request.json();
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Get existing availability rule
-    const { data: existingRule, error: fetchError } = await supabase
+    const { data: existingRule, error: fetchError } = await rds
       .from('instructor_availability')
       .select('*')
       .eq('id', id)
@@ -147,7 +149,7 @@ const putHandler = async (
     if (body.day_of_week !== undefined || body.start_time || body.end_time) {
       const checkDay = body.day_of_week !== undefined ? body.day_of_week : existingRule.day_of_week;
       
-      const { data: conflictRules, error: conflictError } = await supabase
+      const { data: conflictRules, error: conflictError } = await rds
         .from('instructor_availability')
         .select('id, start_time, end_time')
         .eq('instructor_id', existingRule.instructor_id)
@@ -165,7 +167,7 @@ const putHandler = async (
       
       // Check for time overlaps
       if (conflictRules) {
-        const hasOverlap = conflictRules.some(rule => 
+        const hasOverlap = conflictRules.some((rule: any) =>
           (newStartTime < rule.end_time && newEndTime > rule.start_time)
         );
         
@@ -190,19 +192,21 @@ const putHandler = async (
     delete updateData.created_at;
     
     // Update availability rule
-    const { data: updatedRule, error: updateError } = await supabase
+    const { data: updatedRules, error: updateError } = await rds
       .from('instructor_availability')
-      .update(updateData)
       .eq('id', id)
-      .select(`
-        *,
-        instructor:identities!instructor_availability_instructor_id_fkey(
-          id,
-          full_name,
-          email
-        )
-      `)
-      .single();
+      .update(updateData, {
+        select: `
+          *,
+          instructor:identities!instructor_availability_instructor_id_fkey(
+            id,
+            full_name,
+            email
+          )
+        `
+      });
+
+    const updatedRule = updatedRules?.[0] || null;
     
     if (updateError) {
       console.error('Error updating availability rule:', updateError);
@@ -239,10 +243,10 @@ const deleteHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { id } = params;
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Get existing availability rule
-    const { data: existingRule, error: fetchError } = await supabase
+    const { data: existingRule, error: fetchError } = await rds
       .from('instructor_availability')
       .select('*')
       .eq('id', id)
@@ -266,7 +270,7 @@ const deleteHandler = async (
     }
     
     // Check if there are future appointments that depend on this availability
-    const { data: futureAppointments, error: appointmentError } = await supabase
+    const { data: futureAppointments, error: appointmentError } = await rds
       .from('appointments')
       .select('id, appointment_date, start_time')
       .eq('instructor_id', existingRule.instructor_id)
@@ -285,7 +289,7 @@ const deleteHandler = async (
     if (futureAppointments && futureAppointments.length > 0) {
       const dayOfWeek = existingRule.day_of_week;
       
-      const affectedAppointments = futureAppointments.filter(appointment => {
+      const affectedAppointments = futureAppointments.filter((appointment: any) => {
         const appointmentDay = new Date(appointment.appointment_date).getDay();
         return appointmentDay === dayOfWeek &&
                appointment.start_time >= existingRule.start_time &&
@@ -304,10 +308,10 @@ const deleteHandler = async (
     }
     
     // Delete the availability rule
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await rds
       .from('instructor_availability')
-      .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .delete();
     
     if (deleteError) {
       console.error('Error deleting availability rule:', deleteError);

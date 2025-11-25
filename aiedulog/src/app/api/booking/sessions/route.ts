@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import { SecureTokenGenerator } from '@/lib/security/secure-token-generator';
@@ -13,6 +13,8 @@ import {
 
 /**
  * POST /api/booking/sessions - Create new booking session
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: Public access to support anonymous bookings
  */
 const postHandler = async (
@@ -21,7 +23,7 @@ const postHandler = async (
 ): Promise<NextResponse> => {
   try {
     const body: CreateBookingSessionRequest = await request.json();
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // 🔒 SECURITY FIX: Generate cryptographically secure session token
     // BEFORE (VULNERABLE): Math.random() + timestamp - predictable and weak
@@ -39,7 +41,7 @@ const postHandler = async (
     };
     
     // Create booking session
-    const { data: session, error: createError } = await supabase
+    const { data: sessions, error: createError } = await rds
       .from('booking_sessions')
       .insert({
         user_id: context.userId || null, // null for anonymous users
@@ -47,9 +49,11 @@ const postHandler = async (
         current_step: body.initial_step || BookingStepType.INSTRUCTOR_SELECTION,
         data: sessionData,
         expires_at: expiresAt.toISOString()
-      })
-      .select()
-      .single();
+      }, {
+        select: '*'
+      });
+
+    const session = sessions?.[0] || null;
     
     if (createError) {
       console.error('Error creating booking session:', createError);
@@ -89,9 +93,9 @@ const getHandler = async (
   try {
     const { searchParams } = new URL(request.url);
     const sessionToken = searchParams.get('session_token');
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
-    let query = supabase
+    let query = rds
       .from('booking_sessions')
       .select('*')
       .gt('expires_at', new Date().toISOString()); // Only non-expired sessions

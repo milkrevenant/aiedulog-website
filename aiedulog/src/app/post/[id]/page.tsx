@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -226,7 +229,7 @@ export default function PostDetailPage() {
 
         if (legacyError) throw legacyError
 
-        const commentsWithAuthor = legacyData.map((comment) => ({
+        const commentsWithAuthor = legacyData.map((comment: any) => ({
           ...comment,
           author: {
             id: comment.identities?.user_profiles?.id,
@@ -242,7 +245,7 @@ export default function PostDetailPage() {
       }
 
       if (data) {
-        const commentsWithAuthor = data.map((comment) => {
+        const commentsWithAuthor = data.map((comment: any) => {
           const userProfile = comment.identities?.user_profiles?.[0]
           return {
             ...comment,

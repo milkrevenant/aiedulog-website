@@ -1,26 +1,39 @@
 /**
  * Enterprise Audit Service
  * Comprehensive audit logging and monitoring system
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  */
 
-import { createClient } from '@/lib/supabase/client';
-import type { 
-  AuditLog, 
-  CreateAuditLogRequest, 
+import { createClient } from '@/lib/supabase/server';
+import type {
+  AuditLog,
+  CreateAuditLogRequest,
   AuditLogFilters,
   PaginatedResponse,
   ApiResponse
 } from '../types';
 
 export class AuditService {
-  private supabase = createClient();
+  private supabase: any;
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
   
   /**
    * Create a comprehensive audit log entry
    */
   async createAuditLog(request: CreateAuditLogRequest): Promise<ApiResponse<AuditLog>> {
     try {
-      const { data, error } = await this.supabase.rpc('create_audit_log', {
+      const supabase = await this.getClient();
+      const { data, error } = await supabase.rpc('create_audit_log', {
         p_event_type: request.event_type,
         p_event_category: request.event_category,
         p_actor_type: request.actor_type,
@@ -62,7 +75,8 @@ export class AuditService {
     limit: number = 50
   ): Promise<PaginatedResponse<AuditLog>> {
     try {
-      let query = this.supabase
+      const supabase = await this.getClient();
+      let query = supabase
         .from('audit_logs')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
@@ -150,7 +164,8 @@ export class AuditService {
     limit: number = 100
   ): Promise<ApiResponse<AuditLog[]>> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getClient();
+      const { data, error } = await supabase
         .from('audit_logs')
         .select('*')
         .eq('resource_type', resourceType)
@@ -180,7 +195,8 @@ export class AuditService {
    */
   async getSecurityEvents(limit: number = 50): Promise<ApiResponse<AuditLog[]>> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getClient();
+      const { data, error } = await supabase
         .from('audit_logs')
         .select('*')
         .in('severity', ['error', 'critical'])
@@ -210,7 +226,8 @@ export class AuditService {
    */
   async getGdprAuditLogs(userId: string): Promise<ApiResponse<AuditLog[]>> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getClient();
+      const { data, error } = await supabase
         .from('audit_logs')
         .select('*')
         .eq('gdpr_subject_id', userId)
@@ -239,42 +256,43 @@ export class AuditService {
    */
   async getAuditStatistics(days: number = 30): Promise<ApiResponse<any>> {
     try {
+      const supabase = await this.getClient();
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - days);
 
       // Get total events
-      const { count: totalEvents } = await this.supabase
+      const { count: totalEvents } = await supabase
         .from('audit_logs')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', fromDate.toISOString());
 
       // Get events by severity
-      const { data: severityStats } = await this.supabase
+      const { data: severityStats } = await supabase
         .from('audit_logs')
         .select('severity')
         .gte('created_at', fromDate.toISOString());
 
       // Get events by category
-      const { data: categoryStats } = await this.supabase
+      const { data: categoryStats } = await supabase
         .from('audit_logs')
         .select('event_category')
         .gte('created_at', fromDate.toISOString());
 
       // Get failed events
-      const { count: failedEvents } = await this.supabase
+      const { count: failedEvents } = await supabase
         .from('audit_logs')
         .select('id', { count: 'exact', head: true })
         .eq('success', false)
         .gte('created_at', fromDate.toISOString());
 
       // Process severity stats
-      const severityCounts = (severityStats || []).reduce((acc: any, log) => {
+      const severityCounts = (severityStats || []).reduce((acc: any, log: any) => {
         acc[log.severity] = (acc[log.severity] || 0) + 1;
         return acc;
       }, {});
 
       // Process category stats
-      const categoryCounts = (categoryStats || []).reduce((acc: any, log) => {
+      const categoryCounts = (categoryStats || []).reduce((acc: any, log: any) => {
         acc[log.event_category] = (acc[log.event_category] || 0) + 1;
         return acc;
       }, {});
@@ -309,8 +327,10 @@ export class AuditService {
     format: 'json' | 'csv' = 'json'
   ): Promise<ApiResponse<any>> {
     try {
+      const supabase = await this.getClient();
+
       // Get all matching logs (no pagination for export)
-      let query = this.supabase
+      let query = supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false });
@@ -367,7 +387,8 @@ export class AuditService {
    */
   async cleanupOldAuditLogs(): Promise<ApiResponse<{ deleted_count: number }>> {
     try {
-      const { data, error } = await this.supabase.rpc('cleanup_expired_data');
+      const supabase = await this.getClient();
+      const { data, error } = await supabase.rpc('cleanup_expired_data');
 
       if (error) throw error;
 

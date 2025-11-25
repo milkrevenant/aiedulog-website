@@ -1,5 +1,7 @@
 /**
  * Appointment-Notification Integration Service
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * This service integrates the appointment booking system with the comprehensive
  * scheduling notification system. It provides high-level methods that handle
@@ -45,7 +47,7 @@ export class AppointmentNotificationIntegration {
 
   private async getSupabase() {
     if (!this.supabase) {
-      this.supabase = await createClient();
+      this.supabase = createClient();
     }
     return this.supabase;
   }

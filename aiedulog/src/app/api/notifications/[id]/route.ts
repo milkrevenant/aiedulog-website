@@ -15,33 +15,26 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { getNotificationService } from '@/lib/services/notification-service';
 
 /**
  * PUT /api/notifications/[id]
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Update notification (mark as read, archive, etc.)
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
+    const rds = createRDSClient();
+
+    // Use authentication from SecurityContext
+    if (!context.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user identity
-    const { data: identity } = await supabase
-      .from('identities')
-      .select('id, role')
-      .eq('auth_user_id', session.user.id)
-      .single();
-
-    if (!identity) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // Use userId from context as the identity ID
+    const identityId = context.userId;
 
     const body = await request.json();
     const { action } = body;
@@ -52,7 +45,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
 
     switch (action) {
       case 'mark_read': {
-        const success = await getNotificationService().markAsRead(notificationId, identity.id);
+        const success = await getNotificationService().markAsRead(notificationId, identityId);
         if (!success) {
           return NextResponse.json({ error: 'Failed to mark notification as read' }, { status: 500 });
         }
@@ -63,7 +56,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
       }
 
       case 'archive': {
-        const success = await getNotificationService().archiveNotification(notificationId, identity.id);
+        const success = await getNotificationService().archiveNotification(notificationId, identityId);
         if (!success) {
           return NextResponse.json({ error: 'Failed to archive notification' }, { status: 500 });
         }
@@ -74,7 +67,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
       }
 
       case 'mark_all_read': {
-        const success = await getNotificationService().markAllAsRead(identity.id);
+        const success = await getNotificationService().markAllAsRead(identityId);
         if (!success) {
           return NextResponse.json({ error: 'Failed to mark all notifications as read' }, { status: 500 });
         }
@@ -100,52 +93,44 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
+    const rds = createRDSClient();
+
+    // Use authentication from SecurityContext
+    if (!context.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user identity
-    const { data: identity } = await supabase
-      .from('identities')
-      .select('id, role')
-      .eq('auth_user_id', session.user.id)
-      .single();
-
-    if (!identity) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const identityId = context.userId;
+    const userRole = context.userRole;
 
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/');
     const notificationId = pathSegments[pathSegments.length - 1];
 
     // Check if user owns the notification or is admin
-    const { data: notification, error: fetchError } = await supabase
+    const { data: notifications, error: fetchError } = await rds
       .from('notifications')
       .select('user_id')
-      .eq('id', notificationId)
-      .single();
+      .eq('id', notificationId);
 
-    if (fetchError) {
+    const notification = notifications?.[0] || null;
+
+    if (fetchError || !notification) {
       return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
     }
 
-    const isOwner = notification.user_id === identity.id;
-    const isAdmin = ['admin', 'super_admin'].includes(identity.role);
+    const isOwner = notification.user_id === identityId;
+    const isAdmin = ['admin', 'super_admin'].includes(userRole || '');
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     // Delete notification
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await rds
       .from('notifications')
-      .delete()
-      .eq('id', notificationId);
+      .eq('id', notificationId)
+      .delete();
 
     if (deleteError) {
       console.error('Error deleting notification:', deleteError);

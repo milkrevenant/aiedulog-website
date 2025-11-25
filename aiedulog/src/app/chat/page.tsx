@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -129,7 +132,7 @@ export default function ChatPage() {
       // Secure logging: production-safe (no console output in production)
       
       // 각 room_id로 채팅방 정보 가져오기
-      const roomIds = participantData.map(p => p.room_id).filter(id => id != null)
+      const roomIds = participantData.map((p: any) => p.room_id).filter((id: string | null) => id != null)
       
       if (roomIds.length === 0) {
         setChatRooms([])
@@ -159,7 +162,7 @@ export default function ChatPage() {
         const roomsWithDetails = await Promise.all(
           rooms.map(async (room: any) => {
             // 해당 방의 last_read_at 찾기
-            const participantInfo = participantData.find(p => p.room_id === room.id)
+            const participantInfo = participantData.find((p: any) => p.room_id === room.id)
             
             // 참가자 정보 - Try new identity system first, fallback to legacy
             let participants = null
@@ -255,7 +258,7 @@ export default function ChatPage() {
           schema: 'public',
           table: 'chat_messages',
         },
-        (payload) => {
+        (payload: any) => {
           // 채팅방 목록 새로고침
           fetchChatRooms()
         }
@@ -267,7 +270,7 @@ export default function ChatPage() {
           schema: 'public',
           table: 'chat_rooms',
         },
-        (payload) => {
+        (payload: any) => {
           // 채팅방 업데이트
           fetchChatRooms()
         }

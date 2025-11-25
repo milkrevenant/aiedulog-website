@@ -1,5 +1,7 @@
 /**
  * Scheduling Notification Service
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * Comprehensive notification system for appointment booking workflow.
  * Provides 11 specialized notification types with bilingual support,
@@ -66,12 +68,12 @@ export class SchedulingNotificationService {
   private supabase: any;
 
   constructor() {
-    this.notificationService = createNotificationService(true);
+    this.notificationService = createNotificationService();
   }
 
   private async getSupabase() {
     if (!this.supabase) {
-      this.supabase = await createClient();
+      this.supabase = createClient();
     }
     return this.supabase;
   }

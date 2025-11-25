@@ -1,29 +1,14 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+/**
+ * Database Client (Server)
+ *
+ * IMPORTANT: This now uses RDS PostgreSQL instead of Supabase
+ * Migration completed: 2025-10-13
+ */
 
-export async function createClient() {
-  const cookieStore = await cookies()
+import { createRDSClient } from './rds-adapter'
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
-            })
-          } catch (error) {
-            // Server Component cookie handling
-            // Cookies can only be modified in Server Actions or Route Handlers
-            // This is expected behavior when called from Server Components
-          }
-        },
-      },
-    }
-  )
+export function createClient() {
+  // Return RDS client with Supabase-compatible API
+  // Note: No cookie handling needed for RDS - auth is handled by NextAuth
+  return createRDSClient()
 }

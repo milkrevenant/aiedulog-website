@@ -161,7 +161,7 @@ export default function PostManagementSystem({ boardType }: PostManagementSystem
 
       if (error) throw error
 
-      const processedPosts = data?.map(post => ({
+      const processedPosts = data?.map((post: any) => ({
         ...post,
         author_name: post.author_profile?.nickname || post.author_profile?.full_name || post.author_email,
       })) || []

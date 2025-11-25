@@ -1,14 +1,16 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import type { AppUser } from '@/lib/auth/types'
 
 /**
  * Identity Migration Helper
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 기존 사용자를 identity 시스템으로 마이그레이션
  */
 
-export async function ensureUserIdentity(user: User): Promise<string | null> {
+export async function ensureUserIdentity(user: AppUser): Promise<string | null> {
   const supabase = createClient()
   
   try {
@@ -25,17 +27,20 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     }
     
     // 2. Identity 생성
-    const { data: newIdentity, error: identityError } = await supabase
+    const { data: insertedIdentities, error: identityError } = await supabase
       .from('identities')
       .insert({
         status: 'active',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      })
-      .select('id')
-      .single()
+      }, { select: 'id' })
+
+    const newIdentityRecord = Array.isArray(insertedIdentities)
+      ? insertedIdentities[0]
+      : insertedIdentities
+    const newIdentityId = (newIdentityRecord as { id?: string | null } | null | undefined)?.id || null
     
-    if (identityError || !newIdentity) {
+    if (identityError || !newIdentityId) {
       console.error('Failed to create identity:', identityError)
       return null
     }
@@ -44,7 +49,7 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     const { error: authMethodError } = await supabase
       .from('auth_methods')
       .insert({
-        identity_id: newIdentity.id,
+        identity_id: newIdentityId,
         provider: 'supabase',  // 중요: 'email'이 아니라 'supabase'
         provider_user_id: user.id,
         auth_user_id: user.id,  // auth.users.id와 동일
@@ -54,7 +59,7 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     if (authMethodError) {
       console.error('Failed to create auth method:', authMethodError)
       // Rollback identity
-      await supabase.from('identities').delete().eq('id', newIdentity.id)
+      await supabase.from('identities').eq('id', newIdentityId).delete()
       return null
     }
     
@@ -62,21 +67,21 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
     const { data: existingProfile } = await supabase
       .from('user_profiles')
       .select('*')
-      .eq('identity_id', newIdentity.id)
+      .eq('identity_id', newIdentityId)
       .single()
     
     if (existingProfile) {
       // 기존 프로필에 identity_id 업데이트
       await supabase
         .from('user_profiles')
+        .eq('identity_id', newIdentityId)
         .update({ updated_at: new Date().toISOString() })
-        .eq('identity_id', newIdentity.id)
     } else {
       // 새 프로필 생성
       await supabase
         .from('user_profiles')
         .insert({
-          identity_id: newIdentity.id,
+          identity_id: newIdentityId,
           email: user.email || '',
           role: 'user',
           created_at: new Date().toISOString(),
@@ -84,8 +89,8 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
         })
     }
     
-    console.log('Successfully created identity:', newIdentity.id)
-    return newIdentity.id
+    console.log('Successfully created identity:', newIdentityId)
+    return newIdentityId
   } catch (error) {
     console.error('Identity migration error:', error)
     return null
@@ -95,7 +100,7 @@ export async function ensureUserIdentity(user: User): Promise<string | null> {
 /**
  * Get or create identity for current user
  */
-export async function getOrCreateIdentity(user: User): Promise<string | null> {
+export async function getOrCreateIdentity(user: AppUser): Promise<string | null> {
   const supabase = createClient()
   
   // 1. Try to get existing identity

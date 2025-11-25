@@ -1,9 +1,11 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * Identity System Health Check Agent
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * 이 에이전트는 Identity 시스템의 전반적인 건전성을 체계적으로 분석합니다.
  * 

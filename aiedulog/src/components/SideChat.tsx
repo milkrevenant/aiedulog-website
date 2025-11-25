@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
+import type { AppUser } from '@/lib/auth/types'
 import {
   Box,
   Paper,
@@ -75,7 +75,7 @@ interface ChatRoom {
 }
 
 interface SideChatProps {
-  user: User | null
+  user: AppUser | null
   open?: boolean
   onClose?: () => void
 }
@@ -219,7 +219,7 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
       .limit(50)
 
     if (messagesData) {
-      const formattedMessages = messagesData.map((msg) => ({
+      const formattedMessages = messagesData.map((msg: any) => ({
         ...msg,
         sender: {
           id: msg.identities?.id || msg.sender_id,
@@ -244,13 +244,13 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
           schema: 'public',
           table: 'chat_messages',
         },
-        async (payload) => {
+        async (payload: any) => {
           if (selectedRoom && payload.new.room_id === selectedRoom.id) {
             // Use getUserIdentity helper for consistent sender info retrieval
             let senderInfo = null
             try {
               // Create a minimal user object to use with getUserIdentity
-              const senderUser = { id: payload.new.sender_id } as User
+              const senderUser: AppUser = { id: payload.new.sender_id }
               const senderIdentity = await getUserIdentity(senderUser, supabase)
               
               if (senderIdentity?.profile) {

@@ -15,7 +15,7 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createRDSClient } from '@/lib/db/rds-client'
 import { getNotificationService } from '@/lib/services/notification-service'
 import { z } from 'zod'
 
@@ -43,40 +43,32 @@ const queryParamsSchema = z.object({
 // HELPER FUNCTIONS
 // =====================================================================
 
-async function validateUserAccess(supabase: any, userId?: string) {
-  const { data: { session }, error: authError } = await supabase.auth.getSession()
-  if (authError || !session) {
-    return { user: null, identity: null, isAdmin: false, error: 'Unauthorized' }
+async function validateUserAccess(context: SecurityContext, userId?: string) {
+  if (!context.userId) {
+    return { userId: null, identityId: null, isAdmin: false, error: 'Unauthorized' }
   }
 
-  // Get user identity
-  const { data: identity } = await supabase
-    .from('identities')
-    .select('id, role')
-    .eq('auth_user_id', session.user.id)
-    .single()
+  const identityId = context.userId
+  const userRole = context.userRole
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin'
 
-  if (!identity) {
-    return { user: session.user, identity: null, isAdmin: false, error: 'User identity not found' }
-  }
-
-  const isAdmin = identity.role === 'admin' || identity.role === 'super_admin'
-  
   // If accessing specific user's notifications, check permissions
-  if (userId && userId !== identity.id && !isAdmin) {
-    return { user: session.user, identity, isAdmin: false, error: 'Forbidden' }
+  if (userId && userId !== identityId && !isAdmin) {
+    return { userId: context.userId, identityId, isAdmin: false, error: 'Forbidden' }
   }
 
-  return { user: session.user, identity, isAdmin, error: null }
+  return { userId: context.userId, identityId, isAdmin, error: null }
 }
 
 /**
  * GET /api/notifications
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Enhanced notification retrieval with comprehensive filtering, pagination, and real-time support
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     const url = new URL(request.url)
     const searchParams = Object.fromEntries(url.searchParams)
     
@@ -95,7 +87,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     const params = validationResult.data
     
     // Validate user access
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase, params.user_id)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context, params.user_id)
     if (error) {
       return NextResponse.json(
         { error },
@@ -103,10 +95,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       )
     }
 
-    const targetUserId = params.user_id || identity.id
+    const targetUserId = params.user_id || identityId
 
     // Build comprehensive query
-    let baseQuery = supabase
+    let baseQuery = rds
       .from('notifications')
       .select(`
         id,
@@ -166,7 +158,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get total count for pagination
-    const { count } = await supabase
+    const { count } = await rds
       .from('notifications')
       .select('*', { count: 'exact' as any, head: true })
       .eq('user_id', targetUserId)
@@ -186,7 +178,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get summary statistics
-    const { data: stats } = await supabase
+    const { data: stats } = await rds
       .from('notifications')
       .select('is_read, category, priority', { count: 'exact' })
       .eq('user_id', targetUserId)
@@ -194,12 +186,12 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 
     const summary = {
       total: count || 0,
-      unread: stats?.filter(n => !n.is_read).length || 0,
-      byCategory: stats?.reduce((acc: any, n) => {
+      unread: stats?.filter((n: any) => !n.is_read).length || 0,
+      byCategory: stats?.reduce((acc: any, n: any) => {
         acc[n.category] = (acc[n.category] || 0) + 1
         return acc
       }, {}) || {},
-      byPriority: stats?.reduce((acc: any, n) => {
+      byPriority: stats?.reduce((acc: any, n: any) => {
         acc[n.priority] = (acc[n.priority] || 0) + 1
         return acc
       }, {}) || {}
@@ -258,10 +250,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate user access (admin only for creating notifications)
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -410,10 +402,10 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate user access
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -459,18 +451,17 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     updateData.updated_at = new Date().toISOString()
 
     // Execute bulk update with user permission check
-    let query = supabase
+    let query = rds
       .from('notifications')
-      .update(updateData)
       .in('id', notification_ids)
-    
+
     // Non-admin users can only update their own notifications
     if (!isAdmin) {
-      query = query.eq('user_id', identity.id)
+      query = query.eq('user_id', identityId)
     }
 
     const { data: updatedNotifications, error: updateError } = await query
-      .select('id, user_id, title, is_read, is_archived, updated_at')
+      .update(updateData, { select: 'id, user_id, title, is_read, is_archived, updated_at' })
 
     if (updateError) {
       console.error('Error updating notifications:', updateError)
@@ -504,10 +495,10 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate user access
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -536,18 +527,16 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     // Delete notifications with user permission check
-    let query = supabase
+    let query = rds
       .from('notifications')
-      .delete()
       .in('id', ids)
-    
+
     // Non-admin users can only delete their own notifications
     if (!isAdmin) {
-      query = query.eq('user_id', identity.id)
+      query = query.eq('user_id', identityId)
     }
 
-    const { data: deletedNotifications, error: deleteError } = await query
-      .select('id, title')
+    const { data: deletedNotifications, error: deleteError } = await query.delete()
 
     if (deleteError) {
       console.error('Error deleting notifications:', deleteError)

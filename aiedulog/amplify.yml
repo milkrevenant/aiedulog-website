@@ -7,59 +7,64 @@ applications:
           commands:
             # Ensure Node.js 20.x for dependencies requiring Node >=20
             - "echo 'Switching to Node.js 20.x'"
-            - "export NVM_DIR=\"$HOME/.nvm\"; [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\""
-            - "rm -f \"$NVM_DIR/default-packages\""
-            - "nvm install 20"
-            - "nvm use 20"
+            - 'export NVM_DIR="$HOME/.nvm"; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'
+            - 'rm -f "$NVM_DIR/default-packages"'
+            - 'nvm install 20'
+            - 'nvm use 20'
             - "echo 'Using Node:' $(node --version)"
             - "echo 'Using NPM:' $(npm --version)"
-            - "npm config set fund false"
-            - "npm config set audit false"
-            - "npm config set loglevel warn"
+            - 'npm config set fund false'
+            - 'npm config set audit false'
+            - 'npm config set loglevel warn'
             # Phase 1: Environment Setup
             - "echo 'Starting AWS Amplify build for AiEduLog'"
             - "echo 'Build timestamp:' $(date)"
             - "echo 'Working directory:' $(pwd)"
             - "echo 'Node version:' $(node --version)"
             - "echo 'NPM version:' $(npm --version)"
-            
+
             # Phase 2: Environment Variables Validation
             - "echo 'Validating environment variables'"
-            - "test -n \"$NEXT_PUBLIC_SUPABASE_URL\" || (echo 'ERROR: NEXT_PUBLIC_SUPABASE_URL required' && exit 1)"
-            - "test -n \"$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY\" || (echo 'ERROR: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY required' && exit 1)"
+            - 'test -n "$NEXT_PUBLIC_SUPABASE_URL" || (echo ''ERROR: NEXT_PUBLIC_SUPABASE_URL required'' && exit 1)'
+            - 'test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" || (echo ''ERROR: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY required'' && exit 1)'
+            - 'test -n "$COGNITO_USER_POOL_ID" || (echo ''ERROR: COGNITO_USER_POOL_ID required'' && exit 1)'
+            - 'test -n "$COGNITO_CLIENT_ID" || (echo ''ERROR: COGNITO_CLIENT_ID required'' && exit 1)'
+            - 'test -n "$COGNITO_REGION" || (echo ''ERROR: COGNITO_REGION required'' && exit 1)'
+            - 'test -n "$NEXTAUTH_SECRET" || (echo ''ERROR: NEXTAUTH_SECRET required'' && exit 1)'
+            - 'test -n "$NEXTAUTH_URL" || (echo ''ERROR: NEXTAUTH_URL required'' && exit 1)'
             - "echo 'Environment variables validated'"
-            
-            # Phase 3: Clean Build Environment  
+
+            # Phase 3: Clean Build Environment
             - "echo 'Cleaning build environment'"
-            - "rm -rf .next node_modules/.cache"
+            - 'rm -rf .next node_modules/.cache'
             - "test -f package.json || (echo 'ERROR: package.json not found' && exit 1)"
             - "echo 'Build environment cleaned'"
-            
+
             # Phase 4: Install Dependencies
             - "echo 'Installing dependencies'"
-            - "npm ci --no-audit --no-fund --prefer-offline || npm install --no-audit --no-fund"
+            - 'npm ci --no-audit --no-fund --prefer-offline || npm install --no-audit --no-fund'
             - "echo 'Dependencies installed'"
-            
+
             # Phase 5: Validate Next.js Installation
             - "echo 'Validating Next.js installation'"
             - "npx next --version || (echo 'ERROR: Next.js not properly installed' && exit 1)"
             - "test -f next.config.ts || (echo 'ERROR: next.config.ts missing' && exit 1)"
             - "test -f src/app/layout.tsx || (echo 'ERROR: layout.tsx missing' && exit 1)"
             - "echo 'Next.js validation completed'"
-            
+
         build:
           commands:
             # Build Phase
             - "echo 'Starting application build'"
             - "echo 'Node version:' $(node --version)"
             - "echo 'Next.js version:' $(npx next --version)"
-            - "export NODE_ENV=production"
-            - "export NEXT_TELEMETRY_DISABLED=1"
-            - "export CI=true"
-            - "npm run build"
+            - 'export NODE_ENV=production'
+            - 'export NEXT_TELEMETRY_DISABLED=1'
+            - 'export CI=true'
+            - 'npm run build'
             - "test -d .next || (echo 'ERROR: Build failed - no .next directory' && exit 1)"
             - "echo 'Build completed successfully'"
-            
+
       artifacts:
         baseDirectory: .next
         files:

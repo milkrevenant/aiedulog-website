@@ -1,0 +1,182 @@
+
+> aiedulog@0.1.0 build
+> next build --no-lint
+
+ ⚠ Linting is disabled.
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/stillclie_mac/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/stillclie_mac/Documents/ug/aideulog/aiedulog/package-lock.json
+
+   ▲ Next.js 15.4.6
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 7.0s
+
+./node_modules/pg/lib/native/client.js
+Module not found: Can't resolve 'pg-native' in '/Users/stillclie_mac/Documents/ug/aideulog/aiedulog/node_modules/pg/lib/native'
+
+Import trace for requested module:
+./node_modules/pg/lib/native/client.js
+./node_modules/pg/lib/native/index.js
+./node_modules/pg/lib/index.js
+./node_modules/pg/esm/index.mjs
+./src/lib/db/rds-client.ts
+./src/lib/supabase/rds-adapter.ts
+./src/lib/supabase/server.ts
+./src/lib/notifications.ts
+./src/app/notifications/page.tsx
+
+./node_modules/pg/lib/native/client.js
+Module not found: Can't resolve 'pg-native' in '/Users/stillclie_mac/Documents/ug/aideulog/aiedulog/node_modules/pg/lib/native'
+
+Import trace for requested module:
+./node_modules/pg/lib/native/client.js
+./node_modules/pg/lib/native/index.js
+./node_modules/pg/lib/index.js
+./node_modules/pg/esm/index.mjs
+./src/lib/db/rds-client.ts
+./src/lib/auth/jwt-middleware.ts
+
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/101) ...
+   Generating static pages (25/101) 
+   Generating static pages (50/101) 
+   Generating static pages (75/101) 
+ ✓ Generating static pages (101/101)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                        Size  First Load JS
+┌ ○ /                                             268 B         102 kB
+├ ○ /_not-found                                    1 kB         103 kB
+├ ○ /aboutus                                     6.9 kB         219 kB
+├ ○ /aboutus-cms                                  844 B         213 kB
+├ ƒ /admin                                      7.97 kB         361 kB
+├ ○ /admin/analytics                             113 kB         526 kB
+├ ƒ /admin/announcements                          13 kB         299 kB
+├ ○ /admin/footer                               11.5 kB         439 kB
+├ ƒ /admin/lectures                             13.2 kB         299 kB
+├ ƒ /admin/main-content                         26.6 kB         235 kB
+├ ƒ /admin/news                                  8.8 kB         207 kB
+├ ○ /admin/posts                                14.4 kB         413 kB
+├ ƒ /admin/regular-meetings                     7.93 kB         275 kB
+├ ○ /admin/scheduler                            20.2 kB         528 kB
+├ ○ /admin/scheduling                           13.5 kB         291 kB
+├ ○ /admin/templates                            14.8 kB         446 kB
+├ ƒ /admin/training-programs                    10.1 kB         277 kB
+├ ○ /admin/translations                         21.2 kB         445 kB
+├ ƒ /admin/users                                16.9 kB         402 kB
+├ ○ /annual-lecture                             4.05 kB         216 kB
+├ ƒ /api/admin/analytics                          268 B         102 kB
+├ ƒ /api/admin/appointments                       268 B         102 kB
+├ ƒ /api/admin/appointments/stats                 268 B         102 kB
+├ ƒ /api/admin/auth                               268 B         102 kB
+├ ƒ /api/admin/dashboard                          268 B         102 kB
+├ ƒ /api/admin/footer                             268 B         102 kB
+├ ƒ /api/admin/footer/categories                  268 B         102 kB
+├ ƒ /api/admin/footer/categories/[id]             268 B         102 kB
+├ ƒ /api/admin/footer/links                       268 B         102 kB
+├ ƒ /api/admin/footer/links/[id]                  268 B         102 kB
+├ ƒ /api/admin/footer/settings                    268 B         102 kB
+├ ƒ /api/admin/footer/social                      268 B         102 kB
+├ ƒ /api/admin/footer/social/[id]                 268 B         102 kB
+├ ƒ /api/admin/main-content                       268 B         102 kB
+├ ƒ /api/admin/main-content/assets                268 B         102 kB
+├ ƒ /api/admin/main-content/blocks                268 B         102 kB
+├ ƒ /api/admin/main-content/templates             268 B         102 kB
+├ ƒ /api/admin/main-content/versions              268 B         102 kB
+├ ƒ /api/admin/scheduler                          268 B         102 kB
+├ ƒ /api/admin/scheduler/templates                268 B         102 kB
+├ ƒ /api/admin/security/comprehensive             268 B         102 kB
+├ ƒ /api/admin/security/dashboard                 268 B         102 kB
+├ ƒ /api/admin/templates                          268 B         102 kB
+├ ƒ /api/admin/templates/apply                    268 B         102 kB
+├ ƒ /api/admin/translations                       268 B         102 kB
+├ ƒ /api/admin/users                              268 B         102 kB
+├ ƒ /api/appointment-types                        268 B         102 kB
+├ ƒ /api/appointments                             268 B         102 kB
+├ ƒ /api/appointments/[id]                        268 B         102 kB
+├ ƒ /api/appointments/[id]/calendar               268 B         102 kB
+├ ƒ /api/appointments/[id]/reschedule             268 B         102 kB
+├ ƒ /api/appointments/availability                268 B         102 kB
+├ ƒ /api/auth/[...nextauth]                       268 B         102 kB
+├ ƒ /api/booking/availability                     268 B         102 kB
+├ ƒ /api/booking/sessions                         268 B         102 kB
+├ ƒ /api/booking/sessions/[sessionId]             268 B         102 kB
+├ ƒ /api/booking/sessions/[sessionId]/complete    268 B         102 kB
+├ ƒ /api/content/public                           268 B         102 kB
+├ ƒ /api/health                                   268 B         102 kB
+├ ƒ /api/instructors/availability                 268 B         102 kB
+├ ƒ /api/instructors/availability/[id]            268 B         102 kB
+├ ƒ /api/notifications                            268 B         102 kB
+├ ƒ /api/notifications/[id]                       268 B         102 kB
+├ ƒ /api/notifications/analytics                  268 B         102 kB
+├ ƒ /api/notifications/preferences                268 B         102 kB
+├ ƒ /api/notifications/realtime                   268 B         102 kB
+├ ƒ /api/notifications/scheduling                 268 B         102 kB
+├ ƒ /api/notifications/templates                  268 B         102 kB
+├ ƒ /api/posts                                    268 B         102 kB
+├ ƒ /api/secure-example                           268 B         102 kB
+├ ƒ /api/security/events                          268 B         102 kB
+├ ƒ /api/security/status                          268 B         102 kB
+├ ƒ /api/security/violations                      268 B         102 kB
+├ ƒ /api/test-content-system                      268 B         102 kB
+├ ƒ /api/workers/notification-processor           268 B         102 kB
+├ ○ /auth/callback                                684 B         151 kB
+├ ○ /auth/confirm                               3.02 kB         153 kB
+├ ○ /auth/login                                 11.7 kB         198 kB
+├ ○ /auth/reset-password                        7.98 kB         194 kB
+├ ○ /auth/signup                                9.95 kB         200 kB
+├ ○ /auth/signup-success                        5.48 kB         159 kB
+├ ƒ /board/[category]                           7.55 kB         389 kB
+├ ○ /board/education                              406 B         102 kB
+├ ƒ /board/education/[level]                    7.38 kB         386 kB
+├ ○ /board/job                                    402 B         102 kB
+├ ƒ /board/job/[subCategory]                    6.55 kB         413 kB
+├ ○ /board/lectures                             7.22 kB         417 kB
+├ ○ /board/trending                             6.42 kB         361 kB
+├ ○ /booking                                    8.12 kB         360 kB
+├ ○ /chat                                       10.1 kB         419 kB
+├ ƒ /chat/[id]                                    606 B         404 kB
+├ ○ /curriculum                                 4.01 kB         216 kB
+├ ○ /dashboard                                  11.2 kB         367 kB
+├ ○ /dashboard/appointments                     10.9 kB         226 kB
+├ ○ /demo-cms                                   2.48 kB         214 kB
+├ ○ /evaluation                                 4.03 kB         216 kB
+├ ○ /excalidraw                                 6.03 kB         157 kB
+├ ○ /feed                                       9.65 kB         387 kB
+├ ○ /grid-practice                              9.64 kB         197 kB
+├ ○ /icon.svg                                       0 B            0 B
+├ ○ /introduction                               3.72 kB         216 kB
+├ ○ /main                                       19.8 kB         386 kB
+├ ○ /messages                                   18.4 kB         450 kB
+├ ○ /news                                       3.99 kB         216 kB
+├ ○ /notice                                     4.01 kB         216 kB
+├ ○ /notifications                              7.83 kB         378 kB
+├ ○ /organization                               4.05 kB         216 kB
+├ ƒ /post/[id]                                  8.08 kB         380 kB
+├ ○ /regular-meetings                           4.03 kB         216 kB
+├ ○ /scheduling                                  8.9 kB         195 kB
+├ ƒ /scheduling/book/[sessionId]                10.4 kB         273 kB
+├ ƒ /scheduling/confirmation/[appointmentId]    7.23 kB         174 kB
+├ ƒ /scheduling/instructor/[instructorId]       8.63 kB         222 kB
+├ ○ /search                                      7.5 kB         369 kB
+├ ○ /settings/profile                           7.44 kB         368 kB
+├ ○ /settings/security                          7.16 kB         360 kB
+├ ○ /tools                                      4.08 kB         216 kB
+└ ○ /vision                                     4.08 kB         216 kB
++ First Load JS shared by all                    102 kB
+  ├ chunks/4bd1b696-cc729d47eba2cee4.js         54.1 kB
+  ├ chunks/5964-6d6a41800488ba64.js             43.9 kB
+  └ other shared chunks (total)                 3.94 kB
+
+
+ƒ Middleware                                    64.4 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

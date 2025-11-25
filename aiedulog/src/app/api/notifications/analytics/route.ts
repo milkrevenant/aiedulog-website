@@ -15,31 +15,27 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { getNotificationService } from '@/lib/services/notification-service';
 
 /**
  * GET /api/notifications/analytics
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Get notification analytics and metrics (admin only)
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
+    const rds = createRDSClient();
+
+    // Check authentication from SecurityContext
+    if (!context.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user is admin
-    const { data: identity } = await supabase
-      .from('identities')
-      .select('id, role')
-      .eq('auth_user_id', session.user.id)
-      .single();
-
-    if (!identity || !['admin', 'super_admin'].includes(identity.role)) {
+    const userRole = context.userRole;
+    if (!userRole || !['admin', 'super_admin'].includes(userRole)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -58,7 +54,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     );
 
     // Get summary statistics
-    const { data: summaryStats, error: summaryError } = await supabase
+    const { data: summaryStats, error: summaryError } = await rds
       .from('notification_analytics')
       .select(`
         category,
@@ -77,7 +73,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       // // .group(['category', 'channel']); // PostgreSQL group by not available in this context
 
     // Get recent notification counts
-    const { data: recentCounts, error: recentError } = await supabase
+    const { data: recentCounts, error: recentError } = await rds
       .from('notifications')
       .select(`
         category,
@@ -88,7 +84,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       // // .group(['category', 'priority']); // PostgreSQL group by not available
 
     // Get delivery status distribution
-    const { data: deliveryStatus, error: deliveryError } = await supabase
+    const { data: deliveryStatus, error: deliveryError } = await rds
       .from('notification_deliveries')
       .select(`
         status,
@@ -99,7 +95,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       // .group(['status', 'channel']);
 
     // Get template performance
-    const { data: templateStats, error: templateError } = await supabase
+    const { data: templateStats, error: templateError } = await rds
       .from('notification_analytics')
       .select(`
         template_key,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withUserSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -20,6 +20,8 @@ interface RouteParams {
 
 /**
  * GET /api/appointments/[id] - Get specific appointment details
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: User can only access their own appointments or appointments they're instructing
  */
 const getHandler = async (
@@ -29,9 +31,9 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { id } = params;
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
-    const { data: appointment, error } = await supabase
+    const { data: appointment, error } = await rds
       .from('appointments')
       .select(`
         *,
@@ -99,10 +101,10 @@ const putHandler = async (
   try {
     const { id } = params;
     const body: UpdateAppointmentRequest = await request.json();
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // First, get the existing appointment
-    const { data: existingAppointment, error: fetchError } = await supabase
+    const { data: existingAppointment, error: fetchError } = await rds
       .from('appointments')
       .select('*, appointment_type:appointment_types(*)')
       .eq('id', id)
@@ -146,7 +148,7 @@ const putHandler = async (
 
       // Check availability (exclude current appointment from conflict check)
       const availabilityCheck = await checkTimeSlotAvailability(
-        supabase,
+        rds,
         existingAppointment.instructor_id,
         newDate,
         newStartTime,
@@ -178,22 +180,24 @@ const putHandler = async (
       updated_at: new Date().toISOString()
     };
 
-    const { data: updatedAppointment, error: updateError } = await supabase
+    const { data: updatedAppointments, error: updateError } = await rds
       .from('appointments')
-      .update(updateData)
       .eq('id', id)
-      .select(`
-        *,
-        instructor:identities!appointments_instructor_id_fkey(
-          id,
-          full_name,
-          email,
-          profile_image_url,
-          bio
-        ),
-        appointment_type:appointment_types(*)
-      `)
-      .single();
+      .update(updateData, {
+        select: `
+          *,
+          instructor:identities!appointments_instructor_id_fkey(
+            id,
+            full_name,
+            email,
+            profile_image_url,
+            bio
+          ),
+          appointment_type:appointment_types(*)
+        `
+      });
+
+    const updatedAppointment = updatedAppointments?.[0] || null;
 
     if (updateError) {
       console.error('Error updating appointment:', updateError);
@@ -206,7 +210,7 @@ const putHandler = async (
     // If date/time was changed, schedule reschedule notification
     if (body.appointment_date || body.start_time) {
       await scheduleNotification(
-        supabase,
+        rds,
         id,
         NotificationType.RESCHEDULE,
         new Date()
@@ -240,7 +244,7 @@ const deleteHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { id } = params;
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // Get cancellation details from request body
     let cancelRequest: CancelAppointmentRequest = { reason: 'User cancellation' };
@@ -252,7 +256,7 @@ const deleteHandler = async (
     }
 
     // Get existing appointment
-    const { data: existingAppointment, error: fetchError } = await supabase
+    const { data: existingAppointment, error: fetchError } = await rds
       .from('appointments')
       .select('*')
       .eq('id', id)
@@ -294,7 +298,7 @@ const deleteHandler = async (
     const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     // Get appointment type for cancellation policy
-    const { data: appointmentType } = await supabase
+    const { data: appointmentType } = await rds
       .from('appointment_types')
       .select('cancellation_hours')
       .eq('id', existingAppointment.appointment_type_id)
@@ -311,27 +315,29 @@ const deleteHandler = async (
     }
 
     // Cancel the appointment
-    const { data: cancelledAppointment, error: cancelError } = await supabase
+    const { data: cancelledAppointments, error: cancelError } = await rds
       .from('appointments')
+      .eq('id', id)
       .update({
         status: 'cancelled' as AppointmentStatus,
         cancellation_reason: cancelRequest.reason,
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select(`
-        *,
-        instructor:identities!appointments_instructor_id_fkey(
-          id,
-          full_name,
-          email,
-          profile_image_url,
-          bio
-        ),
-        appointment_type:appointment_types(*)
-      `)
-      .single();
+      }, {
+        select: `
+          *,
+          instructor:identities!appointments_instructor_id_fkey(
+            id,
+            full_name,
+            email,
+            profile_image_url,
+            bio
+          ),
+          appointment_type:appointment_types(*)
+        `
+      });
+
+    const cancelledAppointment = cancelledAppointments?.[0] || null;
 
     if (cancelError) {
       console.error('Error cancelling appointment:', cancelError);
@@ -343,7 +349,7 @@ const deleteHandler = async (
 
     // Send cancellation notification
     await scheduleNotification(
-      supabase,
+      rds,
       id,
       NotificationType.CANCELLATION,
       new Date()
@@ -369,7 +375,7 @@ const deleteHandler = async (
  * Helper function to check time slot availability (with exclusion)
  */
 async function checkTimeSlotAvailability(
-  supabase: any,
+  rds: any,
   instructorId: string,
   date: string,
   startTime: string,
@@ -377,7 +383,7 @@ async function checkTimeSlotAvailability(
   excludeAppointmentId?: string
 ): Promise<{ available: boolean; reason?: string }> {
   // Build conflict check query
-  let conflictQuery = supabase
+  let conflictQuery = rds
     .from('appointments')
     .select('id')
     .eq('instructor_id', instructorId)
@@ -404,7 +410,7 @@ async function checkTimeSlotAvailability(
 
   // Check instructor availability rules
   const dayOfWeek = new Date(date).getDay();
-  const { data: availability, error: availError } = await supabase
+  const { data: availability, error: availError } = await rds
     .from('instructor_availability')
     .select('*')
     .eq('instructor_id', instructorId)
@@ -435,13 +441,13 @@ async function checkTimeSlotAvailability(
  * Helper function to schedule notifications
  */
 async function scheduleNotification(
-  supabase: any,
+  rds: any,
   appointmentId: string,
   type: NotificationType,
   scheduledTime: Date
 ): Promise<void> {
   try {
-    await supabase
+    await rds
       .from('appointment_notifications')
       .insert({
         appointment_id: appointmentId,

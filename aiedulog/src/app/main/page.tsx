@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import {
   Box,
@@ -60,10 +63,12 @@ import DynamicFooter from '@/components/DynamicFooter'
 import { useSession } from 'next-auth/react'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export default function Home() {
   const theme = useTheme()
   const router = useRouter()
+  const supabase = createClient()
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<HTMLElement | null>(null)

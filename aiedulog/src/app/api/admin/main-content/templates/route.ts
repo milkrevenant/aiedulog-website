@@ -15,23 +15,29 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers'
+import { createRDSClient } from '@/lib/db/rds-client'
+import { TableRow } from '@/lib/db/types'
+
+type ContentTemplateRow = TableRow<'content_templates'>
+type IdentityRow = TableRow<'identities'>
 
 // GET - Fetch content templates
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
   const { searchParams } = new URL(request.url)
   const templateType = searchParams.get('type')
   const category = searchParams.get('category')
-  
+
   try {
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 })
     }
 
-    let query = supabase
+    const rds = createRDSClient()
+
+    let query = rds
       .from('content_templates')
       .select('*')
       .eq('is_public', true)
@@ -69,32 +75,33 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 
 // POST - Create new template
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
-  
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 })
     }
-    
+
+    const rds = createRDSClient()
     const body = await request.json()
-    
+
     // Get user identity for created_by field
-    const { data: identity } = await supabase
+    const { data: identityRows } = await rds
       .from('identities')
       .select('id')
-      .eq('user_id', user.id)
-      .single()
-    
-    const { data: template, error } = await supabase
+      .eq('user_id', auth.user.id)
+
+    const identity = identityRows?.[0]
+
+    const { data: templateRows, error } = await rds
       .from('content_templates')
       .insert({
         ...body,
         created_by: identity?.id,
         updated_by: identity?.id
-      })
-      .select()
-      .single()
+      }, { select: '*' })
+
+    const template = templateRows?.[0]
     
     if (error) {
       if (error.code === '42P01') {
@@ -117,40 +124,41 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
 // PUT - Update template usage count
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
-  
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Check admin authentication
+    const auth = await requireAdmin(request)
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 })
     }
-    
+
+    const rds = createRDSClient()
     const body = await request.json()
     const { id, action } = body
-    
+
     if (action === 'increment_usage') {
       // Increment usage count
-      const { data: template, error } = await supabase
+      const { data: templateRows, error } = await rds
         .from('content_templates')
         .select('usage_count')
         .eq('id', id)
-        .single()
-      
+
+      const template = templateRows?.[0]
+
       if (error) throw error
-      
-      const { error: updateError } = await supabase
+
+      const { error: updateError } = await rds
         .from('content_templates')
-        .update({ 
-          usage_count: (template.usage_count || 0) + 1,
+        .eq('id', id)
+        .update({
+          usage_count: (template?.usage_count || 0) + 1,
           updated_at: new Date().toISOString()
         })
-        .eq('id', id)
-      
+
       if (updateError) throw updateError
-      
+
       return NextResponse.json({ success: true })
     }
-    
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   } catch (error: any) {
     console.error('Error updating template:', error)

@@ -1,5 +1,7 @@
 /**
  * Scheduling Notifications API
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * Comprehensive API endpoints for managing appointment booking notifications.
  * Supports all 11 notification types with multi-channel delivery,
@@ -20,9 +22,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { 
-  getSchedulingNotificationService, 
+import { withPublicSecurity } from '@/lib/security/api-wrapper';
+import { SecurityContext } from '@/lib/security/core-security';
+import { createRDSClient } from '@/lib/db/rds-client';
+import {
+  getSchedulingNotificationService,
   NotificationConfig,
   AppointmentData,
   AppointmentTypeData,
@@ -37,12 +41,11 @@ interface APIResponse {
 }
 
 // POST handler for sending notifications
-export async function POST(request: NextRequest): Promise<NextResponse<APIResponse>> {
+const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse<APIResponse>> => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    const rds = createRDSClient();
+
+    if (!context.userId) {
       return NextResponse.json({
         success: false,
         error: 'Authentication required'
@@ -56,31 +59,31 @@ export async function POST(request: NextRequest): Promise<NextResponse<APIRespon
 
     switch (action) {
       case 'send_booking_confirmation':
-        return await handleBookingConfirmation(schedulingNotificationService, params, supabase);
+        return await handleBookingConfirmation(schedulingNotificationService, params, rds);
 
       case 'send_appointment_confirmation':
-        return await handleAppointmentConfirmation(schedulingNotificationService, params, supabase);
+        return await handleAppointmentConfirmation(schedulingNotificationService, params, rds);
 
       case 'schedule_reminders':
-        return await handleScheduleReminders(schedulingNotificationService, params, supabase);
+        return await handleScheduleReminders(schedulingNotificationService, params, rds);
 
       case 'send_cancellation':
-        return await handleCancellation(schedulingNotificationService, params, supabase);
+        return await handleCancellation(schedulingNotificationService, params, rds);
 
       case 'send_reschedule':
-        return await handleReschedule(schedulingNotificationService, params, supabase);
+        return await handleReschedule(schedulingNotificationService, params, rds);
 
       case 'send_completion':
-        return await handleCompletion(schedulingNotificationService, params, supabase);
+        return await handleCompletion(schedulingNotificationService, params, rds);
 
       case 'send_no_show':
-        return await handleNoShow(schedulingNotificationService, params, supabase);
+        return await handleNoShow(schedulingNotificationService, params, rds);
 
       case 'send_waitlist_available':
-        return await handleWaitlistAvailable(schedulingNotificationService, params, supabase);
+        return await handleWaitlistAvailable(schedulingNotificationService, params, rds);
 
       case 'generate_calendar_file':
-        return await handleGenerateCalendarFile(schedulingNotificationService, params, supabase) as NextResponse<APIResponse>;
+        return await handleGenerateCalendarFile(schedulingNotificationService, params, rds) as NextResponse<APIResponse>;
 
       default:
         return NextResponse.json({
@@ -99,12 +102,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<APIRespon
 }
 
 // GET handler for retrieving notification data
-export async function GET(request: NextRequest): Promise<NextResponse<APIResponse>> {
+const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse<APIResponse>> => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    const rds = createRDSClient();
+
+    if (!context.userId) {
       return NextResponse.json({
         success: false,
         error: 'Authentication required'
@@ -117,7 +119,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<APIRespons
 
     switch (action) {
       case 'get_notification_preferences':
-        return await handleGetNotificationPreferences(user.id, supabase);
+        return await handleGetNotificationPreferences(context.userId, rds);
 
       case 'get_appointment_notifications':
         if (!appointmentId) {
@@ -126,7 +128,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<APIRespons
             error: 'appointmentId is required'
           }, { status: 400 });
         }
-        return await handleGetAppointmentNotifications(appointmentId, supabase);
+        return await handleGetAppointmentNotifications(appointmentId, rds);
 
       default:
         return NextResponse.json({
@@ -145,12 +147,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<APIRespons
 }
 
 // PUT handler for updating preferences
-export async function PUT(request: NextRequest): Promise<NextResponse<APIResponse>> {
+const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse<APIResponse>> => {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    const rds = createRDSClient();
+
+    if (!context.userId) {
       return NextResponse.json({
         success: false,
         error: 'Authentication required'
@@ -162,7 +163,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse<APIRespons
 
     switch (action) {
       case 'update_notification_preferences':
-        return await handleUpdateNotificationPreferences(user.id, params, supabase);
+        return await handleUpdateNotificationPreferences(context.userId, params, rds);
 
       default:
         return NextResponse.json({
@@ -743,3 +744,6 @@ function getDefaultSchedulingPreferences(userId: string) {
     is_active: true
   };
 }
+export const POST = withPublicSecurity(postHandler);
+export const GET = withPublicSecurity(getHandler);
+export const PUT = withPublicSecurity(putHandler);

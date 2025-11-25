@@ -1,5 +1,7 @@
 /**
  * Secure API Client - Production-Ready Backend Security Layer
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * CRITICAL SECURITY FEATURES:
  * - Request/Response sanitization
@@ -15,6 +17,7 @@ import { rateLimiter } from '@/lib/security/rateLimiter'
 import { secureLogger } from '@/lib/security/secure-logger'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import { RDSQueryBuilder } from '@/lib/db/rds-query-builder'
 
 // Input sanitization patterns
 const DANGEROUS_PATTERNS = [
@@ -218,7 +221,7 @@ async function createSecurityContext(request: NextRequest): Promise<SecurityCont
   let sessionId: string | undefined
   
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       userId = user.id
@@ -507,12 +510,12 @@ export function withSecurity(
  * Utility function to create secure Supabase queries with RLS validation
  */
 export async function createSecureSupabaseQuery(context: SecurityContext) {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   // Add request context to all queries for audit logging
   const originalFrom = supabase.from
-  supabase.from = function(table: string) {
-    const query = originalFrom.call(this, table)
+  supabase.from = function fromWithAudit<T = any>(table: string): RDSQueryBuilder<T> {
+    const query = originalFrom.call(this, table) as RDSQueryBuilder<T>
     
     // Add audit metadata to query context
     // Always log database queries for security

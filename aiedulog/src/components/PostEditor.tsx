@@ -44,7 +44,7 @@ import {
   CloudUploadOutlined,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import type { AppUser } from '@/lib/auth/types'
 import { useTheme, alpha } from '@mui/material/styles'
 import dynamic from 'next/dynamic'
 
@@ -55,7 +55,7 @@ const MapPicker = dynamic(() => import('./MapPicker'), {
 })
 
 interface PostEditorProps {
-  user: User | null
+  user: AppUser | null
   profile: any
   category: 'feed' | 'job' | 'lecture' | 'elementary' | 'middle' | 'high'
   subCategory?: string

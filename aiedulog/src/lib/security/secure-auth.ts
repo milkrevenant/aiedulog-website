@@ -11,10 +11,34 @@
  * - Audit logging for all auth events
  */
 
+import { NextRequest } from 'next/server'
 import { secureLogger, SecurityEventType } from '@/lib/security/secure-logger'
 import { rateLimiter } from '@/lib/security/rateLimiter'
 import { securityMonitor } from '@/lib/security/security-monitor'
-import { NextRequest } from 'next/server'
+import { createRDSClient, DatabaseClient } from '@/lib/db/rds-client'
+import { getAuthenticatedUser } from '@/lib/auth/rds-auth-helpers'
+
+interface AuthUser {
+  id: string
+  email?: string | null
+  email_confirmed_at?: string | null
+}
+
+interface AuthSignInResult {
+  user: AuthUser | null
+  session?: unknown
+}
+
+interface AuthResponse<T> {
+  data: T | null
+  error: { message?: string } | null
+}
+
+interface RDSAuthClient {
+  signInWithPassword: (credentials: { email: string; password: string }) => Promise<AuthResponse<AuthSignInResult>>
+  getUser: () => Promise<AuthResponse<{ user: AuthUser | null }>>
+  signOut: () => Promise<{ error: { message?: string } | null }>
+}
 // Dynamic imports for server-side functions to avoid build issues
 
 // Authentication context
@@ -96,10 +120,12 @@ const LOCKOUT_CONFIG = {
  */
 export class SecureAuthService {
   private static instance: SecureAuthService
+  private readonly db: DatabaseClient
   private failedAttempts: Map<string, { count: number; lastAttempt: number; locked: boolean }> = new Map()
   private activeSessions: Map<string, { userId: string; lastActivity: number; ipAddress: string }> = new Map()
 
   constructor() {
+    this.db = createRDSClient()
     // Cleanup expired data every hour
     setInterval(() => {
       this.cleanupExpiredData()
@@ -111,6 +137,10 @@ export class SecureAuthService {
       SecureAuthService.instance = new SecureAuthService()
     }
     return SecureAuthService.instance
+  }
+
+  private get auth(): RDSAuthClient {
+    return this.db.auth as unknown as RDSAuthClient
   }
 
   /**
@@ -184,23 +214,32 @@ export class SecureAuthService {
         return result
       }
 
-      // 4. Authenticate with Supabase
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: sanitizedEmail,
-        password: password
-      })
+      // 4. Authenticate user credentials
+      let authData: AuthSignInResult | null = null
+      let authErrorMessage: string | undefined
+
+      try {
+        const authResponse = await this.auth.signInWithPassword({
+          email: sanitizedEmail,
+          password
+        })
+        authData = authResponse.data
+        authErrorMessage = authResponse.error?.message
+      } catch (authError) {
+        authErrorMessage = authError instanceof Error ? authError.message : 'Authentication error'
+      }
+
+      const authUser = authData?.user ?? null
 
       // 5. Handle authentication failure
-      if (authError || !authData.user) {
+      if (authErrorMessage || !authUser) {
         this.recordFailedAttempt(sanitizedEmail, ipAddress)
         
         secureLogger.logAuthEvent('login_failure', undefined, {
           requestId,
           email: sanitizedEmail,
           ipAddress: ipAddress.substring(0, 10) + '...',
-          reason: authError?.message || 'invalid_credentials'
+          reason: authErrorMessage || 'invalid_credentials'
         })
 
         securityMonitor.recordSecurityEvent(SecurityEventType.AUTHENTICATION_FAILURE, {
@@ -215,24 +254,30 @@ export class SecureAuthService {
       }
 
       // 6. Get user profile and role
-      const { data: profile, error: profileError } = await supabase
+      let profileQuery = this.db
         .from('profiles')
         .select('*')
-        .eq('id', authData.user.id)
-        .single()
+        .eq('id', authUser.id)
+
+      const { data: profileRows, error: profileError } = await profileQuery
+      const profile = (profileRows ?? [])[0] as Record<string, any> | undefined
 
       if (profileError || !profile) {
         secureLogger.error('Failed to fetch user profile during login', profileError as Error, {
-          requestId, userId: authData.user.id
+          requestId, userId: authUser.id
         })
         result.error = { code: 'PROFILE_ERROR', message: 'Failed to load user profile' }
         return result
       }
 
       // 7. Check if user account is active
-      if (profile.status !== 'active') {
-        secureLogger.logAuthEvent('login_failure', authData.user.id, {
-          requestId, reason: 'account_inactive', status: profile.status
+      const profileStatus = typeof profile.status === 'string'
+        ? profile.status
+        : (profile.is_active === false ? 'inactive' : 'active')
+
+      if (profileStatus !== 'active') {
+        secureLogger.logAuthEvent('login_failure', authUser.id, {
+          requestId, reason: 'account_inactive', status: profileStatus
         })
         
         result.error = { code: 'ACCOUNT_INACTIVE', message: 'Account is not active' }
@@ -247,10 +292,10 @@ export class SecureAuthService {
       }
 
       if (profile.mfa_enabled && options.mfaCode) {
-        const mfaValid = await this.validateMFA(authData.user.id, options.mfaCode)
+        const mfaValid = await this.validateMFA(authUser.id, options.mfaCode)
         if (!mfaValid) {
           securityMonitor.recordSecurityEvent(SecurityEventType.AUTHENTICATION_FAILURE, {
-            ipAddress, userAgent, requestId, userId: authData.user.id
+            ipAddress, userAgent, requestId, userId: authUser.id
           })
           
           result.error = { code: 'INVALID_MFA', message: 'Invalid MFA code' }
@@ -259,15 +304,18 @@ export class SecureAuthService {
       }
 
       // 9. Security risk assessment
-      const riskAssessment = await this.assessLoginRisk(authData.user.id, ipAddress, userAgent, profile)
+      const riskAssessment = await this.assessLoginRisk(authUser.id, ipAddress, userAgent, profile)
       
       // 10. Create secure session
-      const session = await this.createSecureSession(authData.user.id, ipAddress, userAgent, {
+      const session = await this.createSecureSession(authUser.id, ipAddress, userAgent, {
         riskScore: riskAssessment.score
       })
 
       // 11. Update user login tracking
-      await this.updateLoginTracking(authData.user.id, ipAddress, userAgent)
+      const currentLoginCount = typeof profile.login_count === 'number'
+        ? profile.login_count
+        : Number(profile.login_count ?? 0)
+      await this.updateLoginTracking(authUser.id, ipAddress, userAgent)
 
       // 12. Clear failed attempts
       this.clearFailedAttempts(sanitizedEmail)
@@ -275,13 +323,13 @@ export class SecureAuthService {
       // 13. Build successful result
       result.success = true
       result.user = {
-        id: authData.user.id,
-        email: authData.user.email!,
+        id: authUser.id,
+        email: authUser.email ?? sanitizedEmail,
         role: profile.role,
-        emailVerified: authData.user.email_confirmed_at !== null,
-        mfaEnabled: profile.mfa_enabled,
-        lastLogin: new Date(profile.last_login_at || Date.now()),
-        loginCount: profile.login_count + 1,
+        emailVerified: Boolean(authUser.email_confirmed_at),
+        mfaEnabled: Boolean(profile.mfa_enabled),
+        lastLogin: profile.last_login_at ? new Date(profile.last_login_at) : new Date(),
+        loginCount: currentLoginCount + 1,
         riskScore: riskAssessment.score
       }
       
@@ -292,13 +340,13 @@ export class SecureAuthService {
       }
 
       // 14. Audit logging
-      secureLogger.logAuthEvent('login_success', authData.user.id, {
+      secureLogger.logAuthEvent('login_success', authUser.id, {
         requestId,
         email: sanitizedEmail,
         ipAddress: ipAddress.substring(0, 10) + '...',
         userAgent,
         riskLevel: riskAssessment.level,
-        mfaUsed: profile.mfa_enabled
+        mfaUsed: Boolean(profile.mfa_enabled)
       })
 
       return result
@@ -323,9 +371,7 @@ export class SecureAuthService {
     const requestId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
     try {
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
-      const { data: { user }, error } = await supabase.auth.getUser()
+      const { user, error } = await getAuthenticatedUser(request)
 
       if (error || !user) {
         return {
@@ -356,11 +402,21 @@ export class SecureAuthService {
       }
 
       // Get user profile
-      const { data: profile } = await supabase
+      let profileQuery = this.db
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
+
+      const { data: profileRows } = await profileQuery
+      let profile = (profileRows ?? [])[0] as Record<string, any> | undefined
+
+      if (!profile) {
+        const { data: fallbackProfiles } = await this.db
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+        profile = (fallbackProfiles ?? [])[0] as Record<string, any> | undefined
+      }
 
       if (!profile) {
         return {
@@ -371,7 +427,11 @@ export class SecureAuthService {
       }
 
       // Check if account is still active
-      if (profile.status !== 'active') {
+      const profileStatus = typeof profile.status === 'string'
+        ? profile.status
+        : (profile.is_active === false ? 'inactive' : 'active')
+
+      if (profileStatus !== 'active') {
         securityIssues.push('account_inactive')
         return {
           valid: false,
@@ -394,12 +454,12 @@ export class SecureAuthService {
 
       const userInfo = {
         id: user.id,
-        email: user.email!,
+        email: user.email || profile.email || 'unknown',
         role: profile.role,
-        emailVerified: user.email_confirmed_at !== null,
-        mfaEnabled: profile.mfa_enabled,
-        lastLogin: new Date(profile.last_login_at || Date.now()),
-        loginCount: profile.login_count,
+        emailVerified: Boolean(profile.email_verified ?? true),
+        mfaEnabled: Boolean(profile.mfa_enabled),
+        lastLogin: profile.last_login_at ? new Date(profile.last_login_at) : new Date(),
+        loginCount: typeof profile.login_count === 'number' ? profile.login_count : Number(profile.login_count ?? 0),
         riskScore: await this.calculateUserRiskScore(user.id, ipAddress)
       }
 
@@ -430,27 +490,19 @@ export class SecureAuthService {
     const requestId = `logout_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
     try {
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        secureLogger.error('Supabase logout error', error, { requestId, userId })
-      }
+      await this.auth.signOut().catch(() => ({ error: null }))
 
       // Cleanup our session tracking
       this.activeSessions.delete(userId)
 
       // Update user's logout timestamp
-      await supabase
+      await this.db
         .from('profiles')
+        .eq('id', userId)
         .update({ 
           last_logout_at: new Date().toISOString(),
           active_session_count: 0 
         })
-        .eq('id', userId)
 
       // Audit logging
       secureLogger.logAuthEvent('logout', userId, {
@@ -474,19 +526,27 @@ export class SecureAuthService {
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
     try {
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
-      const { data, error } = await supabase.auth.refreshSession()
+      const { user, error } = await getAuthenticatedUser(request)
 
-      if (error || !data.user) {
+      if (error || !user) {
         return { success: false, needsReauth: true }
       }
 
-      // Update session tracking
-      this.activeSessions.set(data.user.id, {
-        userId: data.user.id,
-        lastActivity: Date.now(),
-        ipAddress
+      const sessionInfo = this.activeSessions.get(user.id)
+      if (sessionInfo) {
+        sessionInfo.lastActivity = Date.now()
+        sessionInfo.ipAddress = ipAddress
+      } else {
+        this.activeSessions.set(user.id, {
+          userId: user.id,
+          lastActivity: Date.now(),
+          ipAddress
+        })
+      }
+
+      secureLogger.logAuthEvent('login_success', user.id, {
+        ipAddress: ipAddress.substring(0, 10) + '...',
+        userAgent
       })
 
       return { success: true }
@@ -583,7 +643,7 @@ export class SecureAuthService {
 
     // Check login history
     const { createClient } = await import('@/lib/supabase/server')
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data: recentLogins } = await supabase
       .from('user_login_history')
       .select('*')
@@ -592,15 +652,29 @@ export class SecureAuthService {
       .limit(10)
 
     if (recentLogins) {
+      const loginEntries: Array<{
+        ip_address?: string | null
+        user_agent?: string | null
+        created_at?: string | null
+      }> = recentLogins as Array<{
+        ip_address?: string | null
+        user_agent?: string | null
+        created_at?: string | null
+      }>
+
       // New IP address
-      const knownIPs = recentLogins.map(login => login.ip_address)
+      const knownIPs = loginEntries
+        .map(login => login.ip_address)
+        .filter((ip): ip is string => typeof ip === 'string')
       if (!knownIPs.includes(ipAddress)) {
         riskScore += 20
         factors.push('new_ip_address')
       }
 
       // New user agent
-      const knownUserAgents = recentLogins.map(login => login.user_agent)
+      const knownUserAgents = loginEntries
+        .map(login => login.user_agent)
+        .filter((ua): ua is string => typeof ua === 'string')
       if (!knownUserAgents.includes(userAgent)) {
         riskScore += 10
         factors.push('new_user_agent')
@@ -608,9 +682,11 @@ export class SecureAuthService {
 
       // Unusual time
       const currentHour = new Date().getHours()
-      const usualHours = recentLogins.map(login => new Date(login.created_at).getHours())
+      const usualHours = loginEntries
+        .map(login => (login.created_at ? new Date(login.created_at).getHours() : null))
+        .filter((hour): hour is number => typeof hour === 'number')
       const isUnusualTime = !usualHours.some(hour => Math.abs(hour - currentHour) <= 2)
-      if (isUnusualTime && recentLogins.length > 3) {
+      if (isUnusualTime && loginEntries.length > 3) {
         riskScore += 15
         factors.push('unusual_time')
       }
@@ -663,20 +739,19 @@ export class SecureAuthService {
 
   private async updateLoginTracking(userId: string, ipAddress: string, userAgent: string): Promise<void> {
     const { createClient } = await import('@/lib/supabase/server')
-    const supabase = await createClient()
-    
-    // Update profile
+    const supabase = createClient()
+
+    const profileUpdateOptions = { select: 'id' }
     await supabase
       .from('profiles')
+      .eq('id', userId)
       .update({
         last_login_at: new Date().toISOString(),
         login_count: 'login_count + 1',
         last_login_ip: ipAddress,
         active_session_count: 1
-      })
-      .eq('id', userId)
+      }, profileUpdateOptions)
 
-    // Record login history
     await supabase
       .from('user_login_history')
       .insert({
@@ -684,7 +759,7 @@ export class SecureAuthService {
         ip_address: ipAddress,
         user_agent: userAgent,
         created_at: new Date().toISOString()
-      })
+      }, { select: 'id' })
   }
 
   private async calculateUserRiskScore(userId: string, ipAddress: string): Promise<number> {

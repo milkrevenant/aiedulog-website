@@ -56,7 +56,7 @@ import {
   Settings,
 } from '@mui/icons-material'
 import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import type { AppUser } from '@/lib/auth/types'
 import { 
   getCurrentChatUser, 
   sendChatMessage, 
@@ -75,7 +75,7 @@ import { initializeUnifiedSizing, useChatSizing } from '@/lib/utils/chat-sizing-
 
 interface ChatInterfaceProps {
   roomId: string
-  user: User
+  user: AppUser
   isNewChat?: boolean
 }
 
@@ -287,7 +287,7 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
           table: 'chat_messages',
           filter: `room_id=eq.${roomId}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           const { data: newMsg } = await supabase
             .from('chat_messages')
             .select(`

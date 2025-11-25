@@ -1,0 +1,320 @@
+.next/types/app/api/auth/[...nextauth]/route.ts(12,13): error TS2344: Type 'OmitWithTag<typeof import("/Users/stillclie_mac/Documents/ug/aideulog/aiedulog/src/app/api/auth/[...nextauth]/route"), "config" | "DELETE" | "PUT" | "PATCH" | "POST" | "GET" | "HEAD" | ... 8 more ... | "maxDuration", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'authOptions' is incompatible with index signature.
+    Type '{ providers: OAuthConfig<CognitoProfile>[]; session: { strategy: "jwt"; }; callbacks: { jwt({ token, account }: { token: any; account?: any; }): Promise<any>; session({ session, token }: { ...; }): Promise<...>; }; cookies: {}; secret: string | undefined; }' is not assignable to type 'never'.
+src/app/admin/main-content/MainContentClient.tsx(620,18): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: { component: ElementType<any, keyof IntrinsicElements>; } & ListItemOwnProps & CommonProps & Omit<any, "children" | ... 15 more ... | "secondaryAction">): Element | null', gave the following error.
+    Property 'component' is missing in type '{ children: Element[]; key: string; selected: boolean; onClick: () => void; sx: { mb: number; borderRadius: number; cursor: "pointer"; }; }' but required in type '{ component: ElementType<any, keyof IntrinsicElements>; }'.
+  Overload 2 of 2, '(props: DefaultComponentProps<ListItemTypeMap<{}, "li">>): Element | null', gave the following error.
+    Type '{ children: Element[]; key: string; selected: boolean; onClick: () => void; sx: { mb: number; borderRadius: number; cursor: "pointer"; }; }' is not assignable to type 'IntrinsicAttributes & ListItemOwnProps & CommonProps & Omit<Omit<DetailedHTMLProps<LiHTMLAttributes<HTMLLIElement>, HTMLLIElement>, "ref"> & { ...; }, "children" | ... 15 more ... | "secondaryAction">'.
+      Property 'selected' does not exist on type 'IntrinsicAttributes & ListItemOwnProps & CommonProps & Omit<Omit<DetailedHTMLProps<LiHTMLAttributes<HTMLLIElement>, HTMLLIElement>, "ref"> & { ...; }, "children" | ... 15 more ... | "secondaryAction">'.
+src/app/api/admin/appointments/route.ts(249,56): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/admin/appointments/route.ts(255,8): error TS2339: Property 'in' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/assets/route.ts(96,22): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/assets/route.ts(106,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/assets/route.ts(148,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/assets/route.ts(193,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/admin/main-content/blocks/route.ts(89,22): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/blocks/route.ts(100,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/blocks/route.ts(143,22): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/blocks/route.ts(154,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/blocks/route.ts(202,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/admin/main-content/route.ts(114,23): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/route.ts(116,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/route.ts(136,23): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/route.ts(138,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/route.ts(185,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/route.ts(208,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/route.ts(256,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/admin/main-content/templates/route.ts(92,22): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/templates/route.ts(103,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/templates/route.ts(156,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/versions/route.ts(112,22): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/versions/route.ts(140,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/versions/route.ts(192,22): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/main-content/versions/route.ts(213,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/versions/route.ts(228,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/versions/route.ts(254,12): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/main-content/versions/route.ts(305,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/admin/scheduler/route.ts(160,27): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/scheduler/route.ts(181,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/scheduler/route.ts(255,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/scheduler/route.ts(275,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/scheduler/route.ts(298,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/scheduler/route.ts(343,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/admin/scheduler/templates/route.ts(75,27): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/scheduler/templates/route.ts(89,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/scheduler/templates/route.ts(132,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/admin/security/comprehensive/route.ts(121,17): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(161,67): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(164,68): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(167,64): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(170,65): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(173,68): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(176,62): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(188,17): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/security/comprehensive/route.ts(285,41): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(293,42): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(303,45): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(326,47): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(333,44): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(340,37): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(369,49): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(376,49): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(383,55): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(402,45): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(419,38): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(444,25): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(474,15): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(515,43): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(536,15): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(640,43): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(679,43): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(708,27): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/security/comprehensive/route.ts(746,41): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/templates/route.ts(149,12): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/templates/route.ts(212,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(149,38): error TS2304: Cannot find name 'supabase'.
+src/app/api/admin/translations/route.ts(152,27): error TS2304: Cannot find name 'session'.
+src/app/api/admin/translations/route.ts(175,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(220,27): error TS18047: 'auth.user' is possibly 'null'.
+src/app/api/admin/translations/route.ts(234,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(257,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(281,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(320,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(345,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/admin/translations/route.ts(390,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/appointment-types/route.ts(209,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/appointments/[id]/reschedule/route.ts(164,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/appointments/[id]/reschedule/route.ts(190,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/appointments/[id]/route.ts(186,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/appointments/[id]/route.ts(324,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/appointments/availability/route.ts(86,40): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/app/api/booking/sessions/[sessionId]/complete/route.ts(165,12): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/booking/sessions/[sessionId]/complete/route.ts(201,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/booking/sessions/[sessionId]/complete/route.ts(256,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/booking/sessions/[sessionId]/route.ts(159,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/booking/sessions/[sessionId]/route.ts(206,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/booking/sessions/route.ts(53,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/instructors/availability/[id]/route.ts(170,47): error TS7006: Parameter 'rule' implicitly has an 'any' type.
+src/app/api/instructors/availability/[id]/route.ts(198,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/instructors/availability/[id]/route.ts(290,62): error TS7006: Parameter 'appointment' implicitly has an 'any' type.
+src/app/api/instructors/availability/[id]/route.ts(312,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/instructors/availability/route.ts(191,45): error TS7006: Parameter 'rule' implicitly has an 'any' type.
+src/app/api/instructors/availability/route.ts(217,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/notifications/[id]/route.ts(41,35): error TS2339: Property 'user' does not exist on type 'never'.
+src/app/api/notifications/[id]/route.ts(117,35): error TS2339: Property 'user' does not exist on type 'never'.
+src/app/api/notifications/[id]/route.ts(150,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/notifications/analytics/route.ts(41,35): error TS2339: Property 'user' does not exist on type 'never'.
+src/app/api/notifications/preferences/route.ts(199,45): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(200,57): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(201,41): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(202,50): error TS7006: Parameter 'pref' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(211,39): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(212,35): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(213,36): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(214,35): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/api/notifications/preferences/route.ts(309,14): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/notifications/preferences/route.ts(333,12): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/notifications/preferences/route.ts(495,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/notifications/realtime/route.ts(26,35): error TS2339: Property 'user' does not exist on type 'never'.
+src/app/api/notifications/realtime/route.ts(79,37): error TS7006: Parameter 'notification' implicitly has an 'any' type.
+src/app/api/notifications/route.ts(199,29): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/app/api/notifications/route.ts(200,44): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/app/api/notifications/route.ts(204,44): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/app/api/notifications/route.ts(467,8): error TS2339: Property 'in' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/notifications/route.ts(544,8): error TS2339: Property 'in' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/notifications/route.ts(567,48): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/app/api/notifications/scheduling/route.ts(122,60): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/api/notifications/scheduling/route.ts(167,63): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/api/notifications/templates/route.ts(213,36): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/notifications/templates/route.ts(214,38): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/notifications/templates/route.ts(215,52): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/notifications/templates/route.ts(219,48): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/notifications/templates/route.ts(223,52): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/notifications/templates/route.ts(341,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/notifications/templates/route.ts(456,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/api/notifications/templates/route.ts(553,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/api/test-content-system/route.ts(78,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/app/api/test-content-system/route.ts(101,37): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/app/board/[category]/page.tsx(256,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/[category]/page.tsx(282,49): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/[category]/page.tsx(455,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/board/education/[level]/page.tsx(358,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/board/education/[level]/page.tsx(400,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/education/[level]/page.tsx(423,49): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/job/[subCategory]/page.tsx(189,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/job/[subCategory]/page.tsx(212,49): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/job/[subCategory]/page.tsx(235,63): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/board/job/[subCategory]/page.tsx(412,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/chat/page.tsx(261,9): error TS2554: Expected 2 arguments, but got 3.
+src/app/chat/page.tsx(266,8): error TS2339: Property 'on' does not exist on type '{ subscribe: () => { unsubscribe: () => void; }; }'.
+src/app/chat/page.tsx(281,16): error TS2339: Property 'removeChannel' does not exist on type '{ from: <T = any>(tableName: string) => RDSQueryBuilder<T>; query: <T = any>(sql: string, params?: any[] | undefined) => Promise<RDSResponse<T[]>>; rpc: <T = any>(fnName: string, params?: any) => Promise<...>; auth: { ...; }; storage: { ...; }; channel: (name: string) => { ...; }; }'.
+src/app/chat/page.tsx(344,25): error TS2345: Argument of type '{ id: any[]; name: any; type: "direct"; last_message: null; last_message_at: null; unread_count: number; participants: { user_id: any; profile: any; }[]; }' is not assignable to parameter of type 'SetStateAction<ChatRoom | null>'.
+  Type '{ id: any[]; name: any; type: "direct"; last_message: null; last_message_at: null; unread_count: number; participants: { user_id: any; profile: any; }[]; }' is not assignable to type 'ChatRoom'.
+    Types of property 'id' are incompatible.
+      Type 'any[]' is not assignable to type 'string'.
+src/app/feed/page.tsx(230,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/feed/page.tsx(256,49): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/feed/page.tsx(351,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/notifications/page.tsx(144,11): error TS2554: Expected 2 arguments, but got 3.
+src/app/post/[id]/page.tsx(287,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/post/[id]/page.tsx(306,49): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/post/[id]/page.tsx(332,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/post/[id]/page.tsx(366,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/post/[id]/page.tsx(379,61): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/post/[id]/page.tsx(387,64): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/search/page.tsx(260,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/search/page.tsx(283,49): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/app/settings/profile/page.tsx(152,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/settings/profile/page.tsx(189,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/app/settings/profile/page.tsx(226,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/PostManagementSystem.tsx(214,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/PostManagementSystem.tsx(234,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/PostManagementSystem.tsx(252,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/PostManagementSystem.tsx(270,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(130,43): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/admin/UserDeletionDialog.backup.tsx(163,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(171,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(191,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(205,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(211,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(219,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(225,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/UserDeletionDialog.backup.tsx(231,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.tsx(228,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.tsx(235,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.tsx(255,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/UserDeletionDialog.tsx(269,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.tsx(275,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.tsx(283,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/UserDeletionDialog.tsx(289,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/admin/UserDeletionDialog.tsx(295,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/admin/UserDeletionDialog.tsx(301,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/ChatInterface.tsx(259,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/ChatInterface.tsx(290,9): error TS2554: Expected 2 arguments, but got 3.
+src/components/ChatInterface.tsx(317,16): error TS2339: Property 'removeChannel' does not exist on type '{ from: <T = any>(tableName: string) => RDSQueryBuilder<T>; query: <T = any>(sql: string, params?: any[] | undefined) => Promise<RDSResponse<T[]>>; rpc: <T = any>(fnName: string, params?: any) => Promise<...>; auth: { ...; }; storage: { ...; }; channel: (name: string) => { ...; }; }'.
+src/components/ChatInterface.tsx(360,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/ChatInterface.tsx(405,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/ChatInterface.tsx(1234,18): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/InlineExpandableMessage.tsx(189,42): error TS2554: Expected 2 arguments, but got 3.
+src/components/InlineExpandableMessage.tsx(190,31): error TS2339: Property 'presenceState' does not exist on type '{ unsubscribe: () => void; }'.
+src/components/InlineExpandableMessage.tsx(201,16): error TS2339: Property 'removeChannel' does not exist on type '{ from: <T = any>(tableName: string) => RDSQueryBuilder<T>; query: <T = any>(sql: string, params?: any[] | undefined) => Promise<RDSResponse<T[]>>; rpc: <T = any>(fnName: string, params?: any) => Promise<...>; auth: { ...; }; storage: { ...; }; channel: (name: string) => { ...; }; }'.
+src/components/InlineExpandableMessage.tsx(210,13): error TS2339: Property 'track' does not exist on type '{ on: (event: string, callback: Function) => { subscribe: () => { unsubscribe: () => void; }; }; subscribe: () => { unsubscribe: () => void; }; }'.
+src/components/KanbanBoard.tsx(140,9): error TS2554: Expected 2 arguments, but got 3.
+src/components/KanbanBoard.tsx(147,16): error TS2339: Property 'removeChannel' does not exist on type '{ from: <T = any>(tableName: string) => RDSQueryBuilder<T>; query: <T = any>(sql: string, params?: any[] | undefined) => Promise<RDSResponse<T[]>>; rpc: <T = any>(fnName: string, params?: any) => Promise<...>; auth: { ...; }; storage: { ...; }; channel: (name: string) => { ...; }; }'.
+src/components/KanbanBoard.tsx(182,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/KanbanBoard.tsx(209,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/KanbanBoard.tsx(242,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/KanbanBoard.tsx(261,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/components/KanbanBoard.tsx(578,16): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/NotificationIcon.tsx(90,9): error TS2554: Expected 2 arguments, but got 3.
+src/components/NotificationIcon.tsx(99,8): error TS2339: Property 'on' does not exist on type '{ subscribe: () => { unsubscribe: () => void; }; }'.
+src/components/NotificationIcon.tsx(133,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/components/SideChat.tsx(247,9): error TS2554: Expected 2 arguments, but got 3.
+src/components/SideChat.tsx(291,16): error TS2339: Property 'removeChannel' does not exist on type '{ from: <T = any>(tableName: string) => RDSQueryBuilder<T>; query: <T = any>(sql: string, params?: any[] | undefined) => Promise<RDSResponse<T[]>>; rpc: <T = any>(fnName: string, params?: any) => Promise<...>; auth: { ...; }; storage: { ...; }; channel: (name: string) => { ...; }; }'.
+src/components/SideChat.tsx(301,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/hooks/useNotifications.ts(387,10): error TS2339: Property 'channel' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/api/secure-client.ts(226,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/api/secure-client.ts(227,24): error TS2339: Property 'app_metadata' does not exist on type 'never'.
+src/lib/api/secure-client.ts(516,3): error TS2322: Type '<T = any>(table: string) => RDSQueryBuilder<unknown>' is not assignable to type '<T = any>(tableName: string) => RDSQueryBuilder<T>'.
+  Call signature return types 'RDSQueryBuilder<unknown>' and 'RDSQueryBuilder<T>' are incompatible.
+    The types returned by 'execute()' are incompatible between these types.
+      Type 'Promise<RDSResponse<unknown>>' is not assignable to type 'Promise<RDSResponse<T>>'.
+        Type 'RDSResponse<unknown>' is not assignable to type 'RDSResponse<T>'.
+          Type 'unknown' is not assignable to type 'T'.
+            'T' could be instantiated with an arbitrary type which could be unrelated to 'unknown'.
+src/lib/auth/enhanced-password-reset.ts(216,65): error TS2554: Expected 0 arguments, but got 2.
+src/lib/auth/enhanced-password-reset.ts(315,15): error TS2339: Property 'user' does not exist on type 'never'.
+src/lib/auth/enhanced-password-reset.ts(324,27): error TS2339: Property 'user' does not exist on type 'never'.
+src/lib/auth/enhanced-password-reset.ts(340,54): error TS2554: Expected 0 arguments, but got 1.
+src/lib/auth/enhanced-password-reset.ts(349,46): error TS2339: Property 'user' does not exist on type 'never'.
+src/lib/auth/enhanced-password-reset.ts(355,25): error TS2339: Property 'user' does not exist on type 'never'.
+src/lib/auth/enhanced-password-reset.ts(427,3): error TS2739: Type 'any[]' is missing the following properties from type '{ totalRequests: number; successfulResets: number; blockedAttempts: number; averageCompletionTime: number; }': totalRequests, successfulResets, blockedAttempts, averageCompletionTime
+src/lib/auth/index.ts(34,27): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/auth/index.ts(38,16): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/auth/index.ts(39,19): error TS2339: Property 'email' does not exist on type 'never'.
+src/lib/chat/unified-system.ts(189,21): error TS2339: Property 'hint' does not exist on type '{ message: string; code?: string | undefined; details?: any; }'.
+src/lib/chat/unified-system.ts(235,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/identity/examples.ts(376,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/identity/migration.ts(37,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/identity/migration.ts(59,50): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/lib/identity/migration.ts(75,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/notifications.ts(98,6): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/notifications.ts(125,6): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/notifications.ts(138,67): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.
+src/lib/security/api-middleware.ts(270,31): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/api-middleware.ts(277,26): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/appointment-authorization.ts(654,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/security/appointment-authorization.ts(813,42): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(814,38): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(815,37): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(819,52): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(833,17): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(834,18): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(834,23): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(843,21): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(844,20): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/lib/security/appointment-authorization.ts(844,23): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/lib/security/implementation-guide.ts(25,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(67,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(155,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(192,18): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(211,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(228,36): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(250,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(268,18): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(289,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(315,42): error TS2339: Property 'rpc' does not exist on type '{ from: (table: string) => { select: () => { eq: () => { data: null; error: { message: string; }; }; }; insert: () => { data: null; error: { message: string; }; }; update: () => { eq: () => { data: null; error: { message: string; }; }; }; delete: () => { ...; }; }; auth: { ...; }; storage: { ...; }; }'.
+src/lib/security/implementation-guide.ts(362,47): error TS2339: Property 'signInWithPassword' does not exist on type '{ getSession: () => Promise<{ data: { session: any; }; error: null; }>; getUser: () => Promise<{ data: { user: any; }; error: null; }>; signOut: () => Promise<{ error: null; }>; }'.
+src/lib/security/implementation-guide.ts(437,41): error TS2339: Property 'resetPasswordForEmail' does not exist on type '{ getSession: () => Promise<{ data: { session: any; }; error: null; }>; getUser: () => Promise<{ data: { user: any; }; error: null; }>; signOut: () => Promise<{ error: null; }>; }'.
+src/lib/security/rls-enforcer.ts(515,14): error TS2367: This comparison appears to be unintentional because the types 'any[] | null' and 'boolean' have no overlap.
+src/lib/security/rls-enforcer.ts(560,26): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/lib/security/secure-auth.ts(190,91): error TS2554: Expected 0 arguments, but got 1.
+src/lib/security/secure-auth.ts(203,30): error TS2339: Property 'message' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(221,33): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(226,44): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(234,66): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(250,63): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(253,68): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(262,71): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(265,68): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(270,52): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(278,27): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(279,30): error TS2339: Property 'email' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(281,38): error TS2339: Property 'email_confirmed_at' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(295,64): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(339,56): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(347,59): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(362,24): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(385,18): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(396,18): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(397,21): error TS2339: Property 'email' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(399,29): error TS2339: Property 'email_confirmed_at' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(403,59): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/security/secure-auth.ts(453,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/security/secure-auth.ts(481,26): error TS2339: Property 'user' does not exist on type '{ session: null; }'.
+src/lib/security/secure-auth.ts(486,36): error TS2339: Property 'user' does not exist on type '{ session: null; }'.
+src/lib/security/secure-auth.ts(487,22): error TS2339: Property 'user' does not exist on type '{ session: null; }'.
+src/lib/security/secure-auth.ts(596,41): error TS7006: Parameter 'login' implicitly has an 'any' type.
+src/lib/security/secure-auth.ts(603,48): error TS7006: Parameter 'login' implicitly has an 'any' type.
+src/lib/security/secure-auth.ts(611,43): error TS7006: Parameter 'login' implicitly has an 'any' type.
+src/lib/security/secure-auth.ts(612,46): error TS7006: Parameter 'hour' implicitly has an 'any' type.
+src/lib/security/secure-auth.ts(677,8): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/atomic-booking-service.ts(527,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/atomic-booking-service.ts(664,56): error TS7006: Parameter 'conflict' implicitly has an 'any' type.
+src/lib/services/atomic-booking-service.ts(718,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/atomic-booking-service.ts(785,9): error TS2322: Type 'number | any[]' is not assignable to type 'number'.
+  Type 'any[]' is not assignable to type 'number'.
+src/lib/services/notification-service.ts(613,10): error TS2554: Expected 2 arguments, but got 3.
+src/lib/services/notification-service.ts(696,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/notification-service.ts(713,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/notification-service.ts(728,14): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/notification-service.ts(805,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/services/scheduling-notification-service.ts(71,58): error TS2554: Expected 0 arguments, but got 1.
+src/lib/storage/upload.ts(44,45): error TS2339: Property 'message' does not exist on type 'never'.
+src/lib/templates.ts(313,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/templates.ts(353,8): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/templates.ts(388,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/templates.ts(469,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/templates.ts(577,10): error TS2339: Property 'select' does not exist on type 'Promise<RDSResponse<any>>'.
+src/lib/templates.ts(602,10): error TS2339: Property 'eq' does not exist on type 'Promise<RDSResponse<any[]>>'.

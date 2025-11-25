@@ -1,13 +1,15 @@
 /**
  * StableIdentityService Usage Examples
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * These examples demonstrate how to use the new StableIdentityService
  * with the improved ensure_user_identity() database function.
  */
 
 import React from 'react'
-import { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
+import type { AppUser } from '@/lib/auth/types'
+import { createClient } from '@/lib/supabase/server'
 import { 
   getUserIdentity, 
   getAdvancedIdentityService,
@@ -24,7 +26,7 @@ import {
  * Example 1: Basic identity resolution (backward compatible)
  * This works exactly like before but now uses the improved service
  */
-export async function basicIdentityResolution(user: User): Promise<IdentityData | null> {
+export async function basicIdentityResolution(user: AppUser): Promise<IdentityData | null> {
   // This now uses ensure_user_identity() under the hood
   // Handles auth.user.id regeneration automatically
   // Includes caching for better performance
@@ -35,7 +37,7 @@ export async function basicIdentityResolution(user: User): Promise<IdentityData 
  * Example 2: React component with identity loading
  * Shows how to use the service in a typical React component
  */
-export function useUserIdentity(user: User | null) {
+export function useUserIdentity(user: AppUser | null) {
   const [identity, setIdentity] = React.useState<IdentityData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -100,7 +102,7 @@ export class AdvancedIdentityManager {
     })
   }
 
-  async resolveUserWithFreshData(user: User): Promise<IdentityData | null> {
+  async resolveUserWithFreshData(user: AppUser): Promise<IdentityData | null> {
     // Clear cache to ensure fresh data
     this.service.clearUserCache(user.id)
     
@@ -108,7 +110,7 @@ export class AdvancedIdentityManager {
     return await this.service.resolveUserIdentity(user)
   }
 
-  async batchResolveUsers(users: User[]): Promise<IdentityData[]> {
+  async batchResolveUsers(users: AppUser[]): Promise<IdentityData[]> {
     // Resolve multiple users in parallel
     const results = await Promise.allSettled(
       users.map(user => this.service.resolveUserIdentity(user))
@@ -138,7 +140,7 @@ export class AdvancedIdentityManager {
  * Example 4: Comprehensive error handling
  * Shows how to handle different types of errors gracefully
  */
-export async function robustIdentityResolution(user: User): Promise<{
+export async function robustIdentityResolution(user: AppUser): Promise<{
   identity: IdentityData | null
   error: string | null
   fromCache: boolean
@@ -206,7 +208,7 @@ export class IdentityPerformanceMonitor {
     errors: 0
   }
 
-  async resolveUserWithMetrics(user: User): Promise<{
+  async resolveUserWithMetrics(user: AppUser): Promise<{
     identity: IdentityData | null
     metrics: {
       responseTime: number
@@ -298,7 +300,7 @@ export class IdentityPerformanceMonitor {
  * Shows how to integrate with useAuth or similar patterns
  */
 export function useAuthWithIdentity() {
-  const [user, setUser] = React.useState<User | null>(null)
+  const [user, setUser] = React.useState<AppUser | null>(null)
   const [identity, setIdentity] = React.useState<IdentityData | null>(null)
   const [loading, setLoading] = React.useState(true)
 
@@ -334,7 +336,7 @@ export function useAuthWithIdentity() {
     // Listen for auth changes
     const supabase = createClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: any, session: any) => {
         if (session?.user) {
           setUser(session.user)
           try {
@@ -362,7 +364,7 @@ export function useAuthWithIdentity() {
  * Shows how to handle profile updates properly
  */
 export async function updateUserProfile(
-  user: User,
+  user: AppUser,
   updates: Partial<UserProfile>
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -370,8 +372,8 @@ export async function updateUserProfile(
     const supabase = createClient()
     const { error } = await supabase
       .from('user_profiles')
-      .update(updates)
       .eq('identity_id', user.id)
+      .update(updates)
 
     if (error) {
       throw new Error(error.message)

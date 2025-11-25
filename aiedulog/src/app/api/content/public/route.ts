@@ -19,7 +19,7 @@ import { createClient } from '@/lib/supabase/server'
 
 // GET - Public content fetching (no auth required)
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { searchParams } = new URL(request.url)
   const sectionKey = searchParams.get('section')
   const blocksForSection = searchParams.get('blocks')

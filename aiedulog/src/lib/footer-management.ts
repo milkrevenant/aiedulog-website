@@ -1,8 +1,14 @@
-import { createClient } from '@/lib/supabase/client'
-import { 
-  FooterCategory, 
-  FooterLink, 
-  FooterSocialLink, 
+/**
+ * Footer Management System
+ *
+ * MIGRATION: Migrated to RDS server client (2025-10-14)
+ */
+
+import { createRDSClient } from '@/lib/db/rds-client'
+import {
+  FooterCategory,
+  FooterLink,
+  FooterSocialLink,
   FooterSetting,
   FooterCategoryFormData,
   FooterLinkFormData,
@@ -12,78 +18,121 @@ import {
   FooterSortOperation
 } from '@/types/footer-management'
 
-const supabase = createClient()
+const CATEGORY_TABLE = 'footer_categories'
+const LINK_TABLE = 'footer_links'
+const SOCIAL_TABLE = 'footer_social_links'
+const SETTING_TABLE = 'footer_settings'
+
+function getClient() {
+  return createRDSClient()
+}
+
+function throwWithContext(context: string, error: { message?: string; code?: string; details?: unknown } | null) {
+  console.error(context, error)
+  throw new Error(error?.message || context)
+}
+
+function requireFirstRow<T>(rows: T[], context: string): T {
+  const first = rows[0]
+  if (!first) {
+    throwWithContext(context, null)
+  }
+  return first
+}
 
 // Footer Categories
 export async function getFooterCategories(): Promise<FooterCategory[]> {
-  const { data, error } = await supabase
-    .from('footer_categories')
-    .select(`
-      *,
-      links:footer_links(*)
-    `)
+  const rds = getClient()
+
+  const { data: categoryRows, error: categoryError } = await rds
+    .from(CATEGORY_TABLE)
+    .select('*')
     .eq('is_active', true)
     .order('display_order')
 
-  if (error) {
-    console.error('Error fetching footer categories:', error)
-    throw error
+  if (categoryError) {
+    throwWithContext('Error fetching footer categories', categoryError)
   }
 
-  return data || []
+  const categories = (categoryRows ?? []) as FooterCategory[]
+
+  if (categories.length === 0) {
+    return categories.map(category => ({ ...category, links: [] }))
+  }
+
+  const categoryIds = categories.map(category => category.id)
+
+  const { data: linkRows, error: linkError } = await rds
+    .from(LINK_TABLE)
+    .select('*')
+    .eq('is_active', true)
+    .in('category_id', categoryIds)
+    .order('display_order')
+
+  if (linkError) {
+    throwWithContext('Error fetching footer links for categories', linkError)
+  }
+
+  const links = (linkRows ?? []) as FooterLink[]
+  const linksByCategory = new Map<string, FooterLink[]>()
+
+  for (const link of links) {
+    if (!linksByCategory.has(link.category_id)) {
+      linksByCategory.set(link.category_id, [])
+    }
+    linksByCategory.get(link.category_id)!.push(link)
+  }
+
+  return categories.map(category => ({
+    ...category,
+    links: linksByCategory.get(category.id) ?? []
+  }))
 }
 
 export async function createFooterCategory(categoryData: FooterCategoryFormData): Promise<FooterCategory> {
-  const { data, error } = await supabase
-    .from('footer_categories')
-    .insert([categoryData])
-    .select()
-    .single()
+  const rds = getClient()
+  const { data, error } = await rds.from(CATEGORY_TABLE).insert([categoryData])
 
   if (error) {
-    console.error('Error creating footer category:', error)
-    throw error
+    throwWithContext('Error creating footer category', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterCategory[]
+  return requireFirstRow(rows, 'Footer category creation returned no data')
 }
 
 export async function updateFooterCategory(id: string, categoryData: Partial<FooterCategoryFormData>): Promise<FooterCategory> {
-  const { data, error } = await supabase
-    .from('footer_categories')
-    .update(categoryData)
+  const rds = getClient()
+  const { data, error } = await rds
+    .from(CATEGORY_TABLE)
     .eq('id', id)
-    .select()
-    .single()
+    .update(categoryData)
 
   if (error) {
-    console.error('Error updating footer category:', error)
-    throw error
+    throwWithContext('Error updating footer category', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterCategory[]
+  return requireFirstRow(rows, 'Footer category update returned no data')
 }
 
 export async function deleteFooterCategory(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('footer_categories')
-    .delete()
-    .eq('id', id)
+  const rds = getClient()
+  const { error } = await rds.from(CATEGORY_TABLE).eq('id', id).delete()
 
   if (error) {
-    console.error('Error deleting footer category:', error)
-    throw error
+    throwWithContext('Error deleting footer category', error)
   }
 }
 
 export async function updateFooterCategoriesOrder(operations: FooterSortOperation[]): Promise<void> {
-  const { error } = await supabase.rpc('update_footer_categories_order', {
+  const rds = getClient()
+  const { error } = await rds.rpc('update_footer_categories_order', {
     updates: operations
   })
 
   if (error) {
-    console.error('Error updating footer categories order:', error)
-    // Fallback to individual updates if RPC doesn't exist
+    console.error('Error updating footer categories order via RPC, falling back to individual updates', error)
     for (const op of operations) {
       await updateFooterCategory(op.id, { display_order: op.display_order })
     }
@@ -92,12 +141,10 @@ export async function updateFooterCategoriesOrder(operations: FooterSortOperatio
 
 // Footer Links
 export async function getFooterLinks(categoryId?: string): Promise<FooterLink[]> {
-  let query = supabase
-    .from('footer_links')
-    .select(`
-      *,
-      category:footer_categories(*)
-    `)
+  const rds = getClient()
+  let query = rds
+    .from(LINK_TABLE)
+    .select('*')
     .eq('is_active', true)
     .order('display_order')
 
@@ -105,67 +152,89 @@ export async function getFooterLinks(categoryId?: string): Promise<FooterLink[]>
     query = query.eq('category_id', categoryId)
   }
 
-  const { data, error } = await query
+  const { data: linkRows, error } = await query
 
   if (error) {
-    console.error('Error fetching footer links:', error)
-    throw error
+    throwWithContext('Error fetching footer links', error)
   }
 
-  return data || []
+  const links = (linkRows ?? []) as FooterLink[]
+
+  if (links.length === 0) {
+    return []
+  }
+
+  const categoryIds = Array.from(new Set(links.map(link => link.category_id).filter(Boolean)))
+
+  if (categoryIds.length === 0) {
+    return links
+  }
+
+  const { data: categoryRows, error: categoryError } = await rds
+    .from(CATEGORY_TABLE)
+    .select('*')
+    .in('id', categoryIds)
+
+  if (categoryError) {
+    throwWithContext('Error fetching footer link categories', categoryError)
+  }
+
+  const categories = (categoryRows ?? []) as FooterCategory[]
+  const categoryMap = new Map<string, FooterCategory>()
+  for (const category of categories) {
+    categoryMap.set(category.id, category)
+  }
+
+  return links.map(link => ({
+    ...link,
+    category: categoryMap.get(link.category_id)
+  }))
 }
 
 export async function createFooterLink(linkData: FooterLinkFormData): Promise<FooterLink> {
-  const { data, error } = await supabase
-    .from('footer_links')
-    .insert([linkData])
-    .select()
-    .single()
+  const rds = getClient()
+  const { data, error } = await rds.from(LINK_TABLE).insert([linkData])
 
   if (error) {
-    console.error('Error creating footer link:', error)
-    throw error
+    throwWithContext('Error creating footer link', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterLink[]
+  return requireFirstRow(rows, 'Footer link creation returned no data')
 }
 
 export async function updateFooterLink(id: string, linkData: Partial<FooterLinkFormData>): Promise<FooterLink> {
-  const { data, error } = await supabase
-    .from('footer_links')
-    .update(linkData)
+  const rds = getClient()
+  const { data, error } = await rds
+    .from(LINK_TABLE)
     .eq('id', id)
-    .select()
-    .single()
+    .update(linkData)
 
   if (error) {
-    console.error('Error updating footer link:', error)
-    throw error
+    throwWithContext('Error updating footer link', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterLink[]
+  return requireFirstRow(rows, 'Footer link update returned no data')
 }
 
 export async function deleteFooterLink(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('footer_links')
-    .delete()
-    .eq('id', id)
+  const rds = getClient()
+  const { error } = await rds.from(LINK_TABLE).eq('id', id).delete()
 
   if (error) {
-    console.error('Error deleting footer link:', error)
-    throw error
+    throwWithContext('Error deleting footer link', error)
   }
 }
 
 export async function updateFooterLinksOrder(operations: FooterSortOperation[]): Promise<void> {
-  const { error } = await supabase.rpc('update_footer_links_order', {
+  const rds = getClient()
+  const { error } = await rds.rpc('update_footer_links_order', {
     updates: operations
   })
 
   if (error) {
-    console.error('Error updating footer links order:', error)
-    // Fallback to individual updates if RPC doesn't exist
+    console.error('Error updating footer links order via RPC, falling back to individual updates', error)
     for (const op of operations) {
       await updateFooterLink(op.id, { display_order: op.display_order })
     }
@@ -174,71 +243,64 @@ export async function updateFooterLinksOrder(operations: FooterSortOperation[]):
 
 // Footer Social Links
 export async function getFooterSocialLinks(): Promise<FooterSocialLink[]> {
-  const { data, error } = await supabase
-    .from('footer_social_links')
+  const rds = getClient()
+  const { data, error } = await rds
+    .from(SOCIAL_TABLE)
     .select('*')
     .eq('is_active', true)
     .order('display_order')
 
   if (error) {
-    console.error('Error fetching footer social links:', error)
-    throw error
+    throwWithContext('Error fetching footer social links', error)
   }
 
-  return data || []
+  return (data ?? []) as FooterSocialLink[]
 }
 
 export async function createFooterSocialLink(socialData: FooterSocialLinkFormData): Promise<FooterSocialLink> {
-  const { data, error } = await supabase
-    .from('footer_social_links')
-    .insert([socialData])
-    .select()
-    .single()
+  const rds = getClient()
+  const { data, error } = await rds.from(SOCIAL_TABLE).insert([socialData])
 
   if (error) {
-    console.error('Error creating footer social link:', error)
-    throw error
+    throwWithContext('Error creating footer social link', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterSocialLink[]
+  return requireFirstRow(rows, 'Footer social link creation returned no data')
 }
 
 export async function updateFooterSocialLink(id: string, socialData: Partial<FooterSocialLinkFormData>): Promise<FooterSocialLink> {
-  const { data, error } = await supabase
-    .from('footer_social_links')
-    .update(socialData)
+  const rds = getClient()
+  const { data, error } = await rds
+    .from(SOCIAL_TABLE)
     .eq('id', id)
-    .select()
-    .single()
+    .update(socialData)
 
   if (error) {
-    console.error('Error updating footer social link:', error)
-    throw error
+    throwWithContext('Error updating footer social link', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterSocialLink[]
+  return requireFirstRow(rows, 'Footer social link update returned no data')
 }
 
 export async function deleteFooterSocialLink(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('footer_social_links')
-    .delete()
-    .eq('id', id)
+  const rds = getClient()
+  const { error } = await rds.from(SOCIAL_TABLE).eq('id', id).delete()
 
   if (error) {
-    console.error('Error deleting footer social link:', error)
-    throw error
+    throwWithContext('Error deleting footer social link', error)
   }
 }
 
 export async function updateFooterSocialLinksOrder(operations: FooterSortOperation[]): Promise<void> {
-  const { error } = await supabase.rpc('update_footer_social_links_order', {
+  const rds = getClient()
+  const { error } = await rds.rpc('update_footer_social_links_order', {
     updates: operations
   })
 
   if (error) {
-    console.error('Error updating footer social links order:', error)
-    // Fallback to individual updates if RPC doesn't exist
+    console.error('Error updating footer social links order via RPC, falling back to individual updates', error)
     for (const op of operations) {
       await updateFooterSocialLink(op.id, { display_order: op.display_order })
     }
@@ -247,32 +309,31 @@ export async function updateFooterSocialLinksOrder(operations: FooterSortOperati
 
 // Footer Settings
 export async function getFooterSettings(): Promise<FooterSetting[]> {
-  const { data, error } = await supabase
-    .from('footer_settings')
+  const rds = getClient()
+  const { data, error } = await rds
+    .from(SETTING_TABLE)
     .select('*')
     .eq('is_active', true)
 
   if (error) {
-    console.error('Error fetching footer settings:', error)
-    throw error
+    throwWithContext('Error fetching footer settings', error)
   }
 
-  return data || []
+  return (data ?? []) as FooterSetting[]
 }
 
 export async function updateFooterSetting(key: string, settingData: Partial<FooterSettingFormData>): Promise<FooterSetting> {
-  const { data, error } = await supabase
-    .from('footer_settings')
+  const rds = getClient()
+  const { data, error } = await rds
+    .from(SETTING_TABLE)
     .upsert([{ setting_key: key, ...settingData }])
-    .select()
-    .single()
 
   if (error) {
-    console.error('Error updating footer setting:', error)
-    throw error
+    throwWithContext('Error updating footer setting', error)
   }
 
-  return data
+  const rows = (data ?? []) as FooterSetting[]
+  return requireFirstRow(rows, 'Footer setting update returned no data')
 }
 
 // Get complete footer data for rendering
@@ -334,7 +395,6 @@ export function validateFooterLinkData(data: FooterLinkFormData): string[] {
     errors.push('Display order must be non-negative')
   }
 
-  // Basic URL validation
   if (data.url && !data.url.match(/^(https?:\/\/|\/|#)/)) {
     errors.push('URL must be a valid HTTP/HTTPS URL, relative path, or hash link')
   }
@@ -361,7 +421,6 @@ export function validateFooterSocialLinkData(data: FooterSocialLinkFormData): st
     errors.push('Display order must be non-negative')
   }
 
-  // URL validation for social links (should be external)
   if (data.url && !data.url.match(/^https?:\/\//)) {
     errors.push('Social media URL must be a valid HTTP/HTTPS URL')
   }

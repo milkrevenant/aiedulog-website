@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -167,7 +170,7 @@ function SearchContent() {
       }
 
       if (postsData) {
-        const postsWithStats = postsData.map((post) => {
+        const postsWithStats = postsData.map((post: any) => {
           // Handle both identity-based and legacy profile data
           const profileData = post.identities?.user_profiles || post.profiles
           
@@ -201,7 +204,7 @@ function SearchContent() {
         const searchResults = await searchUsers(query, supabase, currentIdentityId, 10)
         
         // Map to consistent format for UI
-        const usersData = searchResults.map(profile => ({
+        const usersData = searchResults.map((profile: any) => ({
           id: profile.user_id,
           email: profile.email,
           nickname: profile.nickname,

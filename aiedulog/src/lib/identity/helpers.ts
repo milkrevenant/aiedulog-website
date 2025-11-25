@@ -1,5 +1,5 @@
-import { createClient as createClientClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { createClient as createClientClient } from '@/lib/supabase/server'
+import type { AppUser } from '@/lib/auth/types'
 import { 
   StableIdentityService, 
   getIdentityService,
@@ -10,6 +10,8 @@ import {
 
 /**
  * Identity System Helper Functions
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * UPDATED: Now uses StableIdentityService for improved reliability and performance
  * These functions maintain backward compatibility while leveraging the new service.
@@ -47,7 +49,7 @@ export { IdentityServiceError } from './stable-identity-service'
  * @param supabaseClient - Optional Supabase client instance
  * @returns Promise<IdentityData | null> - User identity data or null if not found
  */
-export async function getUserIdentity(user: User, supabaseClient?: any): Promise<IdentityData | null> {
+export async function getUserIdentity(user: AppUser, supabaseClient?: any): Promise<IdentityData | null> {
   try {
     const service = getIdentityService(supabaseClient)
     return await service.resolveUserIdentity(user)
@@ -63,7 +65,7 @@ export async function getUserIdentity(user: User, supabaseClient?: any): Promise
  * 
  * UPDATED: Now uses StableIdentityService for better performance
  */
-export async function getIdentityId(user: User, supabaseClient?: any): Promise<string | null> {
+export async function getIdentityId(user: AppUser, supabaseClient?: any): Promise<string | null> {
   try {
     const service = getIdentityService(supabaseClient)
     return await service.getIdentityId(user)
