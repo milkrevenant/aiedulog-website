@@ -17,12 +17,20 @@ import {
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+type MainContentSection = {
+  section_key: string
+  title: string | null
+  status: string | null
+}
+
 /**
  * Test endpoint to verify Main Content Management System is working
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * This endpoint tests database connectivity and basic functionality
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
-  const supabase = await createClient()
+  const supabase = createClient()
   
   try {
     console.log('🔍 Testing Main Content Management System...')
@@ -73,8 +81,8 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       'news'
     ]
     
-    const sectionsFound = sections?.filter(s => 
-      sampleSections.includes(s.section_key)
+    const sectionsFound = sections?.filter((section: MainContentSection) => 
+      sampleSections.includes(section.section_key)
     ) || []
 
     console.log(`✅ Found ${sectionsFound.length} expected sections`)
@@ -96,10 +104,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       status: overallHealth ? 'HEALTHY' : 'PARTIAL',
       timestamp: new Date().toISOString(),
       systemHealth,
-      sampleSections: sections?.map(s => ({
-        key: s.section_key,
-        title: s.title,
-        status: s.status
+      sampleSections: sections?.map((section: MainContentSection) => ({
+        key: section.section_key,
+        title: section.title,
+        status: section.status
       })) || [],
       blocksCount: blocks?.length || 0,
       message: overallHealth 
@@ -149,7 +157,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 export async function HEAD() {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     const { data, error } = await supabase
       .from('main_content_sections')
       .select('id')

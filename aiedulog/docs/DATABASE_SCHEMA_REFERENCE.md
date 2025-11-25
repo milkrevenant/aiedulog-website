@@ -368,6 +368,12 @@ CREATE FUNCTION ensure_user_identity(user_id UUID, user_email TEXT) RETURNS UUID
 CREATE FUNCTION create_user_profile_from_auth() RETURNS TRIGGER
 ```
 
+## 🧾 TypeScript Schema Mapping
+
+- `src/lib/db/types.ts`는 본 문서의 테이블/열 정의를 기반으로 60개 이상의 인터페이스와 enum literal을 제공한다.
+- `DatabaseTables` 맵과 `TableRow<Table>` 헬퍼를 활용해 `RDSClient` 제네릭 작업(TODO: Track A/B)과 API 타입 지정 시 스키마와 동기화할 수 있다.
+- 새 테이블 추가 시 먼저 여기 문서를 갱신하고, 이후 `types.ts`에 동일 필드를 반영해 타입 불일치를 예방한다.
+
 ## 📊 Schema Relationships
 
 ### Primary Relationships

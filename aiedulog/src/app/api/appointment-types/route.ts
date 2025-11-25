@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity, withUserSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext, SecurityRole } from '@/lib/security/core-security';
 import {
@@ -10,6 +10,8 @@ import {
 
 /**
  * GET /api/appointment-types - Get available appointment types
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: Public access for viewing active types, user access for all types
  * 
  * Query Parameters:
@@ -22,7 +24,7 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     const instructorId = searchParams.get('instructor_id');
     const activeOnly = searchParams.get('active_only') === 'true' || 
@@ -30,7 +32,7 @@ const getHandler = async (
                        searchParams.get('active_only') !== 'false');
     
     // Build query
-    let query = supabase
+    let query = rds
       .from('appointment_types')
       .select(`
         *,
@@ -90,7 +92,7 @@ const postHandler = async (
 ): Promise<NextResponse> => {
   try {
     const body = await request.json();
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Validate required fields
     const requiredFields = ['instructor_id', 'type_name', 'duration_minutes'];
@@ -138,7 +140,7 @@ const postHandler = async (
     }
     
     // Verify instructor exists and is active
-    const { data: instructor, error: instructorError } = await supabase
+    const { data: instructor, error: instructorError } = await rds
       .from('identities')
       .select('id, role, status')
       .eq('id', body.instructor_id)
@@ -166,7 +168,7 @@ const postHandler = async (
     }
     
     // Check for duplicate type names for this instructor
-    const { data: existingType, error: duplicateError } = await supabase
+    const { data: existingType, error: duplicateError } = await rds
       .from('appointment_types')
       .select('id')
       .eq('instructor_id', body.instructor_id)
@@ -201,20 +203,24 @@ const postHandler = async (
       color_hex: body.color_hex || '#2E86AB'
     };
     
-    const { data: newType, error: createError } = await supabase
+    const { data: newType, error: createError } = await rds
       .from('appointment_types')
-      .insert([typeData])
-      .select(`
-        *,
-        instructor:identities!appointment_types_instructor_id_fkey(
-          id,
-          full_name,
-          email,
-          profile_image_url,
-          bio
-        )
-      `)
-      .single();
+      .insert([typeData], {
+        select: `
+          *,
+          instructor:identities!appointment_types_instructor_id_fkey(
+            id,
+            full_name,
+            email,
+            profile_image_url,
+            bio
+          )
+        `
+      })
+      .then(result => ({
+        data: result.data?.[0] || null,
+        error: result.error
+      }));
     
     if (createError) {
       console.error('Error creating appointment type:', createError);

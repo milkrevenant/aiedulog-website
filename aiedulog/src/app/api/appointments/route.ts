@@ -1,5 +1,7 @@
 /**
  * 🔒 SECURE APPOINTMENTS API ENDPOINT
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * SECURITY FIXES IMPLEMENTED:
  * ✅ CRITICAL-01: SQL injection prevention (database functions secured)
@@ -18,7 +20,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withUserSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import { InputSanitizer } from '@/lib/security/input-sanitizer';
@@ -83,10 +85,10 @@ const getHandler = async (
       userAgent: context.userAgent
     };
 
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // 🔒 SECURITY: Build query with proper access controls
-    let query = supabase
+    let query = rds
       .from('appointments')
       .select(`
         *,
@@ -202,7 +204,7 @@ const getHandler = async (
     }
 
     // Get total count with same filters (for pagination)
-    let countQuery = supabase
+    let countQuery = rds
       .from('appointments')
       .select('*', { count: 'exact', head: true });
 
@@ -302,10 +304,10 @@ const postHandler = async (
       );
     }
 
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // 🔒 BUSINESS VALIDATION: Get appointment type and validate
-    const { data: appointmentType, error: typeError } = await supabase
+    const { data: appointmentType, error: typeError } = await rds
       .from('appointment_types')
       .select('*')
       .eq('id', appointmentData.appointment_type_id)
@@ -381,7 +383,7 @@ const postHandler = async (
     }
 
     // 🔒 SUCCESS: Get the created appointment with full details
-    const { data: appointment, error: fetchError } = await supabase
+    const { data: appointment, error: fetchError } = await rds
       .from('appointments')
       .select(`
         *,
@@ -424,9 +426,9 @@ const postHandler = async (
 
     // Don't await - let notifications be scheduled asynchronously
     Promise.all([
-      scheduleNotification(supabase, bookingResult.appointmentId!, NotificationType.CONFIRMATION, new Date()),
-      scheduleNotification(supabase, bookingResult.appointmentId!, NotificationType.REMINDER_24H, reminder24h),
-      scheduleNotification(supabase, bookingResult.appointmentId!, NotificationType.REMINDER_1H, reminder1h)
+      scheduleNotification(rds, bookingResult.appointmentId!, NotificationType.CONFIRMATION, new Date()),
+      scheduleNotification(rds, bookingResult.appointmentId!, NotificationType.REMINDER_24H, reminder24h),
+      scheduleNotification(rds, bookingResult.appointmentId!, NotificationType.REMINDER_1H, reminder1h)
     ]).catch(error => {
       console.error('Failed to schedule notifications:', error);
       // Don't fail the appointment creation due to notification errors

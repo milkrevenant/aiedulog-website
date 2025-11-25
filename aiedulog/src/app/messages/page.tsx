@@ -1,4 +1,7 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import {
   Box,

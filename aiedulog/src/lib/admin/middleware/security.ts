@@ -1,9 +1,13 @@
 /**
  * Enterprise Security Middleware
  * Comprehensive security checks, rate limiting, and threat detection
+ *
+ * MIGRATION: Updated to use NextAuth (2025-10-14)
  */
 
 import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/auth-options';
 import { createClient } from '@/lib/supabase/server';
 import { AuditService } from '../services/audit-service';
 import { getUserIdentity } from '@/lib/identity/helpers';
@@ -27,7 +31,14 @@ export class SecurityMiddleware {
   private supabase: any;
 
   constructor(supabase?: any) {
-    this.supabase = supabase || createClient();
+    this.supabase = supabase;
+  }
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    return this.supabase || createClient();
   }
 
   // Rate limiting storage (in production, use Redis)
@@ -70,9 +81,12 @@ export class SecurityMiddleware {
         };
       }
 
-      // 2. Check user authentication
-      const { data: user } = await this.supabase.auth.getUser();
-      if (!user.user) {
+      // 2. Check user authentication (NextAuth)
+      const session = await getServerSession(authOptions);
+      const sessionUser = session?.user as ({ id?: string | null; email?: string | null } | undefined);
+      const userId = sessionUser?.id ?? null;
+
+      if (!userId) {
         return {
           success: false,
           error: 'Authentication required'
@@ -80,7 +94,11 @@ export class SecurityMiddleware {
       }
 
       // 3. Get admin identity
-      const adminIdentity = await getUserIdentity(user.user, this.supabase);
+      const supabase = await this.getClient();
+      const adminIdentity = await getUserIdentity(
+        { id: userId, email: sessionUser?.email || null },
+        supabase
+      );
       
       if (!adminIdentity) {
         return {
@@ -109,7 +127,7 @@ export class SecurityMiddleware {
 
       // 6. Calculate risk score
       const riskScore = await this.calculateRiskScore({
-        userId: user.user.id,
+        userId,
         adminId: adminIdentity.user_id,
         ipAddress,
         userAgent,
@@ -135,7 +153,7 @@ export class SecurityMiddleware {
       }
 
       const context: SecurityContext = {
-        userId: user.user.id,
+        userId,
         adminId: adminIdentity.user_id,
         sessionId: sessionValidation.sessionId,
         ipAddress,
@@ -221,8 +239,10 @@ export class SecurityMiddleware {
     sessionAge?: number;
   }> {
     try {
+      const supabase = await this.getClient();
+
       // Get active admin session
-      const { data: session } = await this.supabase
+      const { data: session } = await supabase
         .from('admin_sessions')
         .select('*')
         .eq('admin_user_id', adminId)
@@ -245,7 +265,7 @@ export class SecurityMiddleware {
 
       if (sessionAge > maxSessionAge) {
         // Deactivate expired session
-        await this.supabase
+        await supabase
           .from('admin_sessions')
           .update({ is_active: false })
           .eq('id', session.id);
@@ -275,7 +295,7 @@ export class SecurityMiddleware {
         });
 
         // Optionally deactivate session for security
-        await this.supabase
+        await supabase
           .from('admin_sessions')
           .update({ is_active: false })
           .eq('id', session.id);
@@ -288,7 +308,7 @@ export class SecurityMiddleware {
       }
 
       // Update session activity
-      await this.supabase
+      await supabase
         .from('admin_sessions')
         .update({ last_activity: new Date().toISOString() })
         .eq('id', session.id);
@@ -312,7 +332,8 @@ export class SecurityMiddleware {
    */
   private async getUserPermissions(adminId: string): Promise<string[]> {
     try {
-      const { data } = await this.supabase
+      const supabase = await this.getClient();
+      const { data } = await supabase
         .from('admin_user_roles')
         .select(`
           admin_roles (
@@ -352,8 +373,10 @@ export class SecurityMiddleware {
     let riskScore = 0;
 
     try {
+      const supabase = await this.getClient();
+
       // 1. Check for recent failed login attempts
-      const { count: failedLogins } = await this.supabase
+      const { count: failedLogins } = await supabase
         .from('audit_logs')
         .select('id', { count: 'exact', head: true })
         .eq('event_type', 'login_failed')
@@ -364,7 +387,7 @@ export class SecurityMiddleware {
       else if (failedLogins > 2) riskScore += 15;
 
       // 2. Check for unusual access patterns
-      const { data: recentAccess } = await this.supabase
+      const { data: recentAccess } = await supabase
         .from('admin_sessions')
         .select('ip_address, user_agent')
         .eq('admin_user_id', factors.adminId)
@@ -390,7 +413,7 @@ export class SecurityMiddleware {
       }
 
       // 6. Check for recent security incidents
-      const { count: securityIncidents } = await this.supabase
+      const { count: securityIncidents } = await supabase
         .from('audit_logs')
         .select('id', { count: 'exact', head: true })
         .eq('actor_id', factors.adminId)
@@ -546,10 +569,12 @@ export class SecurityMiddleware {
     // This is a simplified implementation
     // In production, implement proper token-based confirmation
     // (e.g., TOTP, SMS, email confirmation, etc.)
-    
+
     try {
+      const supabase = await this.getClient();
+
       // Check if token exists and is valid (within last 5 minutes)
-      const { data: tokenRecord } = await this.supabase
+      const { data: tokenRecord } = await supabase
         .from('admin_confirmation_tokens')
         .select('*')
         .eq('admin_id', adminId)
@@ -564,7 +589,7 @@ export class SecurityMiddleware {
       }
 
       // Mark token as used
-      await this.supabase
+      await supabase
         .from('admin_confirmation_tokens')
         .update({ used: true, used_at: new Date().toISOString() })
         .eq('id', tokenRecord.id);
@@ -588,7 +613,8 @@ export class SecurityMiddleware {
     const expiresAt = new Date(Date.now() + expirationMinutes * 60 * 1000);
 
     try {
-      await this.supabase
+      const supabase = await this.getClient();
+      await supabase
         .from('admin_confirmation_tokens')
         .insert({
           admin_id: adminId,

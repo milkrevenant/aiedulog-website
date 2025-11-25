@@ -389,7 +389,7 @@ export function useNotifications(options: UseNotificationsOptions = {}): UseNoti
           event: 'INSERT',
           schema: 'public',
           table: 'notifications'
-        }, (payload) => {
+        }, (payload: any) => {
           const newNotification = payload.new as any;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);

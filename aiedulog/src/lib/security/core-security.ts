@@ -1,15 +1,19 @@
 /**
  * Core Security Functions
  * Simplified, focused security utilities for API protection
- * 
+ *
  * DESIGN PRINCIPLES:
  * - Keep it simple and maintainable (~300 lines total)
  * - Fail securely by default
  * - Clear environment-based configuration
  * - Easy to understand and debug
+ *
+ * MIGRATION: Updated to use NextAuth + RDS (2025-10-13)
  */
 
 import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/auth-options';
 import { createClient } from '@/lib/supabase/server';
 
 // Security roles in order of privilege
@@ -197,6 +201,7 @@ export function validateOrigin(origin: string | null, allowedOrigins: string[]):
 
 /**
  * Create security context from request
+ * Updated to use NextAuth + RDS
  */
 export async function createSecurityContext(request: NextRequest): Promise<SecurityContext> {
   const requestId = generateRequestId();
@@ -205,28 +210,31 @@ export async function createSecurityContext(request: NextRequest): Promise<Secur
   const userAgent = request.headers.get('user-agent') || 'unknown';
   const origin = request.headers.get('origin') || undefined;
   const riskLevel = calculateRiskLevel(request, ipAddress);
-  
+
   let userId: string | undefined;
   let userRole: SecurityRole = SecurityRole.ANONYMOUS;
   let sessionValid = false;
-  
+
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      userId = user.id;
+    // Use NextAuth session instead of Supabase auth
+    const session = await getServerSession(authOptions);
+    const sessionUser = session?.user as ({ id?: string | null; email?: string | null } | undefined);
+    const resolvedUserId = sessionUser?.id ?? sessionUser?.email ?? undefined;
+
+    if (resolvedUserId) {
+      userId = resolvedUserId;
       sessionValid = true;
-      
-      // Get user role from database
-      const { data: identity } = await supabase
-        .from('identities')
+
+      // Get user role from RDS database
+      const db = createClient();
+      const { data: profile } = await db
+        .from('user_profiles')
         .select('role, status')
-        .eq('id', user.id)
+        .eq('id', resolvedUserId)
         .single();
-      
-      if (identity && identity.status === 'active') {
-        userRole = mapDatabaseRole(identity.role);
+
+      if (profile && profile.status === 'active') {
+        userRole = mapDatabaseRole(profile.role || 'user');
       } else {
         sessionValid = false; // Invalid if user blocked/suspended
       }
@@ -235,7 +243,7 @@ export async function createSecurityContext(request: NextRequest): Promise<Secur
     // Authentication failed, keep as anonymous
     console.warn('Authentication check failed:', error);
   }
-  
+
   return {
     requestId,
     timestamp,
@@ -280,7 +288,7 @@ export async function logSecurityEvent(
   metadata?: Record<string, any>
 ): Promise<void> {
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
     
     await supabase
       .from('security_audit_log')

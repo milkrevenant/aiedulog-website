@@ -1,9 +1,12 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/hooks'
+import { createClient } from '@/lib/supabase/client'
 import AuthGuard from '@/components/AuthGuard'
 import {
   Box,

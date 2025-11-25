@@ -6,23 +6,23 @@
 import { UserSession } from './jwt-middleware';
 
 // Permission types
-export type Permission = 
+export type Permission =
   // User permissions
   | 'read:users' | 'write:users' | 'delete:users' | 'manage:users'
-  
+
   // Content permissions  
   | 'read:posts' | 'write:posts' | 'delete:posts' | 'manage:posts'
   | 'read:comments' | 'write:comments' | 'delete:comments' | 'manage:comments'
-  
+
   // Chat permissions
   | 'read:chat' | 'write:chat' | 'delete:chat' | 'manage:chat'
-  
+
   // Lecture permissions
   | 'read:lectures' | 'write:lectures' | 'delete:lectures' | 'manage:lectures'
-  
+
   // Admin permissions
   | 'manage:system' | 'manage:content' | 'manage:notifications' | 'audit:logs'
-  
+
   // Profile permissions
   | 'read:profile' | 'write:profile' | 'delete:profile';
 
@@ -34,6 +34,8 @@ export interface ResourceOwnership {
   resourceId: string;
   userId: string;
 }
+
+type QueryFilter = { where: string; params: unknown[] };
 
 /**
  * Role-based permission definitions
@@ -161,7 +163,7 @@ export class PermissionService {
     user: UserSession | null,
     resourceType: ResourceOwnership['resourceType'],
     permission: Permission
-  ): { where: string; params: any[] } {
+  ): QueryFilter {
     // No user = no access (except for public content)
     if (!user) {
       return {
@@ -203,7 +205,7 @@ export class PermissionService {
   /**
    * Post access filter
    */
-  private static generatePostFilter(user: UserSession, permission: Permission): { where: string; params: any[] } {
+  private static generatePostFilter(user: UserSession, permission: Permission): QueryFilter {
     if (permission === 'read:posts') {
       // Users can read published posts and their own drafts
       return {
@@ -229,7 +231,7 @@ export class PermissionService {
   /**
    * Comment access filter
    */
-  private static generateCommentFilter(user: UserSession, permission: Permission): { where: string; params: any[] } {
+  private static generateCommentFilter(user: UserSession, permission: Permission): QueryFilter {
     if (permission === 'read:comments') {
       // Users can read all comments on public posts
       return {
@@ -268,7 +270,7 @@ export class PermissionService {
   /**
    * Chat room access filter
    */
-  private static generateChatRoomFilter(user: UserSession, permission: Permission): { where: string; params: any[] } {
+  private static generateChatRoomFilter(user: UserSession, permission: Permission): QueryFilter {
     if (permission === 'read:chat' || permission === 'write:chat') {
       // Users can access rooms they're participants in or public rooms
       return {
@@ -289,7 +291,7 @@ export class PermissionService {
   /**
    * Chat message access filter
    */
-  private static generateChatMessageFilter(user: UserSession, permission: Permission): { where: string; params: any[] } {
+  private static generateChatMessageFilter(user: UserSession, permission: Permission): QueryFilter {
     if (permission === 'read:chat') {
       // Users can read messages in rooms they have access to
       return {
@@ -319,7 +321,7 @@ export class PermissionService {
   /**
    * Lecture access filter
    */
-  private static generateLectureFilter(user: UserSession, permission: Permission): { where: string; params: any[] } {
+  private static generateLectureFilter(user: UserSession, permission: Permission): QueryFilter {
     if (permission === 'read:lectures') {
       // All users can read published lectures
       return {
@@ -345,7 +347,7 @@ export class PermissionService {
   /**
    * Profile access filter
    */
-  private static generateProfileFilter(user: UserSession, permission: Permission): { where: string; params: any[] } {
+  private static generateProfileFilter(user: UserSession, permission: Permission): QueryFilter {
     if (permission === 'read:profile') {
       // Admins can read all profiles, users can read their own and public profiles
       if (user.role === 'admin') {
@@ -385,15 +387,7 @@ export class PermissionService {
       return action === 'read'; // Only allow read access for anonymous users
     }
 
-    // Map actions to permissions
-    const permissionMap: Record<string, Permission> = {
-      [`create:${resourceType}`]: `write:${resourceType}` as Permission,
-      [`read:${resourceType}`]: `read:${resourceType}` as Permission,
-      [`update:${resourceType}`]: `write:${resourceType}` as Permission,
-      [`delete:${resourceType}`]: `delete:${resourceType}` as Permission,
-    };
-
-    const requiredPermission = permissionMap[`${action}:${resourceType}`];
+    const requiredPermission = this.resolvePermission(resourceType, action);
     
     if (!requiredPermission) {
       return false;
@@ -426,6 +420,52 @@ export class PermissionService {
     }
 
     return false;
+  }
+
+  private static resolvePermission(
+    resourceType: ResourceOwnership['resourceType'],
+    action: 'create' | 'read' | 'update' | 'delete'
+  ): Permission | null {
+    const mapping: Record<ResourceOwnership['resourceType'], Record<typeof action, Permission | null>> = {
+      post: {
+        create: 'write:posts',
+        read: 'read:posts',
+        update: 'write:posts',
+        delete: 'delete:posts'
+      },
+      comment: {
+        create: 'write:comments',
+        read: 'read:comments',
+        update: 'write:comments',
+        delete: 'delete:comments'
+      },
+      chat_room: {
+        create: 'manage:chat',
+        read: 'read:chat',
+        update: 'manage:chat',
+        delete: 'manage:chat'
+      },
+      chat_message: {
+        create: 'write:chat',
+        read: 'read:chat',
+        update: 'write:chat',
+        delete: 'delete:chat'
+      },
+      lecture: {
+        create: 'write:lectures',
+        read: 'read:lectures',
+        update: 'write:lectures',
+        delete: 'delete:lectures'
+      },
+      profile: {
+        create: null,
+        read: 'read:profile',
+        update: 'write:profile',
+        delete: 'delete:profile'
+      }
+    };
+
+    return mapping[resourceType][action] ?? null;
   }
 
   /**
@@ -481,9 +521,10 @@ export function RequirePermission(permission: Permission) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
-      const user = this.user || args[0]; // Assume first arg is user or method has user property
+      const context = this as { user?: UserSession | null };
+      const candidateUser = (context?.user ?? null) || (args.length > 0 ? (args[0] as UserSession | null) : null);
       
-      if (!PermissionService.hasPermission(user, permission)) {
+      if (!PermissionService.hasPermission(candidateUser, permission)) {
         throw new Error(`Permission denied: requires ${permission}`);
       }
 

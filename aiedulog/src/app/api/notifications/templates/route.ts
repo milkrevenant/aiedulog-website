@@ -15,7 +15,7 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createRDSClient } from '@/lib/db/rds-client'
 import { z } from 'zod'
 
 // =====================================================================
@@ -58,30 +58,19 @@ const templateTestSchema = z.object({
 // HELPER FUNCTIONS
 // =====================================================================
 
-async function validateAdminAccess(supabase: any) {
-  const { data: { session }, error: authError } = await supabase.auth.getSession()
-  if (authError || !session) {
-    return { user: null, identity: null, error: 'Unauthorized' }
+async function validateAdminAccess(context: SecurityContext) {
+  if (!context.userId) {
+    return { userId: null, isAdmin: false, error: 'Unauthorized' }
   }
 
-  // Get user identity
-  const { data: identity } = await supabase
-    .from('identities')
-    .select('id, role')
-    .eq('auth_user_id', session.user.id)
-    .single()
+  const userRole = context.userRole
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin'
 
-  if (!identity) {
-    return { user: session.user, identity: null, error: 'User identity not found' }
-  }
-
-  const isAdmin = identity.role === 'admin' || identity.role === 'super_admin'
-  
   if (!isAdmin) {
-    return { user: session.user, identity, error: 'Admin access required' }
+    return { userId: context.userId, isAdmin: false, error: 'Admin access required' }
   }
 
-  return { user: session.user, identity, error: null }
+  return { userId: context.userId, isAdmin: true, error: null }
 }
 
 function replaceTemplateVariables(template: string, variables: Record<string, any>): string {
@@ -112,14 +101,16 @@ function validateTemplateVariables(template: string): string[] {
 
 /**
  * GET /api/notifications/templates
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * List all notification templates with filtering and pagination (Admin only)
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate admin access
-    const { user, identity, error } = await validateAdminAccess(supabase)
+    const { userId, isAdmin, error } = await validateAdminAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -145,7 +136,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     const params = validationResult.data
 
     // Build query with filters
-    let baseQuery = supabase
+    let baseQuery = rds
       .from('notification_templates')
       .select(`
         id,
@@ -183,7 +174,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get total count for pagination
-    const { count } = await supabase
+    const { count } = await rds
       .from('notification_templates')
       .select('*', { count: 'exact' as any, head: true })
     
@@ -202,23 +193,23 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get summary statistics
-    const { data: allTemplates } = await supabase
+    const { data: allTemplates } = await rds
       .from('notification_templates')
       .select('category, template_type, is_active, language')
 
     const summary = {
       total: count || 0,
-      active: allTemplates?.filter(t => t.is_active).length || 0,
-      inactive: allTemplates?.filter(t => !t.is_active).length || 0,
-      by_category: allTemplates?.reduce((acc: any, t) => {
+      active: allTemplates?.filter((t: any) => t.is_active).length || 0,
+      inactive: allTemplates?.filter((t: any) => !t.is_active).length || 0,
+      by_category: allTemplates?.reduce((acc: any, t: any) => {
         acc[t.category] = (acc[t.category] || 0) + 1
         return acc
       }, {}) || {},
-      by_type: allTemplates?.reduce((acc: any, t) => {
+      by_type: allTemplates?.reduce((acc: any, t: any) => {
         acc[t.template_type] = (acc[t.template_type] || 0) + 1
         return acc
       }, {}) || {},
-      by_language: allTemplates?.reduce((acc: any, t) => {
+      by_language: allTemplates?.reduce((acc: any, t: any) => {
         acc[t.language] = (acc[t.language] || 0) + 1
         return acc
       }, {}) || {}
@@ -273,10 +264,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate admin access
-    const { user, identity, error } = await validateAdminAccess(supabase)
+    const { userId, isAdmin, error } = await validateAdminAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -301,7 +292,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     const templateData = validationResult.data
 
     // Check if template key already exists
-    const { data: existingTemplate } = await supabase
+    const { data: existingTemplate } = await rds
       .from('notification_templates')
       .select('id')
       .eq('template_key', templateData.template_key)
@@ -330,14 +321,14 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     }
 
     // Create template
-    const { data: template, error: createError } = await supabase
+    const { data: templateArr, error: createError } = await rds
       .from('notification_templates')
       .insert({
         ...templateData,
-        created_by: identity.id
-      })
-      .select()
-      .single()
+        created_by: userId
+      }, { select: '*' })
+
+    const template = templateArr?.[0] || null
 
     if (createError) {
       console.error('Error creating template:', createError)
@@ -374,10 +365,10 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate admin access
-    const { user, identity, error } = await validateAdminAccess(supabase)
+    const { userId, isAdmin, error } = await validateAdminAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -412,7 +403,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     const updateData = validationResult.data
 
     // Check if template exists
-    const { data: existingTemplate, error: fetchError } = await supabase
+    const { data: existingTemplate, error: fetchError } = await rds
       .from('notification_templates')
       .select('*')
       .eq('id', templateId)
@@ -445,15 +436,15 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Update template
-    const { data: updatedTemplate, error: updateError } = await supabase
+    const { data: updatedTemplateArr, error: updateError } = await rds
       .from('notification_templates')
+      .eq('id', templateId)
       .update({
         ...updateData,
         updated_at: new Date().toISOString()
-      })
-      .eq('id', templateId)
-      .select()
-      .single()
+      }, { select: '*' })
+
+    const updatedTemplate = updatedTemplateArr?.[0] || null
 
     if (updateError) {
       console.error('Error updating template:', updateError)
@@ -486,10 +477,10 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate admin access
-    const { user, identity, error } = await validateAdminAccess(supabase)
+    const { userId, isAdmin, error } = await validateAdminAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -509,7 +500,7 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     // Check if template exists and is not being used
-    let templateQuery = supabase
+    let templateQuery = rds
       .from('notification_templates')
       .select('id, template_key, template_name')
     
@@ -529,7 +520,7 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     // Check if template is being used in notifications
-    const { count: usageCount } = await supabase
+    const { count: usageCount } = await rds
       .from('notifications')
       .select('*', { count: 'exact' as any })
       .eq('metadata->>template_key', template.template_key)
@@ -545,10 +536,10 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     // Delete template
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await rds
       .from('notification_templates')
-      .delete()
       .eq('id', template.id)
+      .delete()
 
     if (deleteError) {
       console.error('Error deleting template:', deleteError)

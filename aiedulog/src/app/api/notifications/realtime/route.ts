@@ -1,32 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 
 /**
  * GET /api/notifications/realtime
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Server-Sent Events endpoint for real-time notifications
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<Response> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
+    const rds = createRDSClient();
+
+    // Check authentication from SecurityContext
+    if (!context.userId) {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    // Get user identity
-    const { data: identity } = await supabase
-      .from('identities')
-      .select('id')
-      .eq('auth_user_id', session.user.id)
-      .single();
-
-    if (!identity) {
-      return new Response('User not found', { status: 404 });
-    }
+    const identityId = context.userId;
 
     // Set up Server-Sent Events
     const encoder = new TextEncoder();
@@ -59,10 +51,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
         const pollInterval = setInterval(async () => {
           try {
             // Get recent notifications for user
-            const { data: notifications, error } = await supabase
+            const { data: notifications, error } = await rds
               .from('notifications')
               .select('*')
-              .eq('user_id', identity.id)
+              .eq('user_id', identityId)
               .eq('is_read', false)
               .gte('created_at', new Date(Date.now() - 60000).toISOString()) // Last minute
               .order('created_at', { ascending: false });
@@ -74,7 +66,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 
             // Send notifications to client
             if (notifications && notifications.length > 0) {
-              notifications.forEach(notification => {
+              notifications.forEach((notification: any) => {
                 const notificationData = `data: ${JSON.stringify({
                   type: 'notification',
                   data: notification

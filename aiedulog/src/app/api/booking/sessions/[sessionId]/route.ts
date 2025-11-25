@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -19,6 +19,8 @@ interface RouteParams {
 
 /**
  * GET /api/booking/sessions/[sessionId] - Get specific booking session
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: Public access with session ownership validation
  */
 const getHandler = async (
@@ -30,10 +32,10 @@ const getHandler = async (
     const { sessionId } = params;
     const { searchParams } = new URL(request.url);
     const sessionToken = searchParams.get('session_token');
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Build session query
-    let query = supabase
+    let query = rds
       .from('booking_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -92,10 +94,10 @@ const putHandler = async (
     const body: UpdateBookingSessionRequest = await request.json();
     const { searchParams } = new URL(request.url);
     const sessionToken = searchParams.get('session_token');
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Get existing session
-    let sessionQuery = supabase
+    let sessionQuery = rds
       .from('booking_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -151,12 +153,12 @@ const putHandler = async (
     updatePayload.expires_at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
     
     // Update session
-    const { data: updatedSession, error: updateError } = await supabase
+    const { data: updatedSessions, error: updateError } = await rds
       .from('booking_sessions')
-      .update(updatePayload)
       .eq('id', sessionId)
-      .select()
-      .single();
+      .update(updatePayload, { select: '*' });
+
+    const updatedSession = updatedSessions?.[0] || null;
     
     if (updateError) {
       console.error('Error updating booking session:', updateError);
@@ -195,14 +197,13 @@ const deleteHandler = async (
     const { sessionId } = params;
     const { searchParams } = new URL(request.url);
     const sessionToken = searchParams.get('session_token');
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
-    // Build delete query
-    let query = supabase
+    // Build delete query with access control
+    let query = rds
       .from('booking_sessions')
-      .delete()
       .eq('id', sessionId);
-    
+
     // Apply access control
     if (context.userId) {
       query = query.eq('user_id', context.userId);
@@ -215,8 +216,8 @@ const deleteHandler = async (
       }
       query = query.eq('session_token', sessionToken).is('user_id', null);
     }
-    
-    const { error: deleteError } = await query;
+
+    const { error: deleteError } = await query.delete();
     
     if (deleteError) {
       console.error('Error deleting booking session:', deleteError);

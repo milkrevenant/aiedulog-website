@@ -1,65 +1,111 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession as useNextAuthSession } from 'next-auth/react'
-import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession as useNextAuthSession } from 'next-auth/react'
+import type { Session } from 'next-auth'
+import type { AppUser } from './types'
 
-type BasicUser = {
-  id: string
+type NextAuthSessionUser = {
+  id?: string | null
   email?: string | null
+  groups?: unknown
+  [key: string]: unknown
+}
+
+type AuthProfile = {
+  user_id?: string | null
+  role: 'admin' | 'moderator' | 'member' | 'verified'
+  email?: string | null
+  nickname?: string | null
+  avatar_url?: string | null
+  full_name?: string | null
+  bio?: string | null
+  school?: string | null
+  subject?: string | null
 }
 
 export function useUser() {
   const { data: session, status } = useNextAuthSession()
   const loading = status === 'loading'
-  const user: BasicUser | null = session?.user
-    ? { id: (session.user as any).id || 'nextauth-user', email: session.user.email }
+
+  const sessionUser = session?.user as NextAuthSessionUser | undefined
+  const user: AppUser | null = sessionUser?.id
+    ? {
+        id: sessionUser.id,
+        email: sessionUser.email ?? null,
+      }
     : null
+
   return { user, loading, error: null as Error | null }
 }
 
-export function useSession() {
+export function useSession(): { session: Session | null; loading: boolean } {
   const { data: session, status } = useNextAuthSession()
   const loading = status === 'loading'
-  return { session: session as any, loading }
+  return { session, loading }
 }
 
 export function useAuth() {
   const { user, loading: userLoading } = useUser()
   const { session, loading: sessionLoading } = useSession()
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<AuthProfile | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    if (session?.user) {
-      // Map NextAuth session to simple profile (roles via groups)
-      const groups: string[] = ((session.user as any).groups as string[]) || []
-      const role = groups.includes('admin') ? 'admin' : groups.includes('moderator') ? 'moderator' : 'member'
-      setProfile({ role })
-    } else {
+    const sessionUser = session?.user as NextAuthSessionUser | undefined
+
+    if (!sessionUser) {
       setProfile(null)
+      return
     }
+
+    const groups = Array.isArray(sessionUser.groups)
+      ? (sessionUser.groups as unknown[])
+          .filter((value): value is string => typeof value === 'string')
+      : []
+
+    const role: AuthProfile['role'] = groups.includes('admin')
+      ? 'admin'
+      : groups.includes('moderator')
+        ? 'moderator'
+        : groups.includes('verified')
+          ? 'verified'
+          : 'member'
+
+    setProfile({
+      user_id: sessionUser.id ?? null,
+      role,
+      email: sessionUser.email ?? null,
+      nickname: (sessionUser as any)?.nickname ?? null,
+      avatar_url: (sessionUser as any)?.avatar_url ?? null,
+      full_name: (sessionUser as any)?.full_name ?? null,
+      bio: (sessionUser as any)?.bio ?? null,
+      school: (sessionUser as any)?.school ?? null,
+      subject: (sessionUser as any)?.subject ?? null
+    })
   }, [session])
 
-  const signIn = async () => {
-    await nextAuthSignIn('cognito', { callbackUrl: '/feed' })
-  }
+  const isAuthenticated = Boolean(user)
 
-  const signUp = async () => {
+  const signIn = useCallback(async (): Promise<void> => {
     await nextAuthSignIn('cognito', { callbackUrl: '/feed' })
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signUp = useCallback(async (): Promise<void> => {
+    await nextAuthSignIn('cognito', { callbackUrl: '/feed' })
+  }, [])
+
+  const signOut = useCallback(async (): Promise<void> => {
     await nextAuthSignOut({ callbackUrl: '/auth/login' })
     router.push('/auth/login')
-  }
+  }, [router])
 
-  const updateProfile = async (_updates: any) => {
+  const updateProfile = useCallback(async (_updates: Record<string, unknown>): Promise<void> => {
     throw new Error('updateProfile is not implemented for NextAuth-only mode')
-  }
+  }, [])
 
-  return {
+  const authState = useMemo(() => ({
     user,
     session,
     profile,
@@ -69,9 +115,11 @@ export function useAuth() {
     signUp,
     signOut,
     updateProfile,
-    isAuthenticated: !!user,
+    isAuthenticated,
     isAdmin: profile?.role === 'admin',
     isModerator: profile?.role === 'moderator' || profile?.role === 'admin',
     isVerified: profile?.role === 'verified' || profile?.role === 'moderator' || profile?.role === 'admin',
-  }
+  }), [user, session, profile, userLoading, sessionLoading, isAuthenticated, signIn, signUp, signOut, updateProfile])
+
+  return authState
 }

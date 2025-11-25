@@ -1,9 +1,11 @@
 /**
  * Content Management System Utilities
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Helper functions for working with the content management system
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createRDSClient } from '@/lib/db/rds-client';
 import type {
   MainContentSection,
   ContentBlock,
@@ -27,7 +29,9 @@ import type {
 } from '@/types/content-management';
 
 // Initialize Supabase client
-const supabase = createClient();
+function getClient() {
+  return createRDSClient();
+}
 
 // ============================================================================
 // CONTENT SECTION OPERATIONS
@@ -46,40 +50,60 @@ export class ContentSectionService {
     offset?: number;
   } = {}): Promise<ApiResponse<PaginatedResponse<MainContentSection>>> {
     try {
-      let query = supabase
+      const rds = getClient();
+      const limit = options.limit ?? 10;
+      const offset = options.offset ?? 0;
+
+      let dataQuery = rds
         .from('main_content_sections')
-        .select('*', { count: 'exact' })
+        .select('*')
         .order('sort_order', { ascending: true });
 
       if (options.status) {
-        query = query.eq('status', options.status);
+        dataQuery = dataQuery.eq('status', options.status);
       }
 
       if (options.visibility) {
-        query = query.eq('visibility', options.visibility);
+        dataQuery = dataQuery.eq('visibility', options.visibility);
       }
 
-      if (options.limit) {
-        query = query.limit(options.limit);
+      if (options.limit !== undefined || options.offset !== undefined) {
+        dataQuery = dataQuery.range(offset, offset + limit - 1);
       }
 
-      if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
-      }
-
-      const { data, error, count } = await query;
+      const { data: sectionRows, error } = await dataQuery;
 
       if (error) throw error;
+
+      const sections = (sectionRows ?? []) as MainContentSection[];
+
+      let countQuery = rds.from('main_content_sections');
+
+      if (options.status) {
+        countQuery = countQuery.eq('status', options.status);
+      }
+
+      if (options.visibility) {
+        countQuery = countQuery.eq('visibility', options.visibility);
+      }
+
+      const countResponse = await countQuery.count({ count: 'exact' });
+
+      if (countResponse.error) {
+        throw countResponse.error;
+      }
+
+      const total = countResponse.count || 0;
 
       return {
         success: true,
         data: {
-          data: data || [],
-          total: count || 0,
-          page: Math.floor((options.offset || 0) / (options.limit || 10)) + 1,
-          limit: options.limit || 10,
-          has_next: (count || 0) > (options.offset || 0) + (options.limit || 10),
-          has_previous: (options.offset || 0) > 0,
+          data: sections,
+          total,
+          page: Math.floor(offset / limit) + 1,
+          limit,
+          has_next: total > offset + sections.length,
+          has_previous: offset > 0,
         },
       };
     } catch (error: any) {
@@ -95,17 +119,27 @@ export class ContentSectionService {
    */
   static async getById(id: string): Promise<ApiResponse<MainContentSection>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('main_content_sections')
         .select('*')
-        .eq('id', id)
-        .single();
+        .eq('id', id);
 
       if (error) throw error;
 
+      const rows = (data ?? []) as MainContentSection[];
+      const section = rows[0];
+
+      if (!section) {
+        return {
+          success: false,
+          error: 'Content section not found',
+        };
+      }
+
       return {
         success: true,
-        data,
+        data: section,
       };
     } catch (error: any) {
       return {
@@ -120,17 +154,27 @@ export class ContentSectionService {
    */
   static async getBySectionKey(sectionKey: string): Promise<ApiResponse<MainContentSection>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('main_content_sections')
         .select('*')
-        .eq('section_key', sectionKey)
-        .single();
+        .eq('section_key', sectionKey);
 
       if (error) throw error;
 
+      const rows = (data ?? []) as MainContentSection[];
+      const section = rows[0];
+
+      if (!section) {
+        return {
+          success: false,
+          error: 'Content section not found',
+        };
+      }
+
       return {
         success: true,
-        data,
+        data: section,
       };
     } catch (error: any) {
       return {
@@ -145,17 +189,21 @@ export class ContentSectionService {
    */
   static async create(sectionData: CreateContentSectionRequest): Promise<ApiResponse<MainContentSection>> {
     try {
-      const { data, error } = await supabase
-        .from('main_content_sections')
-        .insert(sectionData)
-        .select()
-        .single();
+      const rds = getClient();
+      const { data, error } = await rds.from('main_content_sections').insert(sectionData);
 
       if (error) throw error;
 
+      const rows = (data ?? []) as MainContentSection[];
+      const section = rows[0];
+
+      if (!section) {
+        throw new Error('Content section creation returned no data');
+      }
+
       return {
         success: true,
-        data,
+        data: section,
         message: 'Content section created successfully',
       };
     } catch (error: any) {
@@ -172,18 +220,24 @@ export class ContentSectionService {
   static async update(sectionData: UpdateContentSectionRequest): Promise<ApiResponse<MainContentSection>> {
     try {
       const { id, ...updateData } = sectionData;
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('main_content_sections')
-        .update(updateData)
         .eq('id', id)
-        .select()
-        .single();
+        .update(updateData);
 
       if (error) throw error;
 
+      const rows = (data ?? []) as MainContentSection[];
+      const section = rows[0];
+
+      if (!section) {
+        throw new Error('Content section update returned no data');
+      }
+
       return {
         success: true,
-        data,
+        data: section,
         message: 'Content section updated successfully',
       };
     } catch (error: any) {
@@ -199,10 +253,11 @@ export class ContentSectionService {
    */
   static async delete(id: string): Promise<ApiResponse<void>> {
     try {
-      const { error } = await supabase
+      const rds = getClient();
+      const { error } = await rds
         .from('main_content_sections')
-        .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .delete();
 
       if (error) throw error;
 
@@ -223,21 +278,27 @@ export class ContentSectionService {
    */
   static async publish(id: string): Promise<ApiResponse<MainContentSection>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('main_content_sections')
+        .eq('id', id)
         .update({ 
           status: 'published' as ContentStatus, 
           published_at: new Date().toISOString() 
-        })
-        .eq('id', id)
-        .select()
-        .single();
+        });
 
       if (error) throw error;
 
+      const rows = (data ?? []) as MainContentSection[];
+      const section = rows[0];
+
+      if (!section) {
+        throw new Error('Content section publish returned no data');
+      }
+
       return {
         success: true,
-        data,
+        data: section,
         message: 'Content section published successfully',
       };
     } catch (error: any) {
@@ -259,7 +320,8 @@ export class ContentBlockService {
    */
   static async getBySectionId(sectionId: string): Promise<ApiResponse<ContentBlock[]>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('content_blocks')
         .select('*')
         .eq('section_id', sectionId)
@@ -270,7 +332,7 @@ export class ContentBlockService {
 
       return {
         success: true,
-        data: data || [],
+        data: (data ?? []) as ContentBlock[],
       };
     } catch (error: any) {
       return {
@@ -287,17 +349,23 @@ export class ContentBlockService {
     blockData: CreateContentBlockRequest<T>
   ): Promise<ApiResponse<ContentBlock>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('content_blocks')
-        .insert(blockData)
-        .select()
-        .single();
+        .insert(blockData);
 
       if (error) throw error;
 
+      const rows = (data ?? []) as ContentBlock[];
+      const block = rows[0];
+
+      if (!block) {
+        throw new Error('Content block creation returned no data');
+      }
+
       return {
         success: true,
-        data,
+        data: block,
         message: 'Content block created successfully',
       };
     } catch (error: any) {
@@ -316,18 +384,24 @@ export class ContentBlockService {
     updateData: Partial<ContentBlock>
   ): Promise<ApiResponse<ContentBlock>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('content_blocks')
-        .update(updateData)
         .eq('id', id)
-        .select()
-        .single();
+        .update(updateData);
 
       if (error) throw error;
 
+      const rows = (data ?? []) as ContentBlock[];
+      const block = rows[0];
+
+      if (!block) {
+        throw new Error('Content block update returned no data');
+      }
+
       return {
         success: true,
-        data,
+        data: block,
         message: 'Content block updated successfully',
       };
     } catch (error: any) {
@@ -343,10 +417,11 @@ export class ContentBlockService {
    */
   static async delete(id: string): Promise<ApiResponse<void>> {
     try {
-      const { error } = await supabase
+      const rds = getClient();
+      const { error } = await rds
         .from('content_blocks')
-        .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .delete();
 
       if (error) throw error;
 
@@ -372,7 +447,8 @@ export class ContentBlockService {
         sort_order: index,
       }));
 
-      const { error } = await supabase
+      const rds = getClient();
+      const { error } = await rds
         .from('content_blocks')
         .upsert(updates);
 
@@ -404,8 +480,8 @@ export class ContentHierarchyService {
     language: LanguageCode = 'ko'
   ): Promise<ApiResponse<ContentHierarchy[]>> {
     try {
-      // Use the database function for optimized query
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .rpc('get_content_hierarchy', {
           p_section_key: sectionKey || null,
           p_language: language,
@@ -415,7 +491,7 @@ export class ContentHierarchyService {
 
       return {
         success: true,
-        data: data || [],
+        data: (data ?? []) as ContentHierarchy[],
       };
     } catch (error: any) {
       return {
@@ -432,8 +508,9 @@ export class ContentHierarchyService {
     sectionKey?: string
   ): Promise<ApiResponse<ContentHierarchy[]>> {
     try {
-      // Get sections
-      let sectionsQuery = supabase
+      const rds = getClient();
+
+      let sectionsQuery = rds
         .from('main_content_sections')
         .select('*')
         .order('sort_order');
@@ -442,12 +519,14 @@ export class ContentHierarchyService {
         sectionsQuery = sectionsQuery.eq('section_key', sectionKey);
       }
 
-      const { data: sections, error: sectionsError } = await sectionsQuery;
+      const { data: sectionRows, error: sectionsError } = await sectionsQuery;
       if (sectionsError) throw sectionsError;
 
+      const sections = (sectionRows ?? []) as MainContentSection[];
+
       // Get blocks for all sections
-      const sectionIds = sections?.map(s => s.id) || [];
-      const { data: blocks, error: blocksError } = await supabase
+      const sectionIds = sections.map((s) => s.id);
+      const { data: blockRows, error: blocksError } = await rds
         .from('content_blocks')
         .select('*')
         .in('section_id', sectionIds)
@@ -455,15 +534,17 @@ export class ContentHierarchyService {
 
       if (blocksError) throw blocksError;
 
+      const blocks = (blockRows ?? []) as ContentBlock[];
+
       // Combine sections with their blocks
-      const hierarchy = sections?.map(section => ({
+      const hierarchy: ContentHierarchy[] = sections.map((section) => ({
         id: section.id,
         section_key: section.section_key,
         title: section.title.ko || section.title.en || '',
         slug: section.slug.ko || section.slug.en || '',
         description: section.description?.ko || section.description?.en,
-        blocks: blocks?.filter(block => block.section_id === section.id) || [],
-      })) || [];
+        blocks: blocks.filter((block) => block.section_id === section.id),
+      }));
 
       return {
         success: true,
@@ -491,7 +572,8 @@ export class ContentVersionService {
     contentId: string
   ): Promise<ApiResponse<ContentVersion[]>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .from('main_content_versions')
         .select('*')
         .eq('content_type', contentType)
@@ -502,7 +584,7 @@ export class ContentVersionService {
 
       return {
         success: true,
-        data: data || [],
+        data: (data ?? []) as ContentVersion[],
       };
     } catch (error: any) {
       return {
@@ -523,7 +605,8 @@ export class ContentVersionService {
     isMajor: boolean = false
   ): Promise<ApiResponse<ContentVersion>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { data, error } = await rds
         .rpc('create_content_version', {
           p_content_type: contentType,
           p_content_id: contentId,
@@ -534,9 +617,16 @@ export class ContentVersionService {
 
       if (error) throw error;
 
+      const rows = (data ?? []) as ContentVersion[];
+      const version = rows[0];
+
+      if (!version) {
+        throw new Error('Content version creation returned no data');
+      }
+
       return {
         success: true,
-        data,
+        data: version,
         message: 'Content version created successfully',
       };
     } catch (error: any) {
@@ -552,7 +642,8 @@ export class ContentVersionService {
    */
   static async publishVersion(versionId: string): Promise<ApiResponse<void>> {
     try {
-      const { data, error } = await supabase
+      const rds = getClient();
+      const { error } = await rds
         .rpc('publish_content_version', {
           p_version_id: versionId,
         });
@@ -598,7 +689,8 @@ export class ContentAnalyticsService {
         interaction_data: additionalData || {},
       };
 
-      const { error } = await supabase
+      const rds = getClient();
+      const { error } = await rds
         .from('content_analytics')
         .insert(eventData);
 
@@ -622,7 +714,8 @@ export class ContentAnalyticsService {
     try {
       // This would typically involve multiple queries or a stored procedure
       // For now, we'll implement basic analytics
-      let baseQuery = supabase
+      const rds = getClient();
+      let baseQuery = rds
         .from('content_analytics')
         .select('*');
 
@@ -650,10 +743,14 @@ export class ContentAnalyticsService {
 
       if (error) throw error;
 
+      const rows = (data ?? []) as ContentAnalytics[];
+
       // Process data to create analytics result
       const analytics: AnalyticsResult = {
-        total_events: data?.length || 0,
-        unique_users: new Set(data?.map(d => d.user_id).filter(Boolean)).size,
+        total_events: rows.length,
+        unique_users: new Set(
+          rows.map((record) => record.user_id).filter(Boolean)
+        ).size,
         events_by_date: [],
         events_by_type: [],
         top_content: [],
@@ -705,7 +802,8 @@ export class ContentTemplateService {
    */
   static async getAll(category?: string): Promise<ApiResponse<ContentTemplate[]>> {
     try {
-      let query = supabase
+      const rds = getClient();
+      let query = rds
         .from('content_templates')
         .select('*')
         .eq('is_public', true)
@@ -721,7 +819,7 @@ export class ContentTemplateService {
 
       return {
         success: true,
-        data: data || [],
+        data: (data ?? []) as ContentTemplate[],
       };
     } catch (error: any) {
       return {
@@ -736,14 +834,21 @@ export class ContentTemplateService {
    */
   static async useTemplate(templateId: string, sectionId: string): Promise<ApiResponse<ContentBlock>> {
     try {
+      const rds = getClient();
       // First, get the template
-      const { data: template, error: templateError } = await supabase
+      const { data: templateRows, error: templateError } = await rds
         .from('content_templates')
         .select('*')
-        .eq('id', templateId)
-        .single();
+        .eq('id', templateId);
 
       if (templateError) throw templateError;
+
+      const templates = (templateRows ?? []) as ContentTemplate[];
+      const template = templates[0];
+
+      if (!template) {
+        throw new Error('Template not found');
+      }
 
       // Create content block from template
       const blockData = {
@@ -756,19 +861,24 @@ export class ContentTemplateService {
         sort_order: 0,
       };
 
-      const { data: block, error: blockError } = await supabase
+      const { data: blockRows, error: blockError } = await rds
         .from('content_blocks')
-        .insert(blockData)
-        .select()
-        .single();
+        .insert(blockData);
 
       if (blockError) throw blockError;
 
+      const blocks = (blockRows ?? []) as ContentBlock[];
+      const block = blocks[0];
+
+      if (!block) {
+        throw new Error('Content block creation from template returned no data');
+      }
+
       // Increment template usage count
-      await supabase
+      await rds
         .from('content_templates')
-        .update({ usage_count: (template.usage_count || 0) + 1 })
-        .eq('id', templateId);
+        .eq('id', templateId)
+        .update({ usage_count: (template.usage_count || 0) + 1 });
 
       return {
         success: true,

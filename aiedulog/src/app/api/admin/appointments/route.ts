@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withAdminSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -15,6 +16,8 @@ import {
 
 /**
  * GET /api/admin/appointments - Get all appointments with admin filters
+ *
+ * MIGRATION: Migrated to RDS with requireAdmin() (2025-10-14)
  * Security: Admin access only
  */
 const getHandler = async (
@@ -22,9 +25,15 @@ const getHandler = async (
   context: SecurityContext
 ): Promise<NextResponse> => {
   try {
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const rds = createRDSClient();
     const { searchParams } = new URL(request.url);
-    const supabase = await createClient();
-    
+
     // Parse query parameters
     const filters: AppointmentFilters = {
       status: searchParams.get('status')?.split(',') as AppointmentStatus[] || undefined,
@@ -38,7 +47,7 @@ const getHandler = async (
     };
 
     // Build query with full appointment details
-    let query = supabase
+    let query: any = rds
       .from('appointments')
       .select(`
         *,
@@ -83,7 +92,7 @@ const getHandler = async (
     query = query.range(filters.offset!, filters.offset! + filters.limit! - 1);
 
     // Get total count for pagination
-    const { count } = await supabase
+    const { count } = await rds
       .from('appointments')
       .select('*', { count: 'exact', head: true });
 
@@ -99,7 +108,7 @@ const getHandler = async (
     }
 
     const response: PaginatedResponse<AppointmentWithDetails> = {
-      data: appointments as AppointmentWithDetails[],
+      data: (appointments ?? []) as AppointmentWithDetails[],
       meta: {
         total: count || 0,
         page: Math.floor(filters.offset! / filters.limit!) + 1,
@@ -129,8 +138,14 @@ const postHandler = async (
   context: SecurityContext
 ): Promise<NextResponse> => {
   try {
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const rds = createRDSClient();
     const body: BulkOperationRequest = await request.json();
-    const supabase = await createClient();
 
     if (!body.appointment_ids || !Array.isArray(body.appointment_ids) || body.appointment_ids.length === 0) {
       return NextResponse.json(
@@ -147,7 +162,7 @@ const postHandler = async (
     }
 
     // Validate appointments exist and get current status
-    const { data: existingAppointments, error: fetchError } = await supabase
+    const { data: existingAppointments, error: fetchError } = await rds
       .from('appointments')
       .select('id, status, user_id, instructor_id, appointment_date, start_time')
       .in('id', body.appointment_ids);
@@ -211,7 +226,7 @@ const postHandler = async (
     }
 
     // Filter appointments that can be processed
-    const processableAppointments = existingAppointments.filter(appointment => {
+    const processableAppointments = (existingAppointments || []).filter((appointment: any) => {
       switch (body.action) {
         case 'confirm':
           return appointment.status === 'pending';
@@ -225,23 +240,21 @@ const postHandler = async (
     });
 
     if (processableAppointments.length === 0) {
-      return NextResponse.json(
-        { 
-          error: 'No appointments can be processed with this action',
-          message: `All appointments are in states that cannot be ${body.action}ed`
-        } as ApiResponse,
-        { status: 400 }
-      );
+      return NextResponse.json({
+        error: 'No appointments can be processed with this action',
+        message: `All appointments are in states that cannot be ${body.action}ed`
+      } as ApiResponse, { status: 400 });
     }
 
-    const processableIds = processableAppointments.map(a => a.id);
+    const processableIds = processableAppointments.map((a: any) => a.id);
 
-    // Perform bulk update
-    const { data: updatedAppointments, error: updateError } = await supabase
+    // Perform bulk update using IN query for all processable appointments
+    const queryBuilder = rds
       .from('appointments')
-      .update(updateData)
-      .in('id', processableIds)
-      .select(`
+      .in('id', processableIds);
+
+    const { data: updatedAppointments, error: updateError } = await queryBuilder.update(updateData, {
+      select: `
         *,
         instructor:identities!appointments_instructor_id_fkey(
           id,
@@ -253,7 +266,8 @@ const postHandler = async (
           full_name,
           email
         )
-      `);
+      `
+    });
 
     if (updateError) {
       console.error('Error performing bulk update:', updateError);
@@ -265,8 +279,8 @@ const postHandler = async (
 
     // Schedule notifications for all updated appointments
     if (notificationType && updatedAppointments) {
-      const notificationPromises = updatedAppointments.map(appointment =>
-        scheduleNotification(supabase, appointment.id, notificationType!, new Date())
+      const notificationPromises = updatedAppointments.map((appointment: any) =>
+        scheduleNotification(rds, appointment.id, notificationType!, new Date())
       );
 
       try {
@@ -297,13 +311,13 @@ const postHandler = async (
  * Helper function to schedule notifications
  */
 async function scheduleNotification(
-  supabase: any,
+  rds: any,
   appointmentId: string,
   type: NotificationType,
   scheduledTime: Date
 ): Promise<void> {
   try {
-    await supabase
+    await rds
       .from('appointment_notifications')
       .insert({
         appointment_id: appointmentId,

@@ -1,6 +1,6 @@
 /**
  * Secure Database Layer - Prevents Data Leakage & Implements RLS
- * 
+ *
  * CRITICAL SECURITY FEATURES:
  * - Row Level Security (RLS) enforcement
  * - Query sanitization and validation
@@ -8,11 +8,16 @@
  * - Audit logging for all database operations
  * - Protection against data exfiltration
  * - Rate limiting for database operations
+ *
+ * MIGRATION: Updated to use RDS (2025-10-13)
  */
 
 // Import runtime-safe components
 import { getSecurityLogger, getSecurityRateLimiter } from './runtime-safe-factory'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { createRDSClient } from '@/lib/supabase/rds-adapter'
+
+// RDS client type (compatible with Supabase-like interface)
+type DatabaseClient = ReturnType<typeof createRDSClient>
 
 // Get runtime-appropriate components
 const secureLogger = getSecurityLogger()
@@ -247,13 +252,13 @@ class QueryValidator {
 }
 
 /**
- * Secure Supabase client wrapper
+ * Secure Database client wrapper (RDS-compatible)
  */
 export class SecureSupabaseClient {
-  private supabase: SupabaseClient
+  private supabase: DatabaseClient
   private context: DatabaseSecurityContext
 
-  constructor(supabase: SupabaseClient, context: DatabaseSecurityContext) {
+  constructor(supabase: DatabaseClient, context: DatabaseSecurityContext) {
     this.supabase = supabase
     this.context = context
   }
@@ -416,13 +421,12 @@ export class SecureSupabaseClient {
       const sanitizedData = this.sanitizeInputData(data)
 
       // Build and execute query
-      let query: any = this.supabase.from(table).insert(sanitizedData)
-      
-      if (options.returning) {
-        query = query.select(options.returning)
-      }
+      const insertQuery = this.supabase.from(table)
+      const insertOptions = options.returning
+        ? { select: options.returning }
+        : undefined
 
-      const result = await query
+      const result = await insertQuery.insert(sanitizedData, insertOptions)
 
       // Audit logging
       if (config?.auditOperations.includes('insert')) {
@@ -486,17 +490,17 @@ export class SecureSupabaseClient {
       const sanitizedUpdates = this.sanitizeInputData(updates)
 
       // Build query with filters
-      let query: any = this.supabase.from(table).update(sanitizedUpdates)
-      
+      let query: any = this.supabase.from(table)
+
       for (const [column, value] of Object.entries(filters)) {
         query = query.eq(column, value)
       }
       
-      if (options.returning) {
-        query = query.select(options.returning)
-      }
+      const updateOptions = options.returning
+        ? { select: options.returning }
+        : undefined
 
-      const result = await query
+      const result = await query.update(sanitizedUpdates, updateOptions)
 
       // Audit logging
       if (config?.auditOperations.includes('update')) {
@@ -561,16 +565,16 @@ export class SecureSupabaseClient {
 
       // Build query with filters
       let query: any = this.supabase.from(table)
-      
-      for (const [column, value] of Object.entries(filters)) {
-        query = query.delete().eq(column, value)
-      }
-      
-      if (options.returning) {
-        query = query.select(options.returning)
-      }
 
-      const result = await query
+      for (const [column, value] of Object.entries(filters)) {
+        query = query.eq(column, value)
+      }
+      
+      const deleteOptions = options.returning
+        ? { select: options.returning }
+        : undefined
+
+      const result = await query.delete(deleteOptions)
 
       // Audit logging (always log deletes)
       secureLogger.info(`[AUDIT] database_delete on ${table} - ${result.error ? 'FAILURE' : 'SUCCESS'}`, {
@@ -672,7 +676,7 @@ export async function createSecureDatabase(context: {
   
   // Dynamically import server client to avoid build issues
   const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
+  const supabase = createClient()
   
   const dbContext: DatabaseSecurityContext = {
     ...context,

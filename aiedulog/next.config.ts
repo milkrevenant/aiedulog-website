@@ -116,6 +116,7 @@ const nextConfig: NextConfig = {
     }
 
     // Fix for @excalidraw and other readonly property issues
+    // Also disable Node.js-only modules for RDS/pg compatibility
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -128,6 +129,7 @@ const nextConfig: NextConfig = {
       url: false,
       net: false,
       tls: false,
+      dns: false,  // Fix for pg module in client builds
     };
 
     // Additional optimizations for Edge Runtime compatibility

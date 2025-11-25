@@ -1,5 +1,7 @@
 /**
  * Enterprise Notification Service
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * Comprehensive notification system with:
  * - Multi-channel delivery (in-app, email, push, SMS)
@@ -10,8 +12,7 @@
  * - Integration with scheduling system
  */
 
-import { createClient } from '@/lib/supabase/server';
-import { createClient as createClientClient } from '@/lib/supabase/client';
+import { createRDSClient } from '@/lib/db/rds-client';
 
 export type NotificationChannel = 'in_app' | 'email' | 'push' | 'sms' | 'webhook';
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'critical' | 'urgent';
@@ -88,10 +89,10 @@ export interface DeliveryTracker {
 }
 
 export class NotificationService {
-  private supabase;
-  
-  constructor(serverMode = true) {
-    this.supabase = serverMode ? createClient() : createClientClient();
+  private rds: ReturnType<typeof createRDSClient>;
+
+  constructor() {
+    this.rds = createRDSClient();
   }
 
   /**
@@ -99,7 +100,7 @@ export class NotificationService {
    */
   async createNotification(data: NotificationData): Promise<{ success: boolean; notificationId?: string; error?: string }> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
       // Process template if provided
       let finalTitle = data.title;
@@ -114,7 +115,7 @@ export class NotificationService {
       }
 
       // Create notification record
-      const { data: notification, error } = await supabase
+      const { data: insertedRows, error } = await rds
         .from('notifications')
         .insert({
           user_id: data.userId,
@@ -132,18 +133,23 @@ export class NotificationService {
           metadata: {
             ...data.metadata,
             template_key: data.templateKey,
-            template_data: data.templateData
+            template_data: data.templateData,
           },
           channels: data.channels,
           scheduled_for: data.scheduledFor,
-          expires_at: data.expiresAt
-        })
-        .select()
-        .single();
+          expires_at: data.expiresAt,
+        });
 
       if (error) {
         console.error('Failed to create notification:', error);
         return { success: false, error: error.message };
+      }
+
+      const notifications = (insertedRows ?? []) as Array<{ id: string }>;
+      const notification = notifications[0];
+
+      if (!notification?.id) {
+        return { success: false, error: 'Failed to persist notification' };
       }
 
       // Queue for delivery
@@ -261,43 +267,68 @@ export class NotificationService {
     } = {}
   ): Promise<{ notifications: any[]; total: number }> {
     try {
-      const supabase = await this.supabase;
-      
-      let query = supabase
+      const rds = this.rds;
+
+      let dataQuery = rds
         .from('notifications')
         .select('*')
         .eq('user_id', userId);
 
       if (options.category) {
-        query = query.eq('category', options.category);
+        dataQuery = dataQuery.eq('category', options.category);
       }
 
       if (options.unreadOnly) {
-        query = query.eq('is_read', false);
+        dataQuery = dataQuery.eq('is_read', false);
       }
 
       if (!options.includeArchived) {
-        query = query.eq('is_archived', false);
+        dataQuery = dataQuery.eq('is_archived', false);
       }
 
-      query = query.order('created_at', { ascending: false });
+      dataQuery = dataQuery.order('created_at', { ascending: false });
 
       if (options.limit) {
-        query = query.limit(options.limit);
+        dataQuery = dataQuery.range(
+          options.offset ?? 0,
+          (options.offset ?? 0) + options.limit - 1
+        );
       }
 
-      if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
-      }
-
-      const { data: notifications, error, count } = await query;
+      const { data: notificationRows, error } = await dataQuery;
 
       if (error) {
         console.error('Error fetching notifications:', error);
         return { notifications: [], total: 0 };
       }
 
-      return { notifications: notifications || [], total: count || 0 };
+      const notifications = (notificationRows ?? []) as any[];
+      let total = notifications.length;
+
+      if (options.limit !== undefined || options.offset !== undefined) {
+        let countQuery = rds
+          .from('notifications')
+          .eq('user_id', userId);
+
+        if (options.category) {
+          countQuery = countQuery.eq('category', options.category);
+        }
+
+        if (options.unreadOnly) {
+          countQuery = countQuery.eq('is_read', false);
+        }
+
+        if (!options.includeArchived) {
+          countQuery = countQuery.eq('is_archived', false);
+        }
+
+        const countResponse = await countQuery.count({ count: 'exact' });
+        if (!countResponse.error && typeof countResponse.count === 'number') {
+          total = countResponse.count;
+        }
+      }
+
+      return { notifications, total };
     } catch (error) {
       console.error('Error in getUserNotifications:', error);
       return { notifications: [], total: 0 };
@@ -309,21 +340,20 @@ export class NotificationService {
    */
   async markAsRead(notificationId: string, userId?: string): Promise<boolean> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
-      let query = supabase
+      const builder = rds
         .from('notifications')
-        .update({
-          is_read: true,
-          read_at: new Date().toISOString()
-        })
         .eq('id', notificationId);
 
       if (userId) {
-        query = query.eq('user_id', userId);
+        builder.eq('user_id', userId);
       }
 
-      const { error } = await query;
+      const { error } = await builder.update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      });
       
       if (error) {
         console.error('Error marking notification as read:', error);
@@ -342,16 +372,17 @@ export class NotificationService {
    */
   async markAllAsRead(userId: string): Promise<boolean> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
-      const { error } = await supabase
+      const builder = rds
         .from('notifications')
-        .update({
-          is_read: true,
-          read_at: new Date().toISOString()
-        })
         .eq('user_id', userId)
         .eq('is_read', false);
+
+      const { error } = await builder.update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      });
 
       if (error) {
         console.error('Error marking all notifications as read:', error);
@@ -370,21 +401,20 @@ export class NotificationService {
    */
   async archiveNotification(notificationId: string, userId?: string): Promise<boolean> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
-      let query = supabase
+      const builder = rds
         .from('notifications')
-        .update({
-          is_archived: true,
-          archived_at: new Date().toISOString()
-        })
         .eq('id', notificationId);
 
       if (userId) {
-        query = query.eq('user_id', userId);
+        builder.eq('user_id', userId);
       }
 
-      const { error } = await query;
+      const { error } = await builder.update({
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+      });
       
       if (error) {
         console.error('Error archiving notification:', error);
@@ -403,9 +433,9 @@ export class NotificationService {
    */
   async getUnreadCount(userId: string): Promise<number> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
-      const { count, error } = await supabase
+      const { count, error } = await rds
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId)
@@ -429,9 +459,9 @@ export class NotificationService {
    */
   async getUserPreferences(userId: string): Promise<NotificationPreferences[]> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
-      const { data: preferences, error } = await supabase
+      const { data: preferences, error } = await rds
         .from('notification_preferences')
         .select('*')
         .eq('user_id', userId);
@@ -454,9 +484,9 @@ export class NotificationService {
     preferences: Partial<NotificationPreferences>
   ): Promise<boolean> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
-      const { error } = await supabase
+      const { error } = await rds
         .from('notification_preferences')
         .upsert({
           user_id: userId,
@@ -483,20 +513,20 @@ export class NotificationService {
    */
   async getTemplate(templateKey: string): Promise<NotificationTemplate | null> {
     try {
-      const supabase = await this.supabase;
-      
-      const { data: template, error } = await supabase
+      const rds = this.rds;
+
+      const { data, error } = await rds
         .from('notification_templates')
         .select('*')
         .eq('template_key', templateKey)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
 
-      if (error || !template) {
+      if (error) {
         return null;
       }
 
-      return template;
+      const templates = (data ?? []) as NotificationTemplate[];
+      return templates[0] || null;
     } catch (error) {
       console.error('Error getting template:', error);
       return null;
@@ -505,20 +535,23 @@ export class NotificationService {
 
   async createTemplate(template: Omit<NotificationTemplate, 'id'>): Promise<{ success: boolean; templateId?: string }> {
     try {
-      const supabase = await this.supabase;
-      
-      const { data, error } = await supabase
+      const rds = this.rds;
+
+      const { data, error } = await rds
         .from('notification_templates')
-        .insert(template)
-        .select()
-        .single();
+        .insert(template);
 
       if (error) {
         console.error('Error creating template:', error);
         return { success: false };
       }
 
-      return { success: true, templateId: data.id };
+      const rows = (data ?? []) as Array<{ id: string }>;
+      const created = rows[0];
+
+      return created?.id
+        ? { success: true, templateId: created.id }
+        : { success: false };
     } catch (error) {
       console.error('Error in createTemplate:', error);
       return { success: false };
@@ -535,9 +568,9 @@ export class NotificationService {
     channel?: NotificationChannel
   ): Promise<any[]> {
     try {
-      const supabase = await this.supabase;
-      
-      let query = supabase
+      const rds = this.rds;
+
+      let query = rds
         .from('notification_analytics')
         .select('*')
         .gte('date', startDate)
@@ -551,15 +584,14 @@ export class NotificationService {
         query = query.eq('channel', channel);
       }
 
-      const { data: analytics, error } = await query
-        .order('date', { ascending: true });
+      const { data: analytics, error } = await query.order('date', { ascending: true });
 
       if (error) {
         console.error('Error getting analytics:', error);
         return [];
       }
 
-      return analytics || [];
+      return (analytics ?? []) as any[];
     } catch (error) {
       console.error('Error in getNotificationAnalytics:', error);
       return [];
@@ -570,23 +602,22 @@ export class NotificationService {
    * Real-time notification delivery
    */
   async setupRealtimeNotifications(userId: string, callback: (notification: any) => void): Promise<() => void> {
-    const supabase = createClientClient();
-    
-    const subscription = supabase
-      .channel(`notifications:${userId}`)
+    const channel = this.rds.channel(`notifications:${userId}`);
+
+    const subscription = channel
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${userId}`
-      }, (payload) => {
+      }, (payload: any) => {
         callback(payload.new);
       })
       .subscribe();
 
     // Return cleanup function
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe?.();
     };
   }
 
@@ -603,9 +634,9 @@ export class NotificationService {
 
   private async queueNotificationForDelivery(notificationId: string, priority: NotificationPriority): Promise<void> {
     try {
-      const supabase = await this.supabase;
-      
-      await supabase
+      const rds = this.rds;
+
+      await rds
         .from('notification_queue')
         .insert({
           notification_id: notificationId,
@@ -624,10 +655,10 @@ export class NotificationService {
    */
   async processNotificationQueue(batchSize = 10): Promise<{ processed: number; errors: string[] }> {
     try {
-      const supabase = await this.supabase;
+      const rds = this.rds;
       
       // Get pending notifications from queue
-      const { data: queueItems, error } = await supabase
+      const { data: queueItems, error } = await rds
         .from('notification_queue')
         .select(`
           *,
@@ -643,19 +674,26 @@ export class NotificationService {
         return { processed: 0, errors: [] };
       }
 
+      const items = queueItems as Array<{
+        id: string;
+        status: string;
+        retry_count: number;
+        notification: any;
+      }>;
+
       const errors: string[] = [];
       let processed = 0;
 
-      for (const item of queueItems) {
+      for (const item of items) {
         try {
           // Mark as processing
-          await supabase
+          await rds
             .from('notification_queue')
+            .eq('id', item.id)
             .update({
               status: 'processing',
               processing_started_at: new Date().toISOString()
-            })
-            .eq('id', item.id);
+            });
 
           // Process each channel
           const notification = item.notification;
@@ -666,13 +704,13 @@ export class NotificationService {
           }
 
           // Mark as completed
-          await supabase
+          await rds
             .from('notification_queue')
+            .eq('id', item.id)
             .update({
               status: 'completed',
               processing_completed_at: new Date().toISOString()
-            })
-            .eq('id', item.id);
+            });
 
           processed++;
         } catch (error) {
@@ -680,14 +718,14 @@ export class NotificationService {
           errors.push(`Queue item ${item.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
 
           // Mark as failed
-          await supabase
+          await rds
             .from('notification_queue')
+            .eq('id', item.id)
             .update({
               status: 'failed',
               error_message: error instanceof Error ? error.message : 'Unknown error',
               retry_count: item.retry_count + 1
-            })
-            .eq('id', item.id);
+            });
         }
       }
 
@@ -706,23 +744,28 @@ export class NotificationService {
     channel: NotificationChannel,
     notification: any
   ): Promise<void> {
-    const supabase = await this.supabase;
+    const rds = this.rds;
 
     try {
       // Create delivery tracking record
-      const { data: delivery, error } = await supabase
+      const { data: deliveryRows, error } = await rds
         .from('notification_deliveries')
         .insert({
           notification_id: notificationId,
           channel,
           recipient: await this.getRecipientForChannel(notification.user_id, channel),
-          status: 'pending'
-        })
-        .select()
-        .single();
+          status: 'pending',
+        });
 
       if (error) {
         throw new Error(`Failed to create delivery record: ${error.message}`);
+      }
+
+      const deliveries = (deliveryRows ?? []) as Array<{ id: string }>;
+      const delivery = deliveries[0];
+
+      if (!delivery?.id) {
+        throw new Error('Failed to create delivery record');
       }
 
       // Deliver based on channel
@@ -748,8 +791,9 @@ export class NotificationService {
       }
 
       // Update delivery status
-      await supabase
+      await rds
         .from('notification_deliveries')
+        .eq('id', delivery.id)
         .update({
           status: deliveryResult.success ? 'delivered' : 'failed',
           sent_at: new Date().toISOString(),
@@ -758,8 +802,7 @@ export class NotificationService {
           provider_name: deliveryResult.provider,
           error_message: deliveryResult.error,
           provider_response: deliveryResult.response || {}
-        })
-        .eq('id', delivery.id);
+        });
 
     } catch (error) {
       console.error(`Error delivering notification ${notificationId} via ${channel}:`, error);
@@ -768,18 +811,18 @@ export class NotificationService {
   }
 
   private async getRecipientForChannel(userId: string, channel: NotificationChannel): Promise<string> {
-    const supabase = await this.supabase;
-    
+    const rds = this.rds;
+
     switch (channel) {
       case 'in_app':
         return userId;
       case 'email':
-        const { data: identity } = await supabase
+        const { data: identityRows } = await rds
           .from('identities')
           .select('email')
-          .eq('id', userId)
-          .single();
-        return identity?.email || '';
+          .eq('id', userId);
+        const identities = (identityRows ?? []) as Array<{ email?: string | null }>;
+        return identities[0]?.email || '';
       case 'push':
         // Would get device token from user_profiles or device_tokens table
         return userId; // Placeholder
@@ -825,7 +868,7 @@ export class NotificationService {
 }
 
 // Export factory function instead of singleton to avoid cookies context issues
-export const createNotificationService = (serverMode = true) => new NotificationService(serverMode);
+export const createNotificationService = () => new NotificationService();
 
 // Export singleton getter that creates instance on demand within request context
-export const getNotificationService = () => createNotificationService(true);
+export const getNotificationService = () => createNotificationService();

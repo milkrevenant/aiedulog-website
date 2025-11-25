@@ -87,7 +87,7 @@ export default function NotificationIcon() {
           schema: 'public',
           table: 'notifications',
         },
-        (payload) => {
+        (payload: any) => {
           // 새 알림이 추가되면 카운트 업데이트
           fetchUnreadCount()
           // 알림 목록에 새 알림 추가

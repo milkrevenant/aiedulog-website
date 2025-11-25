@@ -3,7 +3,7 @@
  * RBAC system with hierarchical roles and fine-grained permissions
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { AuditService } from './audit-service';
 import { getUserIdentity } from '@/lib/identity/helpers';
 import type {
@@ -18,7 +18,17 @@ import type {
 } from '../types';
 
 export class PermissionService {
-  private supabase = createClient();
+  private supabase: any;
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
   private auditService = new AuditService();
 
   /**
@@ -31,7 +41,7 @@ export class PermissionService {
     resourceId?: string
   ): Promise<ApiResponse<{ has_permission: boolean; roles: string[] }>> {
     try {
-      const { data, error } = await this.supabase.rpc('user_has_permission', {
+      const { data, error } = await (await this.getClient()).rpc('user_has_permission', {
         p_user_id: userId,
         p_permission_name: permissionName,
         p_resource_type: resourceType,
@@ -194,7 +204,7 @@ export class PermissionService {
     }
   ): Promise<ApiResponse<AdminRole>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -261,7 +271,7 @@ export class PermissionService {
     }
   ): Promise<ApiResponse<AdminRole>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -337,7 +347,7 @@ export class PermissionService {
    */
   async deleteRole(roleId: string, transferUsersToRoleId?: string): Promise<ApiResponse<{ deleted: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -445,7 +455,7 @@ export class PermissionService {
     conditions?: Record<string, any>
   ): Promise<ApiResponse<AdminRolePermission>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -518,7 +528,7 @@ export class PermissionService {
    */
   async revokePermissionFromRole(roleId: string, permissionId: string): Promise<ApiResponse<{ revoked: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -583,7 +593,7 @@ export class PermissionService {
    */
   async assignRoleToUser(request: RoleAssignmentRequest): Promise<ApiResponse<AdminUserRole>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -594,7 +604,7 @@ export class PermissionService {
         throw new Error('Admin identity not found');
       }
 
-      const { data, error } = await this.supabase.rpc('grant_user_role', {
+      const { data, error } = await (await this.getClient()).rpc('grant_user_role', {
         p_user_id: request.user_id,
         p_role_name: request.role_name,
         p_granted_by: adminIdentity.user_id,
@@ -634,7 +644,7 @@ export class PermissionService {
    */
   async revokeRoleFromUser(userId: string, roleId: string): Promise<ApiResponse<{ revoked: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }

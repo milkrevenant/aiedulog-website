@@ -15,7 +15,7 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createRDSClient } from '@/lib/db/rds-client'
 import { getNotificationService } from '@/lib/services/notification-service'
 import { z } from 'zod'
 
@@ -50,34 +50,24 @@ const defaultPreferencesSchema = z.object({
 // HELPER FUNCTIONS
 // =====================================================================
 
-async function validateUserAccess(supabase: any, targetUserId?: string) {
-  const { data: { session }, error: authError } = await supabase.auth.getSession()
-  if (authError || !session) {
-    return { user: null, identity: null, isAdmin: false, error: 'Unauthorized' }
+async function validateUserAccess(context: SecurityContext, targetUserId?: string) {
+  if (!context.userId) {
+    return { userId: null, identityId: null, isAdmin: false, error: 'Unauthorized' }
   }
 
-  // Get user identity
-  const { data: identity } = await supabase
-    .from('identities')
-    .select('id, role')
-    .eq('auth_user_id', session.user.id)
-    .single()
-
-  if (!identity) {
-    return { user: session.user, identity: null, isAdmin: false, error: 'User identity not found' }
-  }
-
-  const isAdmin = identity.role === 'admin' || identity.role === 'super_admin'
+  const identityId = context.userId
+  const userRole = context.userRole
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin'
   
   // If accessing another user's preferences, check admin permissions
-  if (targetUserId && targetUserId !== identity.id && !isAdmin) {
-    return { user: session.user, identity, isAdmin: false, error: 'Forbidden' }
+  if (targetUserId && targetUserId !== identityId && !isAdmin) {
+    return { userId: context.userId, identityId, isAdmin: false, error: 'Forbidden' }
   }
 
-  return { user: session.user, identity, isAdmin, error: null }
+  return { userId: context.userId, identityId, isAdmin, error: null }
 }
 
-async function createDefaultPreferences(supabase: any, userId: string) {
+async function createDefaultPreferences(rds: any, userId: string) {
   const defaultCategories = [
     'schedule', 'content', 'system', 'security', 'user', 'admin', 'marketing'
   ] as const
@@ -96,13 +86,13 @@ async function createDefaultPreferences(supabase: any, userId: string) {
     is_active: true
   }))
 
-  const { data, error } = await supabase
+  const { data, error } = await rds
     .from('notification_preferences')
-    .upsert(defaultPrefs, { 
+    .upsert(defaultPrefs, {
       onConflict: 'user_id,category',
-      ignoreDuplicates: false 
+      ignoreDuplicates: false,
+      select: '*'
     })
-    .select()
 
   return { data, error }
 }
@@ -113,16 +103,18 @@ async function createDefaultPreferences(supabase: any, userId: string) {
 
 /**
  * GET /api/notifications/preferences
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Get user's notification preferences with comprehensive category breakdown
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     const url = new URL(request.url)
     const targetUserId = url.searchParams.get('user_id')
     
     // Validate user access
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase, targetUserId || undefined)
+    const { identityId, isAdmin, error } = await validateUserAccess(context, targetUserId || undefined)
     if (error) {
       return NextResponse.json(
         { error },
@@ -130,10 +122,14 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       )
     }
 
-    const userId = targetUserId || identity.id
+    const userId = targetUserId || identityId;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found' }, { status: 400 });
+    }
 
     // Get user preferences
-    const { data: preferences, error: fetchError } = await supabase
+    const { data: preferences, error: fetchError } = await rds
       .from('notification_preferences')
       .select(`
         id,
@@ -166,7 +162,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 
     // If no preferences exist, create defaults
     if (!preferences || preferences.length === 0) {
-      const { data: defaultPrefs, error: createError } = await createDefaultPreferences(supabase, userId)
+      const { data: defaultPrefs, error: createError } = await createDefaultPreferences(rds, userId)
       
       if (createError) {
         console.error('Error creating default preferences:', createError)
@@ -194,10 +190,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     // Build summary statistics
     const summary = {
       total_categories: preferences.length,
-      active_categories: preferences.filter(p => p.is_active).length,
-      enabled_channels: [...new Set(preferences.flatMap(p => p.channels))],
-      has_quiet_hours: preferences.some(p => p.quiet_hours_start && p.quiet_hours_end),
-      by_category: preferences.reduce((acc: any, pref) => {
+      active_categories: preferences.filter((p: any) => p.is_active).length,
+      enabled_channels: [...new Set(preferences.flatMap((p: any) => p.channels))],
+      has_quiet_hours: preferences.some((p: any) => p.quiet_hours_start && p.quiet_hours_end),
+      by_category: preferences.reduce((acc: any, pref: any) => {
         acc[pref.category] = {
           channels: pref.channels,
           is_active: pref.is_active,
@@ -206,10 +202,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
         return acc
       }, {}),
       digest_preferences: {
-        immediate: preferences.filter(p => p.digest_frequency === 'immediate').length,
-        daily: preferences.filter(p => p.digest_frequency === 'daily').length,
-        weekly: preferences.filter(p => p.digest_frequency === 'weekly').length,
-        never: preferences.filter(p => p.digest_frequency === 'never').length
+        immediate: preferences.filter((p: any) => p.digest_frequency === 'immediate').length,
+        daily: preferences.filter((p: any) => p.digest_frequency === 'daily').length,
+        weekly: preferences.filter((p: any) => p.digest_frequency === 'weekly').length,
+        never: preferences.filter((p: any) => p.digest_frequency === 'never').length
       }
     }
 
@@ -242,10 +238,10 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate user access
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -254,10 +250,10 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     const body = await request.json()
-    const targetUserId = body.user_id || identity.id
+    const targetUserId = body.user_id || identityId
 
     // Admin can update any user's preferences
-    if (targetUserId !== identity.id && !isAdmin) {
+    if (targetUserId !== identityId && !isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: Cannot update another user\'s preferences' },
         { status: 403 }
@@ -295,17 +291,18 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
       // Handle bulk preference updates
       for (const prefData of (validatedData as any).preferences) {
         try {
-          const { data, error: updateError } = await supabase
+          const { data: dataArr, error: updateError } = await rds
             .from('notification_preferences')
             .upsert({
               user_id: targetUserId,
               ...prefData,
               updated_at: new Date().toISOString()
             }, {
-              onConflict: 'user_id,category'
+              onConflict: 'user_id,category',
+              select: '*'
             })
-            .select()
-            .single()
+
+          const data = dataArr?.[0] || null
 
           if (updateError) {
             errors.push(`Category ${prefData.category}: ${updateError.message}`)
@@ -319,17 +316,18 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     } else {
       // Handle single preference update
       try {
-        const { data, error: updateError } = await supabase
+        const { data: dataArr, error: updateError } = await rds
           .from('notification_preferences')
           .upsert({
             user_id: targetUserId,
             ...validatedData,
             updated_at: new Date().toISOString()
           }, {
-            onConflict: 'user_id,category'
+            onConflict: 'user_id,category',
+            select: '*'
           })
-          .select()
-          .single()
+
+        const data = dataArr?.[0] || null
 
         if (updateError) {
           errors.push(updateError.message)
@@ -376,10 +374,10 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate user access (admin only)
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -411,7 +409,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     const { user_id } = validationResult.data
 
     // Check if user exists
-    const { data: existingUser, error: userError } = await supabase
+    const { data: existingUser, error: userError } = await rds
       .from('identities')
       .select('id')
       .eq('id', user_id)
@@ -425,7 +423,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     }
 
     // Create default preferences
-    const { data: preferences, error: createError } = await createDefaultPreferences(supabase, user_id)
+    const { data: preferences, error: createError } = await createDefaultPreferences(rds, user_id)
 
     if (createError) {
       console.error('Error creating default preferences:', createError)
@@ -463,10 +461,10 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient()
+    const rds = createRDSClient()
     
     // Validate user access
-    const { user, identity, isAdmin, error } = await validateUserAccess(supabase)
+    const { userId, identityId, isAdmin, error } = await validateUserAccess(context)
     if (error) {
       return NextResponse.json(
         { error },
@@ -475,11 +473,15 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     const url = new URL(request.url)
-    const targetUserId = url.searchParams.get('user_id') || identity.id
+    const targetUserId = url.searchParams.get('user_id') || identityId
     const categories = url.searchParams.get('categories')?.split(',') || []
 
+    if (!targetUserId) {
+      return NextResponse.json({ error: 'User ID not found' }, { status: 400 });
+    }
+
     // Admin can reset any user's preferences
-    if (targetUserId !== identity.id && !isAdmin) {
+    if (targetUserId !== identityId && !isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: Cannot reset another user\'s preferences' },
         { status: 403 }
@@ -487,16 +489,15 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     // Delete existing preferences (optionally filtered by categories)
-    let deleteQuery = supabase
+    let deleteQuery = rds
       .from('notification_preferences')
-      .delete()
       .eq('user_id', targetUserId)
 
     if (categories.length > 0) {
       deleteQuery = deleteQuery.in('category', categories)
     }
 
-    const { error: deleteError } = await deleteQuery
+    const { error: deleteError } = await deleteQuery.delete()
 
     if (deleteError) {
       console.error('Error deleting preferences:', deleteError)
@@ -507,7 +508,7 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
     }
 
     // Recreate default preferences
-    const { data: preferences, error: createError } = await createDefaultPreferences(supabase, targetUserId)
+    const { data: preferences, error: createError } = await createDefaultPreferences(rds, targetUserId)
 
     if (createError) {
       console.error('Error creating default preferences:', createError)

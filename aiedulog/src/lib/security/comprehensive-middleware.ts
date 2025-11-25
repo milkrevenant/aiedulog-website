@@ -1,16 +1,20 @@
 /**
  * Comprehensive Security Middleware
  * Enterprise-grade security enforcement for all API endpoints
- * 
+ *
  * SECURITY ARCHITECTURE:
  * - Zero-Trust security model
  * - Defense-in-depth approach
  * - Real-time threat detection
  * - Automated incident response
  * - Compliance enforcement (GDPR, SOC2, ISO27001)
+ *
+ * MIGRATION: Updated to use NextAuth + RDS (2025-10-13)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/auth-options'
 import { createClient } from '@/lib/supabase/server'
 import { RLSSecurityEnforcer, SecurityRole } from './rls-enforcer'
 import { secureLogger, SecurityEventType } from './secure-logger'
@@ -143,7 +147,7 @@ export class ComprehensiveSecurityMiddleware {
     
     try {
       // Initialize Supabase client
-      this.supabase = await createClient()
+      this.supabase = createClient()
       
       // Step 1: Create security context
       context = await this.createSecurityContext(request)
@@ -305,27 +309,30 @@ export class ComprehensiveSecurityMiddleware {
     const threatIndicators: string[] = []
     const complianceFlags: string[] = []
     
-    // Get user information
+    // Get user information (using NextAuth)
     let userId: string | undefined
     let userRole: SecurityRole = SecurityRole.ANONYMOUS
     let sessionId: string | undefined
-    
+
     try {
-      const { data: { user } } = await this.supabase.auth.getUser()
-      if (user) {
-        userId = user.id
-        sessionId = user.app_metadata?.session_id
-        
-        // Get user role from database
+      const session = await getServerSession(authOptions)
+      const sessionUser = session?.user as ({ id?: string | null; email?: string | null } | undefined)
+      const resolvedUserId = sessionUser?.id ?? sessionUser?.email ?? undefined
+
+      if (resolvedUserId) {
+        userId = resolvedUserId
+        sessionId = resolvedUserId // Use user ID as session ID for now
+
+        // Get user role from RDS database
         const { data: userProfile } = await this.supabase
-          .from('identities')
+          .from('user_profiles')
           .select('role, status')
-          .eq('id', user.id)
+          .eq('id', userId)
           .single()
-        
+
         if (userProfile) {
-          userRole = this.mapDatabaseRoleToSecurityRole(userProfile.role)
-          
+          userRole = this.mapDatabaseRoleToSecurityRole(userProfile.role || 'user')
+
           // Check user status
           if (userProfile.status === 'blocked' || userProfile.status === 'suspended') {
             threatIndicators.push('USER_BLOCKED_OR_SUSPENDED')
@@ -1042,23 +1049,23 @@ export class ComprehensiveSecurityMiddleware {
   
   private async blockSuspiciousUser(context: SecurityContext): Promise<void> {
     if (!context.userId) return
-    
+
     try {
       await this.supabase
-        .from('identities')
+        .from('user_profiles')
         .update({
           status: 'blocked',
           updated_at: new Date().toISOString()
         })
         .eq('id', context.userId)
-      
+
       // Log blocking action
       await this.auditSecurityEvent('USER_AUTO_BLOCKED', context, {
         reason: 'Suspicious activity detected',
         threatIndicators: context.threatIndicators,
         riskScore: context.riskScore
       })
-      
+
     } catch (error) {
       secureLogger.error('Failed to block suspicious user', error as Error, {
         requestId: context.requestId,

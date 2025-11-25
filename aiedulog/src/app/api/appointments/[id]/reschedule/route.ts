@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withUserSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -18,6 +18,8 @@ interface RouteParams {
 
 /**
  * POST /api/appointments/[id]/reschedule - Reschedule appointment to new date/time
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: User can only reschedule their own appointments
  */
 const postHandler = async (
@@ -28,7 +30,7 @@ const postHandler = async (
   try {
     const { id } = params;
     const body: RescheduleAppointmentRequest = await request.json();
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // Validate required fields
     if (!body.new_date || !body.new_time) {
@@ -39,7 +41,7 @@ const postHandler = async (
     }
 
     // Get existing appointment
-    const { data: existingAppointment, error: fetchError } = await supabase
+    const { data: existingAppointment, error: fetchError } = await rds
       .from('appointments')
       .select(`
         *,
@@ -119,7 +121,7 @@ const postHandler = async (
 
     // Check availability of new time slot
     const availabilityCheck = await checkTimeSlotAvailability(
-      supabase,
+      rds,
       existingAppointment.instructor_id,
       body.new_date,
       body.new_time,
@@ -156,22 +158,24 @@ const postHandler = async (
       updated_at: new Date().toISOString()
     };
 
-    const { data: rescheduledAppointment, error: updateError } = await supabase
+    const { data: rescheduledAppointments, error: updateError } = await rds
       .from('appointments')
-      .update(updateData)
       .eq('id', id)
-      .select(`
-        *,
-        instructor:identities!appointments_instructor_id_fkey(
-          id,
-          full_name,
-          email,
-          profile_image_url,
-          bio
-        ),
-        appointment_type:appointment_types(*)
-      `)
-      .single();
+      .update(updateData, {
+        select: `
+          *,
+          instructor:identities!appointments_instructor_id_fkey(
+            id,
+            full_name,
+            email,
+            profile_image_url,
+            bio
+          ),
+          appointment_type:appointment_types(*)
+        `
+      });
+
+    const rescheduledAppointment = rescheduledAppointments?.[0] || null;
 
     if (updateError) {
       console.error('Error rescheduling appointment:', updateError);
@@ -182,12 +186,12 @@ const postHandler = async (
     }
 
     // Cancel old reminder notifications
-    await supabase
+    await rds
       .from('appointment_notifications')
-      .update({ is_sent: true }) // Mark as sent to prevent sending
       .eq('appointment_id', id)
       .in('notification_type', ['reminder_24h', 'reminder_1h'])
-      .eq('is_sent', false);
+      .eq('is_sent', false)
+      .update({ is_sent: true }); // Mark as sent to prevent sending
 
     // Schedule new notifications
     const newAppointmentDateTime = new Date(`${body.new_date}T${body.new_time}`);
@@ -197,7 +201,7 @@ const postHandler = async (
     await Promise.all([
       // Send reschedule notification immediately
       scheduleNotification(
-        supabase,
+        rds,
         id,
         NotificationType.RESCHEDULE,
         new Date(),
@@ -210,8 +214,8 @@ const postHandler = async (
         }
       ),
       // Schedule new reminder notifications
-      scheduleNotification(supabase, id, NotificationType.REMINDER_24H, reminder24h),
-      scheduleNotification(supabase, id, NotificationType.REMINDER_1H, reminder1h)
+      scheduleNotification(rds, id, NotificationType.REMINDER_24H, reminder24h),
+      scheduleNotification(rds, id, NotificationType.REMINDER_1H, reminder1h)
     ]);
 
     const response: ApiResponse<AppointmentWithDetails> = {
@@ -234,7 +238,7 @@ const postHandler = async (
  * Helper function to check time slot availability (with exclusion)
  */
 async function checkTimeSlotAvailability(
-  supabase: any,
+  rds: any,
   instructorId: string,
   date: string,
   startTime: string,
@@ -242,7 +246,7 @@ async function checkTimeSlotAvailability(
   excludeAppointmentId?: string
 ): Promise<{ available: boolean; reason?: string }> {
   // Build conflict check query
-  let conflictQuery = supabase
+  let conflictQuery = rds
     .from('appointments')
     .select('id')
     .eq('instructor_id', instructorId)
@@ -269,7 +273,7 @@ async function checkTimeSlotAvailability(
 
   // Check instructor availability rules
   const dayOfWeek = new Date(date).getDay();
-  const { data: availability, error: availError } = await supabase
+  const { data: availability, error: availError } = await rds
     .from('instructor_availability')
     .select('*')
     .eq('instructor_id', instructorId)
@@ -294,7 +298,7 @@ async function checkTimeSlotAvailability(
   }
 
   // Check for blocked time periods
-  const { data: blocks, error: blockError } = await supabase
+  const { data: blocks, error: blockError } = await rds
     .from('time_blocks')
     .select('*')
     .eq('instructor_id', instructorId)
@@ -324,14 +328,14 @@ async function checkTimeSlotAvailability(
  * Helper function to schedule notifications
  */
 async function scheduleNotification(
-  supabase: any,
+  rds: any,
   appointmentId: string,
   type: NotificationType,
   scheduledTime: Date,
   templateData: Record<string, any> = {}
 ): Promise<void> {
   try {
-    await supabase
+    await rds
       .from('appointment_notifications')
       .insert({
         appointment_id: appointmentId,

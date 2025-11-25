@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createRDSClient } from '@/lib/db/rds-client'
 import { withUserSecurity } from '@/lib/security/api-wrapper'
 import { SecurityContext } from '@/lib/security/core-security'
 import { AppointmentWithDetails, ApiResponse } from '@/types/appointment-system'
@@ -12,6 +12,8 @@ interface RouteParams {
 
 /**
  * GET /api/appointments/[id]/calendar - Generate and download calendar file (.ics) for appointment
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: User can only access their own appointments or appointments they're instructing
  */
 const getHandler = async (
@@ -21,10 +23,10 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { id } = params
-    const supabase = await createClient()
+    const rds = createRDSClient()
 
     // Get appointment details
-    const { data: appointment, error } = await supabase
+    const { data: appointment, error } = await rds
       .from('appointments')
       .select(`
         *,

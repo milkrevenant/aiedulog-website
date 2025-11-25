@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -18,6 +18,8 @@ interface RouteParams {
 
 /**
  * POST /api/booking/sessions/[sessionId]/complete - Complete booking session and create appointment
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: Public access with session ownership validation
  */
 const postHandler = async (
@@ -29,10 +31,10 @@ const postHandler = async (
     const { sessionId } = params;
     const { searchParams } = new URL(request.url);
     const sessionToken = searchParams.get('session_token');
-    const supabase = await createClient();
+    const rds = createRDSClient();
     
     // Get booking session
-    let sessionQuery = supabase
+    let sessionQuery = rds
       .from('booking_sessions')
       .select('*')
       .eq('id', sessionId)
@@ -92,7 +94,7 @@ const postHandler = async (
     }
     
     // Get appointment type for title and validation
-    const { data: appointmentType, error: typeError } = await supabase
+    const { data: appointmentType, error: typeError } = await rds
       .from('appointment_types')
       .select('*')
       .eq('id', sessionData.appointment_type_id)
@@ -108,7 +110,7 @@ const postHandler = async (
     
     // Final availability check
     const availabilityCheck = await checkTimeSlotAvailability(
-      supabase,
+      rds,
       sessionData.instructor_id,
       sessionData.appointment_date,
       sessionData.start_time,
@@ -132,7 +134,7 @@ const postHandler = async (
       const { email, full_name, phone } = sessionData.user_details;
       
       // Check if user already exists
-      const { data: existingUser, error: userCheckError } = await supabase
+      const { data: existingUser, error: userCheckError } = await rds
         .from('identities')
         .select('id')
         .eq('email', email)
@@ -150,7 +152,7 @@ const postHandler = async (
         finalUserId = existingUser.id;
       } else {
         // Create temporary user entry for anonymous booking
-        const { data: newUser, error: createUserError } = await supabase
+        const { data: newUsers, error: createUserError } = await rds
           .from('identities')
           .insert({
             email,
@@ -159,18 +161,20 @@ const postHandler = async (
             role: 'user',
             status: 'pending', // Pending until they complete registration
             created_at: new Date().toISOString()
-          })
-          .select('id')
-          .single();
-        
-        if (createUserError) {
+          }, {
+            select: 'id'
+          });
+
+        const newUser = newUsers?.[0] || null;
+
+        if (createUserError || !newUser) {
           console.error('Error creating user:', createUserError);
           return NextResponse.json(
             { error: 'Failed to create user account' } as ApiResponse,
             { status: 500 }
           );
         }
-        
+
         finalUserId = newUser.id;
       }
     }
@@ -193,26 +197,28 @@ const postHandler = async (
       reminder_sent: false
     };
     
-    const { data: appointment, error: createError } = await supabase
+    const { data: appointments, error: createError } = await rds
       .from('appointments')
-      .insert([appointmentData])
-      .select(`
-        *,
-        instructor:identities!appointments_instructor_id_fkey(
-          id,
-          full_name,
-          email,
-          profile_image_url,
-          bio
-        ),
-        user:identities!appointments_user_id_fkey(
-          id,
-          full_name,
-          email
-        ),
-        appointment_type:appointment_types(*)
-      `)
-      .single();
+      .insert([appointmentData], {
+        select: `
+          *,
+          instructor:identities!appointments_instructor_id_fkey(
+            id,
+            full_name,
+            email,
+            profile_image_url,
+            bio
+          ),
+          user:identities!appointments_user_id_fkey(
+            id,
+            full_name,
+            email
+          ),
+          appointment_type:appointment_types(*)
+        `
+      });
+
+    const appointment = appointments?.[0] || null;
     
     if (createError) {
       console.error('Error creating appointment:', createError);
@@ -226,20 +232,20 @@ const postHandler = async (
     try {
       // Immediate confirmation notification
       await scheduleNotification(
-        supabase,
+        rds,
         appointment.id,
         NotificationType.CONFIRMATION,
         new Date()
       );
-      
+
       // Schedule reminder notifications
       const appointmentDateTime = new Date(`${sessionData.appointment_date}T${sessionData.start_time}`);
       const reminder24h = new Date(appointmentDateTime.getTime() - 24 * 60 * 60 * 1000);
       const reminder1h = new Date(appointmentDateTime.getTime() - 60 * 60 * 1000);
-      
+
       await Promise.all([
-        scheduleNotification(supabase, appointment.id, NotificationType.REMINDER_24H, reminder24h),
-        scheduleNotification(supabase, appointment.id, NotificationType.REMINDER_1H, reminder1h)
+        scheduleNotification(rds, appointment.id, NotificationType.REMINDER_24H, reminder24h),
+        scheduleNotification(rds, appointment.id, NotificationType.REMINDER_1H, reminder1h)
       ]);
     } catch (notificationError) {
       console.error('Error scheduling notifications:', notificationError);
@@ -248,10 +254,10 @@ const postHandler = async (
     
     // Delete the completed booking session
     try {
-      await supabase
+      await rds
         .from('booking_sessions')
-        .delete()
-        .eq('id', sessionId);
+        .eq('id', sessionId)
+        .delete();
     } catch (deleteError) {
       console.warn('Error deleting booking session:', deleteError);
       // Don't fail if session cleanup fails
@@ -277,14 +283,14 @@ const postHandler = async (
  * Helper function to check time slot availability
  */
 async function checkTimeSlotAvailability(
-  supabase: any,
+  rds: any,
   instructorId: string,
   date: string,
   startTime: string,
   endTime: string
 ): Promise<{ available: boolean; reason?: string }> {
   // Check for conflicting appointments
-  const { data: conflicts, error: conflictError } = await supabase
+  const { data: conflicts, error: conflictError } = await rds
     .from('appointments')
     .select('id')
     .eq('instructor_id', instructorId)
@@ -304,7 +310,7 @@ async function checkTimeSlotAvailability(
 
   // Check instructor availability rules
   const dayOfWeek = new Date(date).getDay();
-  const { data: availability, error: availError } = await supabase
+  const { data: availability, error: availError } = await rds
     .from('instructor_availability')
     .select('*')
     .eq('instructor_id', instructorId)
@@ -329,7 +335,7 @@ async function checkTimeSlotAvailability(
   }
 
   // Check for blocked time periods
-  const { data: blocks, error: blockError } = await supabase
+  const { data: blocks, error: blockError } = await rds
     .from('time_blocks')
     .select('*')
     .eq('instructor_id', instructorId)

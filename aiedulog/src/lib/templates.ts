@@ -1,9 +1,11 @@
 /**
  * Enterprise Template System
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Advanced template management and processing utilities
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import type { ContentTemplate, ContentBlock, MainContentSection, ContentBlockType } from '@/types/content-management';
 
 const supabase = createClient();
@@ -307,9 +309,8 @@ export class TemplateEngine {
     // Create section
     const { data: section, error: sectionError } = await supabase
       .from('main_content_sections')
-      .insert(sectionData)
-      .select()
-      .single();
+      .single()
+      .insert(sectionData, { select: '*' });
 
     if (sectionError) throw sectionError;
 
@@ -347,9 +348,8 @@ export class TemplateEngine {
 
     const { data: block, error: blockError } = await supabase
       .from('content_blocks')
-      .insert(blockData)
-      .select()
-      .single();
+      .single()
+      .insert(blockData, { select: '*' });
 
     if (blockError) throw blockError;
 
@@ -382,9 +382,8 @@ export class TemplateEngine {
 
       const { data: section, error: sectionError } = await supabase
         .from('main_content_sections')
-        .insert(sectionData)
-        .select()
-        .single();
+        .single()
+        .insert(sectionData, { select: '*' });
 
       if (sectionError) throw sectionError;
 
@@ -463,9 +462,8 @@ export class TemplateEngine {
 
       const { data: newTemplate, error } = await supabase
         .from('content_templates')
-        .insert(template)
-        .select()
-        .single();
+        .single()
+        .insert(template, { select: '*' });
 
       if (error) throw error;
 
@@ -507,7 +505,7 @@ export class TemplateEngine {
       description: section.description,
       template: section.template,
       settings: section.settings,
-      blocks: blocks?.map(block => ({
+      blocks: blocks?.map((block: any) => ({
         type: block.block_type,
         content: block.content,
         metadata: block.metadata,
@@ -571,9 +569,8 @@ export class TemplateEngine {
 
       const { data: duplicatedTemplate, error: createError } = await supabase
         .from('content_templates')
-        .insert(newTemplate)
-        .select()
-        .single();
+        .single()
+        .insert(newTemplate, { select: '*' });
 
       if (createError) throw createError;
 
@@ -596,8 +593,8 @@ export class TemplateEngine {
     try {
       const { error } = await supabase
         .from('content_templates')
-        .delete()
-        .eq('id', templateId);
+        .eq('id', templateId)
+        .delete();
 
       if (error) throw error;
 

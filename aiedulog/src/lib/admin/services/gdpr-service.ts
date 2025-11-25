@@ -3,7 +3,7 @@
  * Handles data protection, privacy rights, and regulatory compliance
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { AuditService } from './audit-service';
 import { getUserIdentity } from '@/lib/identity/helpers';
 import type {
@@ -15,7 +15,17 @@ import type {
 } from '../types';
 
 export class GdprService {
-  private supabase = createClient();
+  private supabase: any;
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
   private auditService = new AuditService();
 
   /**
@@ -27,7 +37,7 @@ export class GdprService {
     notes?: string
   ): Promise<ApiResponse<UserDataRequest>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -38,7 +48,7 @@ export class GdprService {
         throw new Error('Admin identity not found');
       }
 
-      const requestId = await this.supabase.rpc('process_gdpr_request', {
+      const requestId = await (await this.getClient()).rpc('process_gdpr_request', {
         p_user_id: userId,
         p_request_type: requestType,
         p_requested_by: adminIdentity.user_id
@@ -326,7 +336,7 @@ export class GdprService {
     affected_tables: string[];
   }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -358,7 +368,7 @@ export class GdprService {
       }
 
       // Archive critical data that must be retained for legal reasons
-      const archiveResult = await this.supabase.rpc('archive_user_data', {
+      const archiveResult = await (await this.getClient()).rpc('archive_user_data', {
         p_user_id: userId,
         p_admin_id: adminIdentity.user_id,
         p_reason: 'gdpr_right_to_be_forgotten'
@@ -368,7 +378,7 @@ export class GdprService {
       const anonymizedTables = await this.anonymizeUserReferences(userId);
 
       // Perform comprehensive user deletion
-      const deletionResult = await this.supabase.rpc('delete_user_comprehensive', {
+      const deletionResult = await (await this.getClient()).rpc('delete_user_comprehensive', {
         p_user_id: userId,
         p_admin_id: adminIdentity.user_id,
         p_reason: 'GDPR Right to be Forgotten',
@@ -478,7 +488,7 @@ export class GdprService {
     processingData?: Record<string, any>
   ): Promise<ApiResponse<UserDataRequest>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -596,7 +606,7 @@ export class GdprService {
         .eq('status', 'completed')
         .not('processed_at', 'is', null);
 
-      const requestsByType = (requestTypes || []).reduce((acc: any, request) => {
+      const requestsByType = (requestTypes || []).reduce((acc: any, request: any) => {
         acc[request.request_type] = (acc[request.request_type] || 0) + 1;
         return acc;
       }, {});
@@ -604,7 +614,7 @@ export class GdprService {
       // Calculate average processing time
       let averageProcessingTime = 0;
       if (processingTimes && processingTimes.length > 0) {
-        const totalProcessingTime = processingTimes.reduce((sum, request) => {
+        const totalProcessingTime = processingTimes.reduce((sum: number, request: any) => {
           const requested = new Date(request.requested_at);
           const processed = new Date(request.processed_at);
           const timeDiff = processed.getTime() - requested.getTime();

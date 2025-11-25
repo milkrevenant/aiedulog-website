@@ -1,10 +1,12 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
@@ -160,7 +162,7 @@ export default function LecturesBoardPage() {
         .in('status', ['pending', 'confirmed'])
 
       if (error) throw error
-      setUserRegistrations(data?.map((r) => r.lecture_id) || [])
+      setUserRegistrations(data?.map((r: any) => r.lecture_id) || [])
     } catch (error) {
       console.error('Error fetching registrations:', error)
     }

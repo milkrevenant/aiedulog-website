@@ -1,5 +1,7 @@
 /**
  * Comprehensive Security Management API
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Enterprise-grade security dashboard and management endpoints
  * 
  * SECURITY FEATURES:
@@ -12,7 +14,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withSecurity } from '@/lib/api/secure-client'
-import { createClient } from '@/lib/supabase/server'
+import { createRDSClient } from '@/lib/db/rds-client'
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers'
 import { RLSSecurityEnforcer, SecurityRole, DataClassification } from '@/lib/security/rls-enforcer'
 import { getSecureLogger, SecurityEventType, rateLimiter } from '@/lib/security'
 
@@ -77,63 +80,49 @@ export const GET = withSecurity(
   async (request: NextRequest, context: any) => {
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action')
-    const supabase = await createClient()
-    
+    const rds = createRDSClient()
+
     // Verify admin access
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }
+    const auth = await requireAdmin(request)
+    if (auth.error || !auth.user) {
+      return { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }
     }
-    
-    // Check admin role
-    const { data: userProfile } = await supabase
-      .from('identities')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    
-    if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
-      return { 
-        success: false, 
-        error: { code: 'FORBIDDEN', message: 'Admin access required' }
-      }
-    }
-    
+
     try {
       switch (action) {
         case 'dashboard':
-          return await getSecurityDashboard(supabase, context)
-        
+          return await getSecurityDashboard(rds, context)
+
         case 'threats':
-          return await getThreatAnalysis(supabase, context)
-        
+          return await getThreatAnalysis(rds, context)
+
         case 'incidents':
-          return await getSecurityIncidents(supabase, context, searchParams)
-        
+          return await getSecurityIncidents(rds, context, searchParams)
+
         case 'policies':
-          return await getSecurityPolicies(supabase, context)
-        
+          return await getSecurityPolicies(rds, context)
+
         case 'audit':
-          return await getAuditReport(supabase, context, searchParams)
-        
+          return await getAuditReport(rds, context, searchParams)
+
         case 'compliance':
-          return await getComplianceReport(supabase, context)
-        
+          return await getComplianceReport(rds, context)
+
         case 'health':
-          return await getSystemSecurityHealth(supabase, context)
-        
+          return await getSystemSecurityHealth(rds, context)
+
         default:
-          return await getSecurityDashboard(supabase, context)
+          return await getSecurityDashboard(rds, context)
       }
     } catch (error) {
       secureLogger.error('Security API error', {
         requestId: context.requestId,
         action,
-        userId: user.id,
+        userId: auth.user.id,
         errorName: (error as Error).name,
         errorMessage: (error as Error).message
       }, error as Error)
-      
+
       return {
         success: false,
         error: {
@@ -158,47 +147,34 @@ export const POST = withSecurity(
   async (request: NextRequest, context: any, params: any) => {
     const { body } = params
     const { action, ...data } = body
-    const supabase = await createClient()
-    
+    const rds = createRDSClient()
+
     // Verify admin access
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }
+    const auth = await requireAdmin(request)
+    if (auth.error || !auth.user) {
+      return { success: false, error: { code: 'UNAUTHORIZED', message: auth.error } }
     }
-    
-    const { data: userProfile } = await supabase
-      .from('identities')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    
-    if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
-      return { 
-        success: false, 
-        error: { code: 'FORBIDDEN', message: 'Admin access required' }
-      }
-    }
-    
+
     try {
       switch (action) {
         case 'create_incident':
-          return await createSecurityIncident(supabase, context, data, user.id)
-        
+          return await createSecurityIncident(rds, context, data, auth.user.id)
+
         case 'resolve_incident':
-          return await resolveSecurityIncident(supabase, context, data, user.id)
-        
+          return await resolveSecurityIncident(rds, context, data, auth.user.id)
+
         case 'block_user':
-          return await blockSuspiciousUser(supabase, context, data, user.id)
-        
+          return await blockSuspiciousUser(rds, context, data, auth.user.id)
+
         case 'update_policy':
-          return await updateSecurityPolicy(supabase, context, data, user.id)
-        
+          return await updateSecurityPolicy(rds, context, data, auth.user.id)
+
         case 'trigger_response':
-          return await triggerIncidentResponse(supabase, context, data, user.id)
-        
+          return await triggerIncidentResponse(rds, context, data, auth.user.id)
+
         case 'emergency_lockdown':
-          return await emergencyLockdown(supabase, context, data, user.id)
-        
+          return await emergencyLockdown(rds, context, data, auth.user.id)
+
         default:
           return {
             success: false,
@@ -209,11 +185,11 @@ export const POST = withSecurity(
       secureLogger.error('Security action error', {
         requestId: context.requestId,
         action,
-        userId: user.id,
+        userId: auth.user.id,
         errorName: (error as Error).name,
         errorMessage: (error as Error).message
       }, error as Error)
-      
+
       return {
         success: false,
         error: {
@@ -235,7 +211,7 @@ export const POST = withSecurity(
 /**
  * Get comprehensive security dashboard metrics
  */
-async function getSecurityDashboard(supabase: any, context: any): Promise<{ success: true; data: SecurityDashboardMetrics }> {
+async function getSecurityDashboard(rds: any, context: any): Promise<{ success: true; data: SecurityDashboardMetrics }> {
   const now = new Date()
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   
@@ -246,29 +222,29 @@ async function getSecurityDashboard(supabase: any, context: any): Promise<{ succ
     { count: securityViolations24h },
     { count: criticalAlerts }
   ] = await Promise.all([
-    supabase.from('identities').select('*', { count: 'exact' as any }),
-    supabase.from('security_audit_log').select('*', { count: 'exact' as any })
+    rds.from('identities').select('*', { count: 'exact' as any }),
+    rds.from('security_audit_log').select('*', { count: 'exact' as any })
       .gte('created_at', yesterday.toISOString()).eq('success', true),
-    supabase.from('security_violations').select('*', { count: 'exact' as any })
+    rds.from('security_violations').select('*', { count: 'exact' as any })
       .gte('created_at', yesterday.toISOString()),
-    supabase.from('security_violations').select('*', { count: 'exact' as any })
+    rds.from('security_violations').select('*', { count: 'exact' as any })
       .eq('severity', 'CRITICAL').eq('resolved', false)
   ])
   
   // Calculate system health score
-  const systemHealthScore = await calculateSystemHealthScore(supabase)
+  const systemHealthScore = await calculateSystemHealthScore(rds)
   
   // Get threat detection metrics
-  const threatDetection = await getThreatDetectionMetrics(supabase)
+  const threatDetection = await getThreatDetectionMetrics(rds)
   
   // Get access control metrics
-  const accessControl = await getAccessControlMetrics(supabase)
+  const accessControl = await getAccessControlMetrics(rds)
   
   // Get compliance metrics
-  const compliance = await getComplianceMetrics(supabase)
+  const compliance = await getComplianceMetrics(rds)
   
   // Get real-time alerts
-  const realTimeAlerts = await getRealTimeAlerts(supabase)
+  const realTimeAlerts = await getRealTimeAlerts(rds)
   
   const dashboardMetrics: SecurityDashboardMetrics = {
     overview: {
@@ -299,22 +275,22 @@ async function getSecurityDashboard(supabase: any, context: any): Promise<{ succ
 /**
  * Calculate system health score based on security metrics
  */
-async function calculateSystemHealthScore(supabase: any): Promise<number> {
+async function calculateSystemHealthScore(rds: any): Promise<number> {
   let score = 100
   const now = new Date()
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   
   try {
     // Deduct points for security violations
-    const { count: violations } = await supabase
+    const { count: violations } = await rds
       .from('security_violations')
       .select('*', { count: 'exact' as any })
       .gte('created_at', yesterday.toISOString())
-    
+
     score -= Math.min((violations || 0) * 5, 30)
-    
+
     // Deduct points for failed authentications
-    const { count: failedAuths } = await supabase
+    const { count: failedAuths } = await rds
       .from('security_audit_log')
       .select('*', { count: 'exact' as any })
       .eq('event_type', 'LOGIN')
@@ -324,7 +300,7 @@ async function calculateSystemHealthScore(supabase: any): Promise<number> {
     score -= Math.min((failedAuths || 0) * 2, 20)
     
     // Deduct points for unresolved critical alerts
-    const { count: criticalAlerts } = await supabase
+    const { count: criticalAlerts } = await rds
       .from('security_violations')
       .select('*', { count: 'exact' as any })
       .eq('severity', 'CRITICAL')
@@ -343,25 +319,25 @@ async function calculateSystemHealthScore(supabase: any): Promise<number> {
 /**
  * Get threat detection metrics
  */
-async function getThreatDetectionMetrics(supabase: any) {
+async function getThreatDetectionMetrics(rds: any) {
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
   
   // Get suspicious activity count
-  const { count: suspiciousActivity } = await supabase
+  const { count: suspiciousActivity } = await rds
     .from('security_violations')
     .select('*', { count: 'exact' as any })
     .in('violation_type', ['SUSPICIOUS_ACTIVITY', 'BRUTE_FORCE', 'ANOMALOUS_ACCESS'])
     .gte('created_at', yesterday.toISOString())
   
   // Get blocked attempts
-  const { count: blockedAttempts } = await supabase
+  const { count: blockedAttempts } = await rds
     .from('security_violations')
     .select('*', { count: 'exact' as any })
     .eq('blocked', true)
     .gte('created_at', yesterday.toISOString())
   
   // Get high-risk users
-  const { data: riskUsers } = await supabase
+  const { data: riskUsers } = await rds
     .rpc('detect_suspicious_activity')
     .limit(10)
   
@@ -383,28 +359,28 @@ async function getThreatDetectionMetrics(supabase: any) {
 /**
  * Get access control metrics
  */
-async function getAccessControlMetrics(supabase: any) {
+async function getAccessControlMetrics(rds: any) {
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
   
   // Get RLS policies count (simplified - would query pg_policies in real implementation)
   const rlsPoliciesActive = 25 // Placeholder
   
   // Get failed access attempts
-  const { count: failedAccessAttempts } = await supabase
+  const { count: failedAccessAttempts } = await rds
     .from('security_violations')
     .select('*', { count: 'exact' as any })
     .eq('violation_type', 'RLS_POLICY_VIOLATION')
     .gte('created_at', yesterday.toISOString())
   
   // Get privilege escalation attempts
-  const { count: privilegeEscalations } = await supabase
+  const { count: privilegeEscalations } = await rds
     .from('security_violations')
     .select('*', { count: 'exact' as any })
     .eq('violation_type', 'PRIVILEGE_ESCALATION')
     .gte('created_at', yesterday.toISOString())
   
   // Get data classification breaches
-  const { count: dataClassificationBreaches } = await supabase
+  const { count: dataClassificationBreaches } = await rds
     .from('security_violations')
     .select('*', { count: 'exact' as any })
     .eq('violation_type', 'DATA_CLASSIFICATION_BREACH')
@@ -421,9 +397,9 @@ async function getAccessControlMetrics(supabase: any) {
 /**
  * Get compliance metrics
  */
-async function getComplianceMetrics(supabase: any) {
+async function getComplianceMetrics(rds: any) {
   // Get audit logs coverage
-  const { count: auditLogsCovered } = await supabase
+  const { count: auditLogsCovered } = await rds
     .from('security_audit_log')
     .select('*', { count: 'exact' as any })
     .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
@@ -439,8 +415,8 @@ async function getComplianceMetrics(supabase: any) {
 /**
  * Get real-time security alerts
  */
-async function getRealTimeAlerts(supabase: any): Promise<SecurityDashboardMetrics['realTimeAlerts']> {
-  const { data: violations } = await supabase
+async function getRealTimeAlerts(rds: any): Promise<SecurityDashboardMetrics['realTimeAlerts']> {
+  const { data: violations } = await rds
     .from('security_violations')
     .select('*')
     .eq('resolved', false)
@@ -461,11 +437,11 @@ async function getRealTimeAlerts(supabase: any): Promise<SecurityDashboardMetric
 /**
  * Get threat analysis
  */
-async function getThreatAnalysis(supabase: any, context: any) {
+async function getThreatAnalysis(rds: any, context: any) {
   // This would implement advanced threat detection algorithms
   // For now, return basic analysis
   
-  const threats = await supabase
+  const threats = await rds
     .rpc('detect_coordinated_attack')
   
   return {
@@ -489,13 +465,13 @@ async function getThreatAnalysis(supabase: any, context: any) {
 /**
  * Get security incidents
  */
-async function getSecurityIncidents(supabase: any, context: any, searchParams: URLSearchParams) {
+async function getSecurityIncidents(rds: any, context: any, searchParams: URLSearchParams) {
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '20')
   const severity = searchParams.get('severity')
   const status = searchParams.get('status')
   
-  let query = supabase
+  let query = rds
     .from('security_violations')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
@@ -535,8 +511,8 @@ async function getSecurityIncidents(supabase: any, context: any, searchParams: U
 /**
  * Get security policies
  */
-async function getSecurityPolicies(supabase: any, context: any) {
-  const { data: policies, error } = await supabase
+async function getSecurityPolicies(rds: any, context: any) {
+  const { data: policies, error } = await rds
     .from('security_policies')
     .select('*')
     .order('created_at', { ascending: false })
@@ -552,12 +528,12 @@ async function getSecurityPolicies(supabase: any, context: any) {
 /**
  * Get audit report
  */
-async function getAuditReport(supabase: any, context: any, searchParams: URLSearchParams) {
+async function getAuditReport(rds: any, context: any, searchParams: URLSearchParams) {
   const timeframe = searchParams.get('timeframe') || '24h'
   const eventType = searchParams.get('eventType')
   const userId = searchParams.get('userId')
   
-  let query = supabase
+  let query = rds
     .from('security_audit_log')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
@@ -604,7 +580,7 @@ async function getAuditReport(supabase: any, context: any, searchParams: URLSear
 /**
  * Get compliance report
  */
-async function getComplianceReport(supabase: any, context: any) {
+async function getComplianceReport(rds: any, context: any) {
   // This would generate comprehensive compliance reports
   // For now, return basic compliance status
   
@@ -636,8 +612,8 @@ async function getComplianceReport(supabase: any, context: any) {
 /**
  * Get system security health
  */
-async function getSystemSecurityHealth(supabase: any, context: any) {
-  const healthScore = await calculateSystemHealthScore(supabase)
+async function getSystemSecurityHealth(rds: any, context: any) {
+  const healthScore = await calculateSystemHealthScore(rds)
   
   return {
     success: true,
@@ -658,10 +634,10 @@ async function getSystemSecurityHealth(supabase: any, context: any) {
 /**
  * Create security incident
  */
-async function createSecurityIncident(supabase: any, context: any, data: any, adminId: string) {
+async function createSecurityIncident(rds: any, context: any, data: any, adminId: string) {
   const { type, severity, description, affectedUsers, metadata } = data
   
-  const { data: incident, error } = await supabase
+  const { data: incident, error } = await rds
     .from('security_violations')
     .insert({
       violation_type: type,
@@ -697,16 +673,16 @@ async function createSecurityIncident(supabase: any, context: any, data: any, ad
 /**
  * Resolve security incident
  */
-async function resolveSecurityIncident(supabase: any, context: any, data: any, adminId: string) {
+async function resolveSecurityIncident(rds: any, context: any, data: any, adminId: string) {
   const { incidentId, resolution, preventiveMeasures } = data
   
-  const { data: incident, error } = await supabase
+  const { data: incident, error } = await rds
     .from('security_violations')
     .update({
       resolved: true,
       resolved_by: adminId,
       resolved_at: new Date().toISOString(),
-      violation_details: supabase.raw(`
+      violation_details: rds.raw(`
         violation_details || '{"resolution": "${resolution}", "preventiveMeasures": "${preventiveMeasures}"}'::jsonb
       `)
     })
@@ -725,11 +701,11 @@ async function resolveSecurityIncident(supabase: any, context: any, data: any, a
 /**
  * Block suspicious user
  */
-async function blockSuspiciousUser(supabase: any, context: any, data: any, adminId: string) {
+async function blockSuspiciousUser(rds: any, context: any, data: any, adminId: string) {
   const { userId, reason, blockDurationHours } = data
   
   // Update user status
-  const { error } = await supabase
+  const { error } = await rds
     .from('identities')
     .update({
       status: 'blocked',
@@ -764,10 +740,10 @@ async function blockSuspiciousUser(supabase: any, context: any, data: any, admin
 /**
  * Update security policy
  */
-async function updateSecurityPolicy(supabase: any, context: any, data: any, adminId: string) {
+async function updateSecurityPolicy(rds: any, context: any, data: any, adminId: string) {
   const { policyId, updates } = data
   
-  const { data: policy, error } = await supabase
+  const { data: policy, error } = await rds
     .from('security_policies')
     .update({
       ...updates,
@@ -788,7 +764,7 @@ async function updateSecurityPolicy(supabase: any, context: any, data: any, admi
 /**
  * Trigger incident response
  */
-async function triggerIncidentResponse(supabase: any, context: any, data: any, adminId: string) {
+async function triggerIncidentResponse(rds: any, context: any, data: any, adminId: string) {
   const { responseType, severity, scope, metadata } = data
   
   // This would trigger automated incident response procedures
@@ -819,7 +795,7 @@ async function triggerIncidentResponse(supabase: any, context: any, data: any, a
 /**
  * Emergency lockdown
  */
-async function emergencyLockdown(supabase: any, context: any, data: any, adminId: string) {
+async function emergencyLockdown(rds: any, context: any, data: any, adminId: string) {
   const { lockdownType, reason, duration } = data
   
   // This would implement emergency lockdown procedures

@@ -1,11 +1,13 @@
 /**
  * Enhanced Password Reset System
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * This module provides a fundamental solution for secure password reset
  * by integrating server-side security functions with client-side validation.
  */
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { Security } from '@/lib/security/implementation-guide'
 
 // ============================================
@@ -309,8 +311,16 @@ export async function updatePassword(
     // }
 
     // 6. Perform comprehensive security check
+    const sessionUserId = session.user?.id ?? null
+    if (!sessionUserId) {
+      return {
+        allowed: false,
+        message: '사용자 정보를 확인할 수 없습니다.'
+      }
+    }
+
     const securityCheck = await Security.performSecurityCheck(
-      session.user.id,
+      sessionUserId,
       request.ipAddress,
       'password_change'
     )
@@ -319,7 +329,7 @@ export async function updatePassword(
       await Security.logSecurityEvent(
         'suspicious_activity',
         { 
-          userId: session.user.id,
+          userId: sessionUserId,
           blocked: true,
           reasons: securityCheck.reasons
         },
@@ -344,13 +354,13 @@ export async function updatePassword(
     }
 
     // 8. Revoke all other sessions
-    await Security.revokeAllSessions(session.user.id)
+    await Security.revokeAllSessions(sessionUserId)
 
     // 9. Log successful password change
     await Security.logSecurityEvent(
       'password_changed',
       { 
-        userId: session.user.id,
+        userId: sessionUserId,
         method: 'reset_link'
       },
       'high',
@@ -413,7 +423,7 @@ export async function getPasswordResetAnalytics(
     p_time_range: timeFilter
   })
 
-  if (error || !data) {
+  if (error || !data || !Array.isArray(data) || data.length === 0) {
     return {
       totalRequests: 0,
       successfulResets: 0,
@@ -422,7 +432,19 @@ export async function getPasswordResetAnalytics(
     }
   }
 
-  return data
+  const stats = data[0] as Partial<{
+    total_requests: number
+    successful_resets: number
+    blocked_attempts: number
+    avg_completion_time: number
+  }>
+
+  return {
+    totalRequests: stats.total_requests ?? 0,
+    successfulResets: stats.successful_resets ?? 0,
+    blockedAttempts: stats.blocked_attempts ?? 0,
+    averageCompletionTime: stats.avg_completion_time ?? 0
+  }
 }
 
 // ============================================

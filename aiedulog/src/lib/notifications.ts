@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { NotificationType, Notification } from '@/types/notification'
 
 // 알림 생성 함수 (서버사이드용)
@@ -91,11 +91,11 @@ export async function markNotificationAsRead(notificationId: string) {
 
   const { error } = await supabase
     .from('notifications')
+    .eq('id', notificationId)
     .update({
       is_read: true,
       read_at: new Date().toISOString(),
     })
-    .eq('id', notificationId)
 
   if (error) {
     console.error('Failed to mark notification as read:', error)
@@ -118,12 +118,12 @@ export async function markAllNotificationsAsRead(providerUserId?: string) {
 
   const { error } = await supabase
     .from('notifications')
+    .eq('user_id', authMethod.user_id)
+    .eq('is_read', false)
     .update({
       is_read: true,
       read_at: new Date().toISOString(),
     })
-    .eq('user_id', authMethod.user_id)
-    .eq('is_read', false)
 
   if (error) {
     console.error('Failed to mark all notifications as read:', error)
@@ -135,7 +135,7 @@ export async function markAllNotificationsAsRead(providerUserId?: string) {
 export async function deleteNotification(notificationId: string) {
   const supabase = createClient()
 
-  const { error } = await supabase.from('notifications').delete().eq('id', notificationId)
+  const { error } = await supabase.from('notifications').eq('id', notificationId).delete()
 
   if (error) {
     console.error('Failed to delete notification:', error)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -10,6 +10,8 @@ import {
 
 /**
  * GET /api/booking/availability - Public availability checking for booking flow
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: Public access with aggressive rate limiting
  * 
  * This endpoint is optimized for the booking flow and provides
@@ -26,7 +28,7 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // Parse and validate query parameters
     const instructorId = searchParams.get('instructor_id');
@@ -68,7 +70,7 @@ const getHandler = async (
     }
 
     // Verify instructor exists and is active
-    const { data: instructor, error: instructorError } = await supabase
+    const { data: instructor, error: instructorError } = await rds
       .from('identities')
       .select('id, full_name, status, role')
       .eq('id', instructorId)
@@ -97,9 +99,9 @@ const getHandler = async (
 
     // Get availability data
     const availability = await getSimplifiedAvailability(
-      supabase, 
-      instructorId, 
-      date, 
+      rds,
+      instructorId,
+      date,
       durationMinutes
     );
 
@@ -134,14 +136,14 @@ const getHandler = async (
  * Get simplified availability for booking flow (optimized for performance)
  */
 async function getSimplifiedAvailability(
-  supabase: any,
+  rds: any,
   instructorId: string,
   date: string,
   durationMinutes: number
 ): Promise<AvailabilityResponse | null> {
   try {
     // Get instructor name
-    const { data: instructor, error: instructorError } = await supabase
+    const { data: instructor, error: instructorError } = await rds
       .from('identities')
       .select('full_name')
       .eq('id', instructorId)
@@ -157,23 +159,23 @@ async function getSimplifiedAvailability(
     // Get all data in parallel for better performance
     const [availabilityResult, appointmentsResult, blocksResult] = await Promise.all([
       // Get availability rules
-      supabase
+      rds
         .from('instructor_availability')
         .select('start_time, end_time, buffer_time_minutes')
         .eq('instructor_id', instructorId)
         .eq('day_of_week', dayOfWeek)
         .eq('is_available', true),
-      
+
       // Get existing appointments
-      supabase
+      rds
         .from('appointments')
         .select('start_time, end_time')
         .eq('instructor_id', instructorId)
         .eq('appointment_date', date)
         .in('status', ['pending', 'confirmed']),
-      
+
       // Get blocked periods
-      supabase
+      rds
         .from('time_blocks')
         .select('start_time, end_time, block_reason')
         .eq('instructor_id', instructorId)

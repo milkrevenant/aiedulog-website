@@ -263,7 +263,7 @@ export class AppointmentAuthorization {
     }
 
     // Validate user exists and is active
-    const supabase = await createClient();
+    const supabase = createClient();
     const { data: user, error } = await supabase
       .from('identities')
       .select('id, status, role, created_at')
@@ -297,7 +297,7 @@ export class AppointmentAuthorization {
    * 🔒 GET APPOINTMENT WITH SECURITY CONTEXT
    */
   private static async getAppointmentWithSecurityContext(appointmentId: string): Promise<any> {
-    const supabase = await createClient();
+    const supabase = createClient();
     
     const { data: appointment, error } = await supabase
       .from('appointments')
@@ -629,9 +629,10 @@ export class AppointmentAuthorization {
     reason?: string
   ): Promise<string> {
     try {
-      const supabase = await createClient();
-      
-      const { data: auditLog, error } = await supabase
+      const supabase = createClient();
+      const insertOptions = { select: 'id' };
+
+      const { data: insertedAudit, error } = await supabase
         .from('security_audit_log')
         .insert({
           event_type: 'authorization_decision',
@@ -650,11 +651,16 @@ export class AppointmentAuthorization {
             timestamp: context.timestamp.toISOString(),
             resource_type: 'appointment'
           }
-        })
-        .select('id')
-        .single();
+        }, insertOptions);
 
-      return auditLog?.id || 'audit-log-failed';
+      if (error) {
+        throw error;
+      }
+
+      const auditRecord = Array.isArray(insertedAudit) ? insertedAudit[0] : insertedAudit;
+      const auditId = (auditRecord as { id?: string | null } | null | undefined)?.id || null;
+
+      return auditId || 'audit-log-failed';
     } catch (error) {
       console.error('Failed to audit authorization decision:', error);
       return 'audit-log-error';
@@ -722,7 +728,7 @@ export class AppointmentAuthorization {
     restrictions: string[];
   }> {
     try {
-      const supabase = await createClient();
+      const supabase = createClient();
       
       const { data: user, error } = await supabase
         .from('identities')
@@ -785,7 +791,7 @@ export class AppointmentAuthorization {
     }>;
   }> {
     try {
-      const supabase = await createClient();
+      const supabase = createClient();
       
       // Get recent authorization decisions
       let query = supabase
@@ -805,7 +811,16 @@ export class AppointmentAuthorization {
         throw error;
       }
 
-      const logs = auditLogs || [];
+      type AuditLogRecord = {
+        success?: boolean;
+        error_message?: string | null;
+        created_at?: string;
+        user_id?: string;
+        metadata?: { action?: string } | null;
+        record_id?: string | null;
+      };
+
+      const logs: AuditLogRecord[] = (auditLogs || []) as AuditLogRecord[];
 
       // Calculate summary
       const summary = {
@@ -817,23 +832,27 @@ export class AppointmentAuthorization {
 
       // Format recent activity
       const recentActivity = logs.slice(0, 20).map(log => ({
-        timestamp: log.created_at,
-        userId: log.user_id,
+        timestamp: log.created_at ?? '',
+        userId: log.user_id ?? 'unknown',
         action: log.metadata?.action || 'unknown',
         resource: log.record_id || 'unknown',
-        authorized: log.success,
-        reason: log.error_message
+        authorized: Boolean(log.success),
+        reason: log.error_message ?? undefined
       }));
 
       // Detect suspicious activity patterns
       const suspiciousActivity: Array<any> = [];
+      const toTimestamp = (value?: string | null) => (value ? new Date(value).getTime() : 0);
       
       // Pattern 1: Multiple failed authorizations
       const failedByUser = logs
         .filter(log => !log.success)
         .reduce((acc, log) => {
-          const userId = log.user_id;
-          acc[userId] = (acc[userId] || 0) + 1;
+          const failedUserId = log.user_id;
+          if (!failedUserId) {
+            return acc;
+          }
+          acc[failedUserId] = (acc[failedUserId] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
 
@@ -841,7 +860,7 @@ export class AppointmentAuthorization {
         if ((count as number) >= 10) { // 10 or more failures
           const lastFailure = logs
             .filter(log => log.user_id === userId && !log.success)
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+            .sort((a, b) => toTimestamp(b.created_at) - toTimestamp(a.created_at))[0];
           
           suspiciousActivity.push({
             userId,

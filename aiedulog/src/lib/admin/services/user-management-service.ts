@@ -3,7 +3,7 @@
  * Comprehensive user administration with GDPR compliance and audit logging
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { AuditService } from './audit-service';
 import { getUserIdentity } from '@/lib/identity/helpers';
 import type { 
@@ -19,7 +19,17 @@ import type {
 import type { UserProfile } from '@/lib/identity/helpers';
 
 export class UserManagementService {
-  private supabase = createClient();
+  private supabase: any;
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
   private auditService = new AuditService();
 
   /**
@@ -187,7 +197,7 @@ export class UserManagementService {
     reason: string = 'admin_action'
   ): Promise<ApiResponse<{ archived_count: number; correlation_id: string }>> {
     try {
-      const { data, error } = await this.supabase.rpc('archive_user_data', {
+      const { data, error } = await (await this.getClient()).rpc('archive_user_data', {
         p_user_id: userId,
         p_admin_id: adminId,
         p_reason: reason
@@ -220,7 +230,7 @@ export class UserManagementService {
   }>> {
     try {
       // Get current user for audit
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin user not authenticated');
       }
@@ -231,7 +241,7 @@ export class UserManagementService {
         throw new Error('Admin identity not found');
       }
 
-      const { data, error } = await this.supabase.rpc('delete_user_comprehensive', {
+      const { data, error } = await (await this.getClient()).rpc('delete_user_comprehensive', {
         p_user_id: request.user_id,
         p_admin_id: adminIdentity.user_id,
         p_reason: request.reason,
@@ -263,7 +273,7 @@ export class UserManagementService {
     correlationId?: string
   ): Promise<ApiResponse<{ restored_count: number }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin user not authenticated');
       }
@@ -274,7 +284,7 @@ export class UserManagementService {
         throw new Error('Admin identity not found');
       }
 
-      const { data, error } = await this.supabase.rpc('restore_user_data', {
+      const { data, error } = await (await this.getClient()).rpc('restore_user_data', {
         p_user_id: userId,
         p_admin_id: adminIdentity.user_id,
         p_correlation_id: correlationId
@@ -307,7 +317,7 @@ export class UserManagementService {
     durationDays?: number
   ): Promise<ApiResponse<{ updated: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin user not authenticated');
       }
@@ -506,12 +516,12 @@ export class UserManagementService {
         .from('user_profiles')
         .select('is_active');
 
-      const usersByRole = (roleData || []).reduce((acc: any, user) => {
+      const usersByRole = (roleData || []).reduce((acc: any, user: any) => {
         acc[user.role] = (acc[user.role] || 0) + 1;
         return acc;
       }, {});
 
-      const usersByStatus = (statusData || []).reduce((acc: any, user) => {
+      const usersByStatus = (statusData || []).reduce((acc: any, user: any) => {
         const status = user.is_active ? 'active' : 'inactive';
         acc[status] = (acc[status] || 0) + 1;
         return acc;
@@ -578,7 +588,7 @@ export class UserManagementService {
               successful.push(userId);
               break;
             case 'archive':
-              const { data: currentUser } = await this.supabase.auth.getUser();
+              const { data: currentUser } = await (await this.getClient()).auth.getUser();
               if (!currentUser.user) {
                 throw new Error('Admin user not authenticated');
               }

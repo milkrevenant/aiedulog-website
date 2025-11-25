@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 export interface UploadResult {
   success: boolean
@@ -9,6 +9,8 @@ export interface UploadResult {
 
 /**
  * 파일을 Supabase Storage에 업로드
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * @param file - 업로드할 파일
  * @param bucket - 저장할 버킷 이름 (post-images, avatars, resources)
  * @param folder - 버킷 내 폴더 경로 (optional)
@@ -39,7 +41,7 @@ export async function uploadFile(
 
     if (error) {
       console.error('Upload error:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: (error as any)?.message || 'Upload failed' }
     }
 
     // Public URL 가져오기

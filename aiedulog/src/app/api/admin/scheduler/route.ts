@@ -15,22 +15,31 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { getNotificationService } from '@/lib/services/notification-service';
+import { TableRow } from '@/lib/db/types';
+
+type ContentScheduleRow = TableRow<'content_schedules'>;
+type MainContentSectionRow = TableRow<'main_content_sections'>;
+type ContentBlockRow = TableRow<'content_blocks'>;
+type IdentityRow = TableRow<'identities'>;
 
 /**
  * GET /api/admin/scheduler
+ *
+ * MIGRATION: Migrated to RDS with requireAdmin() (2025-10-14)
  * Get all scheduled content actions
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
@@ -39,7 +48,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let query = supabase
+    let query = rds
       .from('content_schedules')
       .select(`
         *,
@@ -76,7 +85,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get summary statistics
-    const { data: stats } = await supabase
+    const { data: stats } = await rds
       .rpc('get_schedule_stats');
 
     return NextResponse.json({
@@ -99,13 +108,13 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const body = await request.json();
     const {
@@ -127,11 +136,12 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Validate content exists
     const contentTable = content_type === 'section' ? 'main_content_sections' : 'content_blocks';
-    const { data: contentExists, error: contentError } = await supabase
+    const { data: contentRows, error: contentError } = await rds
       .from(contentTable)
       .select('id')
-      .eq('id', content_id)
-      .single();
+      .eq('id', content_id);
+
+    const contentExists = contentRows?.[0];
 
     if (contentError || !contentExists) {
       return NextResponse.json({ error: 'Content not found' }, { status: 404 });
@@ -144,11 +154,12 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     }
 
     // Get current user identity
-    const { data: identity } = await supabase
+    const { data: identityRows } = await rds
       .from('identities')
       .select('id')
-      .eq('auth_user_id', session.user.id)
-      .single();
+      .eq('auth_user_id', auth.user.id);
+
+    const identity = identityRows?.[0];
 
     const scheduleData = {
       content_type,
@@ -164,11 +175,11 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       created_by: identity?.id
     };
 
-    const { data: schedule, error } = await supabase
+    const { data: scheduleRows, error } = await rds
       .from('content_schedules')
-      .insert(scheduleData)
-      .select()
-      .single();
+      .insert(scheduleData, { select: '*' });
+
+    const schedule = scheduleRows?.[0];
 
     if (error) {
       console.error('Error creating schedule:', error);
@@ -212,13 +223,13 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const body = await request.json();
     const { id, action, ...updateData } = body;
@@ -232,17 +243,17 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
       switch (action) {
         case 'execute': {
           // Execute schedule immediately
-          const result = await executeSchedule(supabase, id);
+          const result = await executeSchedule(rds, id);
           return NextResponse.json(result);
         }
 
         case 'pause': {
-          const { data: schedule, error } = await supabase
+          const { data: scheduleRows, error } = await rds
             .from('content_schedules')
-            .update({ status: 'cancelled' })
             .eq('id', id)
-            .select()
-            .single();
+            .update({ status: 'cancelled' }, { select: '*' });
+
+          const schedule = scheduleRows?.[0];
 
           if (error) {
             return NextResponse.json({ error: 'Failed to pause schedule' }, { status: 500 });
@@ -256,13 +267,13 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
         }
 
         case 'resume': {
-          const { data: schedule, error } = await supabase
+          const { data: scheduleRows, error } = await rds
             .from('content_schedules')
-            .update({ status: 'pending' })
             .eq('id', id)
             .eq('status', 'cancelled')
-            .select()
-            .single();
+            .update({ status: 'pending' }, { select: '*' });
+
+          const schedule = scheduleRows?.[0];
 
           if (error) {
             return NextResponse.json({ error: 'Failed to resume schedule' }, { status: 500 });
@@ -278,12 +289,12 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Regular update
-    const { data: schedule, error } = await supabase
+    const { data: scheduleRows, error } = await rds
       .from('content_schedules')
-      .update(updateData)
       .eq('id', id)
-      .select()
-      .single();
+      .update(updateData, { select: '*' });
+
+    const schedule = scheduleRows?.[0];
 
     if (error) {
       console.error('Error updating schedule:', error);
@@ -307,13 +318,13 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
@@ -322,10 +333,10 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
       return NextResponse.json({ error: 'Schedule ID is required' }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const { error } = await rds
       .from('content_schedules')
-      .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .delete();
 
     if (error) {
       console.error('Error deleting schedule:', error);
@@ -345,14 +356,15 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
 /**
  * Execute a scheduled action immediately
  */
-async function executeSchedule(supabase: any, scheduleId: string) {
+async function executeSchedule(rds: any, scheduleId: string) {
   try {
     // Get schedule details
-    const { data: schedule, error: scheduleError } = await supabase
+    const { data: scheduleRows, error: scheduleError } = await rds
       .from('content_schedules')
       .select('*')
-      .eq('id', scheduleId)
-      .single();
+      .eq('id', scheduleId);
+
+    const schedule = scheduleRows?.[0];
 
     if (scheduleError || !schedule) {
       return { success: false, error: 'Schedule not found' };
@@ -366,53 +378,49 @@ async function executeSchedule(supabase: any, scheduleId: string) {
 
     switch (schedule.schedule_type) {
       case 'publish': {
-        const { data, error } = await supabase
+        const { data: rows, error } = await rds
           .from(contentTable)
-          .update({ 
-            status: 'published', 
-            published_at: new Date().toISOString() 
-          })
           .eq('id', schedule.content_id)
-          .select()
-          .single();
+          .update({
+            status: 'published',
+            published_at: new Date().toISOString()
+          }, { select: '*' });
 
+        const data = rows?.[0];
         executionResult = { action: 'publish', content: data, error };
         break;
       }
 
       case 'unpublish': {
-        const { data, error } = await supabase
+        const { data: rows, error } = await rds
           .from(contentTable)
-          .update({ status: 'draft' })
           .eq('id', schedule.content_id)
-          .select()
-          .single();
+          .update({ status: 'draft' }, { select: '*' });
 
+        const data = rows?.[0];
         executionResult = { action: 'unpublish', content: data, error };
         break;
       }
 
       case 'archive': {
-        const { data, error } = await supabase
+        const { data: rows, error } = await rds
           .from(contentTable)
-          .update({ status: 'archived' })
           .eq('id', schedule.content_id)
-          .select()
-          .single();
+          .update({ status: 'archived' }, { select: '*' });
 
+        const data = rows?.[0];
         executionResult = { action: 'archive', content: data, error };
         break;
       }
 
       case 'update': {
         // Apply action_data as updates
-        const { data, error } = await supabase
+        const { data: rows, error } = await rds
           .from(contentTable)
-          .update(schedule.action_data)
           .eq('id', schedule.content_id)
-          .select()
-          .single();
+          .update(schedule.action_data, { select: '*' });
 
+        const data = rows?.[0];
         executionResult = { action: 'update', content: data, error };
         break;
       }
@@ -434,10 +442,10 @@ async function executeSchedule(supabase: any, scheduleId: string) {
       updateData.retry_count = schedule.retry_count + 1;
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await rds
       .from('content_schedules')
-      .update(updateData)
-      .eq('id', scheduleId);
+      .eq('id', scheduleId)
+      .update(updateData, { select: '*' });
 
     if (updateError) {
       console.error('Error updating schedule after execution:', updateError);
@@ -474,14 +482,14 @@ async function executeSchedule(supabase: any, scheduleId: string) {
     console.error('Error executing schedule:', error);
     
     // Update schedule with error
-    await supabase
+    await rds
       .from('content_schedules')
+      .eq('id', scheduleId)
       .update({
         status: 'failed',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
-        retry_count: supabase.literal('retry_count + 1')
-      })
-      .eq('id', scheduleId);
+        error_message: error instanceof Error ? error.message : 'Unknown error'
+        // Note: retry_count increment needs to be handled differently in RDS
+      }, { select: '*' });
 
     // Send notification about execution failure
     try {

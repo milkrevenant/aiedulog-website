@@ -1,5 +1,7 @@
 /**
  * Stable Identity Service
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * Provides consistent user resolution using the improved ensure_user_identity() 
  * database function with caching, error handling, and future provider compatibility.
@@ -13,8 +15,8 @@
  * - Comprehensive TypeScript typing
  */
 
-import { createClient as createClientClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { createClient as createClientClient } from '@/lib/supabase/server'
+import type { AppUser } from '@/lib/auth/types'
 
 // =====================================================================
 // TYPE DEFINITIONS
@@ -120,7 +122,7 @@ export class StableIdentityService {
    * Resolves user identity using the improved ensure_user_identity() database function
    * This is the primary method that should be used throughout the application
    */
-  async resolveUserIdentity(authUser: User): Promise<IdentityData> {
+  async resolveUserIdentity(authUser: AppUser): Promise<IdentityData> {
     const cacheKey = `identity:${authUser.id}:${authUser.email}`
     
     // Check cache first
@@ -412,7 +414,7 @@ export class StableIdentityService {
   /**
    * Fallback identity resolution using legacy method with retries
    */
-  private async fallbackUserIdentity(authUser: User): Promise<IdentityData> {
+  private async fallbackUserIdentity(authUser: AppUser): Promise<IdentityData> {
     let lastError: any
     
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
@@ -537,7 +539,7 @@ export class StableIdentityService {
   /**
    * Get identity ID from user (convenience method)
    */
-  async getIdentityId(user: User): Promise<string | null> {
+  async getIdentityId(user: AppUser): Promise<string | null> {
     try {
       const identity = await this.resolveUserIdentity(user)
       return identity.user_id

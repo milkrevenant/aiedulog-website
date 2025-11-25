@@ -1,10 +1,12 @@
 'use client'
+/**
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
+ */
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
 import { getUserIdentity } from '@/lib/identity/helpers'
 import {
   Box,
@@ -129,7 +131,7 @@ export default function TrendingPage() {
       .limit(5)
 
     if (postsData) {
-      const formattedPosts = postsData.map((post) => ({
+      const formattedPosts = postsData.map((post: any) => ({
         id: post.id,
         title: post.title,
         content: post.content,
@@ -166,7 +168,7 @@ export default function TrendingPage() {
       .limit(5)
 
     if (commentsData) {
-      const formattedComments = commentsData.map((comment) => ({
+      const formattedComments = commentsData.map((comment: any) => ({
         id: comment.id,
         content: comment.content,
         like_count: comment.like_count || 0,

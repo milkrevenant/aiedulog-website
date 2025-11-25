@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRDSClient } from '@/lib/db/rds-client';
 import { withPublicSecurity } from '@/lib/security/api-wrapper';
 import { SecurityContext } from '@/lib/security/core-security';
 import {
@@ -11,6 +11,8 @@ import {
 
 /**
  * GET /api/appointments/availability - Get real-time availability for booking
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * Security: Public access with rate limiting
  * 
  * Query Parameters:
@@ -25,7 +27,7 @@ const getHandler = async (
 ): Promise<NextResponse> => {
   try {
     const { searchParams } = new URL(request.url);
-    const supabase = await createClient();
+    const rds = createRDSClient();
 
     // Parse and validate query parameters
     const instructorId = searchParams.get('instructor_id');
@@ -67,7 +69,7 @@ const getHandler = async (
       instructorIds = [instructorId];
     } else {
       // Get all active instructors
-      const { data: instructors, error: instructorError } = await supabase
+      const { data: instructors, error: instructorError } = await rds
         .from('identities')
         .select('id')
         .eq('role', 'instructor')
@@ -81,7 +83,7 @@ const getHandler = async (
         );
       }
 
-      instructorIds = instructors?.map(i => i.id) || [];
+      instructorIds = instructors?.map((i: any) => i.id) || [];
     }
 
     if (instructorIds.length === 0) {
@@ -94,8 +96,8 @@ const getHandler = async (
     }
 
     // Get availability for each instructor
-    const availabilityPromises = instructorIds.map(id => 
-      getInstructorAvailability(supabase, id, date, durationMinutes, appointmentTypeId || undefined)
+    const availabilityPromises = instructorIds.map(id =>
+      getInstructorAvailability(rds, id, date, durationMinutes, appointmentTypeId || undefined)
     );
 
     const availabilityResults = await Promise.allSettled(availabilityPromises);
@@ -140,7 +142,7 @@ const getHandler = async (
  * Get availability for a specific instructor on a specific date
  */
 async function getInstructorAvailability(
-  supabase: any,
+  rds: any,
   instructorId: string,
   date: string,
   durationMinutes: number,
@@ -148,7 +150,7 @@ async function getInstructorAvailability(
 ): Promise<AvailabilityResponse | null> {
   try {
     // Get instructor details
-    const { data: instructor, error: instructorError } = await supabase
+    const { data: instructor, error: instructorError } = await rds
       .from('profiles')
       .select('full_name')
       .eq('id', instructorId)
@@ -164,7 +166,7 @@ async function getInstructorAvailability(
     const dayOfWeek = dayNames[dayOfWeekNumber];
 
     // Get instructor availability for this day
-    const { data: availabilityRules, error: availError } = await supabase
+    const { data: availabilityRules, error: availError } = await rds
       .from('instructor_availability')
       .select('*')
       .eq('instructor_id', instructorId)
@@ -187,7 +189,7 @@ async function getInstructorAvailability(
     }
 
     // Get existing appointments for this instructor on this date
-    const { data: existingAppointments, error: appointmentError } = await supabase
+    const { data: existingAppointments, error: appointmentError } = await rds
       .from('appointments')
       .select('start_time, end_time')
       .eq('instructor_id', instructorId)
@@ -199,7 +201,7 @@ async function getInstructorAvailability(
     }
 
     // Get blocked time periods
-    const { data: timeBlocks, error: blockError } = await supabase
+    const { data: timeBlocks, error: blockError } = await rds
       .from('time_blocks')
       .select('start_time, end_time, block_reason')
       .eq('instructor_id', instructorId)
@@ -213,7 +215,7 @@ async function getInstructorAvailability(
     // Filter appointment types if specified
     let appointmentTypes = null;
     if (appointmentTypeId) {
-      const { data: typeData, error: typeError } = await supabase
+      const { data: typeData, error: typeError } = await rds
         .from('appointment_types')
         .select('duration_minutes')
         .eq('id', appointmentTypeId)

@@ -3,7 +3,7 @@
  * Comprehensive content moderation, versioning, and management system
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { AuditService } from './audit-service';
 import { getUserIdentity } from '@/lib/identity/helpers';
 import type {
@@ -18,7 +18,17 @@ import type {
 } from '../types';
 
 export class ContentManagementService {
-  private supabase = createClient();
+  private supabase: any;
+
+  /**
+   * Get database client (async for server-side)
+   */
+  private async getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
   private auditService = new AuditService();
 
   /**
@@ -136,7 +146,7 @@ export class ContentManagementService {
    */
   async moderateContent(request: ContentModerationRequest): Promise<ApiResponse<ContentModeration>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Moderator not authenticated');
       }
@@ -147,7 +157,7 @@ export class ContentManagementService {
         throw new Error('Moderator identity not found');
       }
 
-      const { data, error } = await this.supabase.rpc('moderate_content', {
+      const { data, error } = await (await this.getClient()).rpc('moderate_content', {
         p_content_type: request.content_type,
         p_content_id: request.content_id,
         p_status: request.status,
@@ -191,7 +201,7 @@ export class ContentManagementService {
     isMajorVersion: boolean = false
   ): Promise<ApiResponse<ContentVersion>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -202,7 +212,7 @@ export class ContentManagementService {
         throw new Error('Admin identity not found');
       }
 
-      const versionId = await this.supabase.rpc('create_content_version', {
+      const versionId = await (await this.getClient()).rpc('create_content_version', {
         p_content_type: contentType,
         p_content_id: contentId,
         p_admin_id: adminIdentity.user_id,
@@ -276,7 +286,7 @@ export class ContentManagementService {
     reason: string
   ): Promise<ApiResponse<{ success: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -406,7 +416,7 @@ export class ContentManagementService {
     archiveData: boolean = true
   ): Promise<ApiResponse<{ deleted: boolean; archived: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -532,7 +542,7 @@ export class ContentManagementService {
     reason: string
   ): Promise<ApiResponse<{ restored: boolean }>> {
     try {
-      const { data: currentUser } = await this.supabase.auth.getUser();
+      const { data: currentUser } = await (await this.getClient()).auth.getUser();
       if (!currentUser.user) {
         throw new Error('Admin not authenticated');
       }
@@ -732,17 +742,17 @@ export class ContentManagementService {
         .gte('moderated_at', fromDate.toISOString())
         .not('moderated_by', 'is', null);
 
-      const statusCounts = (statusData || []).reduce((acc: any, item) => {
+      const statusCounts = (statusData || []).reduce((acc: any, item: any) => {
         acc[item.status] = (acc[item.status] || 0) + 1;
         return acc;
       }, {});
 
-      const typeCounts = (typeData || []).reduce((acc: any, item) => {
+      const typeCounts = (typeData || []).reduce((acc: any, item: any) => {
         acc[item.content_type] = (acc[item.content_type] || 0) + 1;
         return acc;
       }, {});
 
-      const moderatorCounts = (moderatorData || []).reduce((acc: any, item) => {
+      const moderatorCounts = (moderatorData || []).reduce((acc: any, item: any) => {
         const id = item.moderated_by;
         const existing = acc.find((m: any) => m.moderator_id === id);
         if (existing) {

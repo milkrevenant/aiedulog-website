@@ -356,7 +356,7 @@ export class RLSSecurityEnforcer {
     userId: string
   ): Promise<boolean> {
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
       const { data, error } = await supabase
         .from(tableName)
         .select(ownershipField)
@@ -390,7 +390,7 @@ export class RLSSecurityEnforcer {
   ): Promise<void> {
     
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
       
       // Insert violation record
       await supabase
@@ -443,7 +443,7 @@ export class RLSSecurityEnforcer {
   ): Promise<void> {
     
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
       
       await supabase
         .from('security_audit_log')
@@ -502,7 +502,7 @@ export class RLSSecurityEnforcer {
    */
   static async validateRLSEnabled(tableName: string): Promise<boolean> {
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
       
       const { data, error } = await supabase
         .rpc('check_rls_enabled', { table_name: tableName })
@@ -512,7 +512,19 @@ export class RLSSecurityEnforcer {
         return false
       }
       
-      return data === true
+      if (Array.isArray(data)) {
+        return data.some((item) => item === true || Boolean((item as { enabled?: boolean }).enabled))
+      }
+
+      if (typeof data === 'boolean') {
+        return data
+      }
+
+      if (data && typeof data === 'object') {
+        return Boolean((data as { enabled?: boolean }).enabled)
+      }
+
+      return false
       
     } catch (error) {
       secureLogger.error('RLS validation error', error as Error, { table: tableName })
@@ -531,7 +543,7 @@ export class RLSSecurityEnforcer {
   }> {
     
     try {
-      const supabase = await createClient()
+      const supabase = createClient()
       const cutoffTime = new Date(Date.now() - timeframeHours * 60 * 60 * 1000).toISOString()
       
       // Get access attempts from audit log
@@ -552,12 +564,21 @@ export class RLSSecurityEnforcer {
         throw new Error('Failed to generate security report')
       }
       
-      const accessAttempts = auditData?.length || 0
-      const violations = violationData?.length || 0
+      const auditEntries: Array<{ user_id?: string | null; success?: boolean | null }> = (auditData || []) as Array<{
+        user_id?: string | null
+        success?: boolean | null
+      }>
+      const violationEntries: Array<{ user_id?: string | null; severity?: string | null }> = (violationData || []) as Array<{
+        user_id?: string | null
+        severity?: string | null
+      }>
+
+      const accessAttempts = auditEntries.length
+      const violations = violationEntries.length
       
       // Calculate top users
       const userActivity = new Map<string, number>()
-      auditData?.forEach(record => {
+      auditEntries.forEach(record => {
         if (record.user_id) {
           userActivity.set(record.user_id, (userActivity.get(record.user_id) || 0) + 1)
         }

@@ -1,11 +1,13 @@
 'use client'
 
-import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+import type { AppUser } from '@/lib/auth/types'
 import { getOrCreateIdentity } from '@/lib/identity/migration'
 
 /**
  * 통합 채팅 시스템 - Identity 기반 완전 구현
+ *
+ * MIGRATION: Updated to use RDS server client (2025-10-14)
  * 
  * 아키텍처:
  * auth.users.id → auth_methods.provider_user_id → auth_methods.user_id
@@ -62,7 +64,7 @@ export interface ChatParticipant {
 /**
  * 현재 사용자의 완전한 채팅 정보 가져오기
  */
-export async function getCurrentChatUser(user: User): Promise<ChatUser | null> {
+export async function getCurrentChatUser(user: AppUser): Promise<ChatUser | null> {
   const supabase = createClient()
 
   try {
@@ -190,7 +192,7 @@ export async function loadChatMessages(roomId: string): Promise<ChatMessage[]> {
       return []
     }
 
-    return data.map(msg => ({
+    return data.map((msg: any) => ({
       id: msg.id,
       roomId: msg.room_id,
       senderId: msg.sender_id,
@@ -229,11 +231,12 @@ export async function createChatRoom(
         type,
         created_by: chatUser.identityId,  // Identity ID 사용
         created_at: new Date().toISOString()
-      })
-      .select('id')
-      .single()
+      }, { select: 'id' })
 
-    if (error) {
+    const insertedRoom = Array.isArray(data) ? data?.[0] : data
+    const roomId = (insertedRoom as { id?: string | null } | null | undefined)?.id || null
+
+    if (error || !roomId) {
       console.error('Failed to create chat room:', error)
       return null
     }
@@ -242,12 +245,12 @@ export async function createChatRoom(
     await supabase
       .from('chat_participants')
       .insert({
-        room_id: data.id,
+        room_id: roomId,
         user_id: chatUser.identityId,  // Identity ID 사용
         is_active: true
       })
 
-    return data.id
+    return roomId
   } catch (error) {
     console.error('Create room error:', error)
     return null

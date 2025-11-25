@@ -26,11 +26,34 @@ export interface AuthContext {
   hasPermission: (permission: string) => boolean;
 }
 
+interface CognitoJwtPayload {
+  sub: string;
+  email?: string;
+  username?: string;
+  exp: number;
+  [key: string]: unknown;
+}
+
+type UserProfileRow = {
+  user_id: string;
+  email: string | null;
+  role: string | null;
+  is_active: boolean | null;
+};
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
 // Configuration
 const AUTH_CONFIG = {
   cognito: {
-    userPoolId: process.env.COGNITO_USER_POOL_ID!,
-    clientId: process.env.COGNITO_CLIENT_ID!,
+    userPoolId: requireEnv('COGNITO_USER_POOL_ID'),
+    clientId: requireEnv('COGNITO_CLIENT_ID'),
     region: process.env.COGNITO_REGION || 'ap-northeast-2',
   },
   // Internal JWT settings (disabled in edge middleware)
@@ -125,18 +148,30 @@ export class JWTAuthMiddleware {
   /**
    * Create user session from Cognito token
    */
-  private static async createUserSessionFromCognito(cognitoPayload: any): Promise<UserSession> {
+  private static async createUserSessionFromCognito(cognitoPayload: CognitoJwtPayload): Promise<UserSession | null> {
     // Cognito tokens contain different fields
     const cognitoSub = cognitoPayload.sub;
-    const email = cognitoPayload.email || cognitoPayload.username;
+    const email = cognitoPayload.email ?? cognitoPayload.username ?? null;
 
     // Look up user profile in our database to get role and other info
     const userProfile = await this.getUserProfileByCognitoSub(cognitoSub);
+    if (!userProfile && !email) {
+      return null;
+    }
+
+    const normalizedRole: UserSession['role'] =
+      userProfile?.role === 'admin' ||
+      userProfile?.role === 'moderator' ||
+      userProfile?.role === 'member'
+        ? (userProfile.role as UserSession['role'])
+        : userProfile?.role === 'super_admin'
+          ? 'admin'
+          : 'member';
 
     return {
       userId: userProfile?.user_id || cognitoSub,
-      email: email,
-      role: userProfile?.role || 'member',
+      email: email ?? 'unknown@example.com',
+      role: normalizedRole,
       isActive: userProfile?.is_active !== false,
       cognitoSub: cognitoSub,
       expiresAt: cognitoPayload.exp * 1000, // Convert to milliseconds
@@ -146,15 +181,10 @@ export class JWTAuthMiddleware {
   /**
    * Look up user profile by Cognito subject ID
    */
-  private static async getUserProfileByCognitoSub(cognitoSub: string) {
+  private static async getUserProfileByCognitoSub(cognitoSub: string): Promise<UserProfileRow | null> {
     // Fetch the mapped user profile (role, flags) using the new RDS connection.
     try {
-      const { rows } = await queryWithAuth<{
-        user_id: string;
-        email: string | null;
-        role: string | null;
-        is_active: boolean | null;
-      }>(
+      const { rows } = await queryWithAuth<UserProfileRow>(
         `SELECT up.user_id, up.email, up.role, up.is_active
          FROM user_profiles up
          WHERE up.user_id IN (
@@ -318,7 +348,7 @@ export function requireAuth(
  */
 export async function getCurrentUser(): Promise<UserSession | null> {
   try {
-    const headersList = headers();
+    const headersList = await headers();
     const userId = headersList.get('x-user-id');
     const userEmail = headersList.get('x-user-email');
     const userRole = headersList.get('x-user-role');

@@ -15,21 +15,28 @@ import {
   ErrorType 
 } from '@/lib/security/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
+import { createRDSClient } from '@/lib/db/rds-client';
+import { TableRow } from '@/lib/db/types';
+
+type ContentTranslationRow = TableRow<'content_translations'>;
+type IdentityRow = TableRow<'identities'>;
 
 /**
  * GET /api/admin/translations
+ *
+ * MIGRATION: Migrated to RDS with requireAdmin() (2025-10-14)
  * Get translations for content or translation progress
  */
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const searchParams = request.nextUrl.searchParams;
     const contentType = searchParams.get('content_type');
@@ -41,7 +48,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
 
     // Get translation progress for specific content
     if (action === 'progress' && contentType && contentId) {
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData, error: progressError } = await rds
         .rpc('get_translation_progress', {
           p_content_type: contentType,
           p_content_id: contentId
@@ -59,7 +66,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Build query
-    let query = supabase
+    let query = rds
       .from('content_translations')
       .select(`
         *,
@@ -89,7 +96,7 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get translation statistics
-    const { data: stats } = await supabase
+    const { data: stats } = await rds
       .rpc('get_translation_stats');
 
     return NextResponse.json({
@@ -111,13 +118,13 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const postHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const body = await request.json();
     const {
@@ -139,10 +146,10 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     }
 
     // Get current user identity
-    const { data: identity } = await supabase
-      .from('identities')
+    const { data: identity } = await rds
+      .from<IdentityRow>('identities')
       .select('id')
-      .eq('auth_user_id', session.user.id)
+      .eq('auth_user_id', auth.user.id)
       .single();
 
     const translationData = {
@@ -160,13 +167,14 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
     };
 
     // Use upsert to handle existing translations
-    const { data: translation, error } = await supabase
+    const { data: translationRows, error } = await rds
       .from('content_translations')
       .upsert(translationData, {
-        onConflict: 'content_type,content_id,field_name,language_code'
-      })
-      .select()
-      .single();
+        onConflict: 'content_type,content_id,field_name,language_code',
+        select: '*'
+      });
+
+    const translation = translationRows?.[0];
 
     if (error) {
       console.error('Error creating translation:', error);
@@ -190,13 +198,13 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
  */
 const putHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const body = await request.json();
     const { id, action, ...updateData } = body;
@@ -206,26 +214,26 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Get current user identity
-    const { data: identity } = await supabase
+    const { data: identityRows } = await rds
       .from('identities')
       .select('id')
-      .eq('auth_user_id', session.user.id)
-      .single();
+      .eq('auth_user_id', auth.user.id);
+    const identity = identityRows?.[0];
 
     // Handle different actions
     if (action) {
       switch (action) {
         case 'approve': {
-          const { data: translation, error } = await supabase
+          const { data: translationRows, error } = await rds
             .from('content_translations')
+            .eq('id', id)
             .update({
               translation_status: 'reviewed',
               reviewer_id: identity?.id,
               reviewed_at: new Date().toISOString()
-            })
-            .eq('id', id)
-            .select()
-            .single();
+            }, { select: '*' });
+
+          const translation = translationRows?.[0];
 
           if (error) {
             return NextResponse.json({ error: 'Failed to approve translation' }, { status: 500 });
@@ -239,15 +247,15 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
         }
 
         case 'publish': {
-          const { data: translation, error } = await supabase
+          const { data: translationRows, error } = await rds
             .from('content_translations')
-            .update({ 
+            .eq('id', id)
+            .update({
               translation_status: 'published',
               reviewed_at: new Date().toISOString()
-            })
-            .eq('id', id)
-            .select()
-            .single();
+            }, { select: '*' });
+
+          const translation = translationRows?.[0];
 
           if (error) {
             return NextResponse.json({ error: 'Failed to publish translation' }, { status: 500 });
@@ -261,16 +269,16 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
         }
 
         case 'reject': {
-          const { data: translation, error } = await supabase
+          const { data: translationRows, error } = await rds
             .from('content_translations')
+            .eq('id', id)
             .update({
               translation_status: 'draft',
               reviewer_id: identity?.id,
               reviewed_at: new Date().toISOString()
-            })
-            .eq('id', id)
-            .select()
-            .single();
+            }, { select: '*' });
+
+          const translation = translationRows?.[0];
 
           if (error) {
             return NextResponse.json({ error: 'Failed to reject translation' }, { status: 500 });
@@ -286,17 +294,19 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
         case 'ai_translate': {
           // TODO: Integrate with AI translation service (OpenAI, Google Translate, etc.)
           // For now, return placeholder
-          const { data: currentTranslation } = await supabase
+          const { data: currentRows } = await rds
             .from('content_translations')
             .select('original_text')
-            .eq('id', id)
-            .single();
+            .eq('id', id);
+
+          const currentTranslation = currentRows?.[0];
 
           // Simulate AI translation (replace with actual service)
           const aiTranslatedText = `[AI Translated] ${currentTranslation?.original_text}`;
-          
-          const { data: translation, error } = await supabase
+
+          const { data: translationRows, error } = await rds
             .from('content_translations')
+            .eq('id', id)
             .update({
               translated_text: aiTranslatedText,
               translation_status: 'translated',
@@ -304,10 +314,9 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
               quality_score: 0.75, // AI confidence score
               translator_id: identity?.id,
               translated_at: new Date().toISOString()
-            })
-            .eq('id', id)
-            .select()
-            .single();
+            }, { select: '*' });
+
+          const translation = translationRows?.[0];
 
           if (error) {
             return NextResponse.json({ error: 'Failed to AI translate' }, { status: 500 });
@@ -323,15 +332,15 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
     }
 
     // Regular update
-    const { data: translation, error } = await supabase
+    const { data: translationRows, error } = await rds
       .from('content_translations')
+      .eq('id', id)
       .update({
         ...updateData,
         updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single();
+      }, { select: '*' });
+
+    const translation = translationRows?.[0];
 
     if (error) {
       console.error('Error updating translation:', error);
@@ -355,13 +364,13 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
  */
 const deleteHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check admin authentication
+    const auth = await requireAdmin(request);
+    if (auth.error || !auth.user) {
+      return NextResponse.json({ error: auth.error || 'User not found' }, { status: auth.status || 401 });
     }
+
+    const rds = createRDSClient();
 
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
@@ -370,10 +379,10 @@ const deleteHandler = async (request: NextRequest, context: SecurityContext): Pr
       return NextResponse.json({ error: 'Translation ID is required' }, { status: 400 });
     }
 
-    const { error } = await supabase
+    const { error } = await rds
       .from('content_translations')
-      .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .delete();
 
     if (error) {
       console.error('Error deleting translation:', error);
