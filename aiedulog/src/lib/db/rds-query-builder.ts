@@ -265,8 +265,9 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
    * Execute SELECT query
    */
   async execute(): Promise<RDSResponse<T>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const query = this.countMode ? this.buildCountQuery() : this.buildSelectQuery()
       const result: QueryResult = await client.query(query, this.whereValues)
 
@@ -303,7 +304,7 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 
@@ -340,8 +341,9 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
    * INSERT
    */
   async insert(data: Partial<T> | Partial<T>[], options?: { onConflict?: string; select?: string }): Promise<RDSResponse<T | T[]>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const records = Array.isArray(data) ? data : [data]
 
       if (records.length === 0) {
@@ -391,7 +393,7 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 
@@ -399,8 +401,9 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
    * UPDATE
    */
   async update(data: Partial<T>, options?: { select?: string }): Promise<RDSResponse<T | T[]>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const columns = Object.keys(data)
       const setClause = columns.map((col, index) => `${col} = $${index + 1}`).join(', ')
       const values = columns.map(col => (data as any)[col])
@@ -437,7 +440,7 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 
@@ -445,8 +448,9 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
    * UPSERT (INSERT ... ON CONFLICT DO UPDATE)
    */
   async upsert(data: Partial<T> | Partial<T>[], options?: { onConflict?: string; select?: string }): Promise<RDSResponse<T | T[]>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const records = Array.isArray(data) ? data : [data]
 
       if (records.length === 0) {
@@ -496,7 +500,7 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 
@@ -504,8 +508,9 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
    * DELETE
    */
   async delete(options?: { select?: string }): Promise<RDSResponse<T[]>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const whereClause = this.whereConditions.length > 0
         ? `WHERE ${this.whereConditions.join(' AND ')}`
         : ''
@@ -535,7 +540,7 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 
@@ -597,8 +602,9 @@ export class RDSClient {
    * Execute raw SQL
    */
   async query<T = any>(sql: string, params?: any[]): Promise<RDSResponse<T[]>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const result = await client.query(sql, params)
       return {
         data: result.rows,
@@ -617,7 +623,7 @@ export class RDSClient {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 
@@ -625,8 +631,9 @@ export class RDSClient {
    * RPC call (stored procedure)
    */
   async rpc<T = any>(fnName: string, params?: any): Promise<RDSResponse<T[]>> {
-    const client = await this.pool.connect()
+    let client
     try {
+      client = await this.pool.connect()
       const paramNames = params ? Object.keys(params) : []
       const paramValues = params ? Object.values(params) : []
       const paramPlaceholders = paramNames.map((_, i) => `$${i + 1}`).join(', ')
@@ -651,7 +658,7 @@ export class RDSClient {
         count: 0
       }
     } finally {
-      client.release()
+      if (client) client.release()
     }
   }
 }

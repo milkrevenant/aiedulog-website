@@ -24,7 +24,7 @@ const securityHeaders = [
   },
   {
     key: 'Content-Security-Policy',
-    value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.stripe.com https://cognito-idp.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazonaws.com https://${process.env.COGNITO_DOMAIN || 'your-domain'}.auth.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazoncognito.com; frame-src https://js.stripe.com https://${process.env.COGNITO_DOMAIN || 'your-domain'}.auth.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazoncognito.com;`
+    value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.stripe.com https://cognito-idp.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazonaws.com https://${process.env.COGNITO_DOMAIN || 'your-domain'}.auth.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazoncognito.com; frame-src 'self' https://js.stripe.com https://${process.env.COGNITO_DOMAIN || 'your-domain'}.auth.${process.env.COGNITO_REGION || 'ap-northeast-2'}.amazoncognito.com https://www.canva.com https://docs.google.com https://www.youtube.com https://player.vimeo.com;`
   },
   {
     key: 'Strict-Transport-Security',
