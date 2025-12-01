@@ -149,6 +149,12 @@ export default function Home() {
       },
     },
     {
+      label: '연수자료',
+      key: 'training-materials',
+      dropdown: null,
+      href: '/training-materials',
+    },
+    {
       label: '자료공유',
       key: 'share',
       dropdown: {
@@ -1240,6 +1246,8 @@ export default function Home() {
                   }}
                 >
                   <Card
+                    component={Link}
+                    href="/training-materials#mcp"
                     sx={{
                       flex: 1,
                       minWidth: { xs: 140, sm: 0, md: 'auto' },
@@ -1249,6 +1257,7 @@ export default function Home() {
                       p: 3,
                       boxShadow: 'none',
                       cursor: 'pointer',
+                      textDecoration: 'none',
                       transition: 'all 0.3s',
                       '&:hover': {
                         transform: 'translateY(-4px)',
@@ -1272,6 +1281,7 @@ export default function Home() {
                         fontWeight: 600,
                         mt: 1,
                         fontSize: { xs: '1rem', sm: '1.25rem' },
+                        color: '#191C20',
                       }}
                     >
                       2025년 상반기 연수 : MCP
@@ -1286,6 +1296,8 @@ export default function Home() {
                   </Card>
 
                   <Card
+                    component={Link}
+                    href="/training-materials#cli"
                     sx={{
                       flex: 1,
                       minWidth: { xs: 140, sm: 0, md: 'auto' },
@@ -1295,6 +1307,7 @@ export default function Home() {
                       p: 3,
                       boxShadow: 'none',
                       cursor: 'pointer',
+                      textDecoration: 'none',
                       transition: 'all 0.3s',
                       '&:hover': {
                         transform: 'translateY(-4px)',
@@ -1318,6 +1331,7 @@ export default function Home() {
                         fontWeight: 600,
                         mt: 1,
                         fontSize: { xs: '1rem', sm: '1.25rem' },
+                        color: '#191C20',
                       }}
                     >
                       2025년 하반기 연수 : CLI 활용 자동채점

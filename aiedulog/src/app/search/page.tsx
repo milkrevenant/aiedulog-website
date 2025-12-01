@@ -50,6 +50,7 @@ import {
   Article,
   Person,
   Tag,
+  School, // Add School icon
 } from '@mui/icons-material'
 import AppHeader from '@/components/AppHeader'
 
@@ -83,6 +84,7 @@ function SearchContent() {
   const [posts, setPosts] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [tags, setTags] = useState<any[]>([])
+  const [materials, setMaterials] = useState<any[]>([]) // Add materials state
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -229,6 +231,22 @@ function SearchContent() {
           count: Math.floor(Math.random() * 50), // 임시 카운트
         }))
       setTags(matchedTags)
+
+      // 연수 자료 검색
+      try {
+        const response = await fetch('/api/training-materials')
+        if (response.ok) {
+          const allMaterials = await response.json()
+          const filteredMaterials = allMaterials.filter((m: any) => 
+            m.title.toLowerCase().includes(query.toLowerCase()) ||
+            m.description?.toLowerCase().includes(query.toLowerCase()) ||
+            m.tags?.some((t: string) => t.toLowerCase().includes(query.toLowerCase()))
+          )
+          setMaterials(filteredMaterials)
+        }
+      } catch (error) {
+        console.error('Materials search error:', error)
+      }
     } catch (error) {
       console.error('Search error:', error)
     } finally {
@@ -330,7 +348,7 @@ function SearchContent() {
                 '{query}' 검색 결과
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                게시글 {posts.length}개, 사용자 {users.length}명, 태그 {tags.length}개
+                게시글 {posts.length}개, 사용자 {users.length}명, 태그 {tags.length}개, 연수자료 {materials.length}개
               </Typography>
             </Box>
           </Stack>
@@ -348,6 +366,7 @@ function SearchContent() {
             <Tab icon={<Article />} label={`게시글 (${posts.length})`} iconPosition="start" />
             <Tab icon={<Person />} label={`사용자 (${users.length})`} iconPosition="start" />
             <Tab icon={<Tag />} label={`태그 (${tags.length})`} iconPosition="start" />
+            <Tab icon={<School />} label={`연수자료 (${materials.length})`} iconPosition="start" />
           </Tabs>
         </Paper>
 
@@ -557,6 +576,41 @@ function SearchContent() {
                   onClick={() => router.push(`/board/${tag.name}`)}
                   sx={{ mb: 1, fontSize: '1rem' }}
                 />
+              ))}
+            </Stack>
+          ) : (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary">
+                검색 결과가 없습니다
+              </Typography>
+            </Paper>
+          )}
+        </TabPanel>
+
+        {/* 연수자료 탭 */}
+        <TabPanel value={tabValue} index={3}>
+          {materials.length > 0 ? (
+            <Stack spacing={2}>
+              {materials.map((material) => (
+                <Card 
+                  key={material.id}
+                  sx={{ cursor: 'pointer', '&:hover': { boxShadow: 3 } }}
+                  onClick={() => router.push('/training-materials')}
+                >
+                  <CardContent>
+                    <Typography variant="h6" fontWeight="bold" gutterBottom>
+                      {material.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      {material.description}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      {material.tags?.map((tag: string) => (
+                        <Chip key={tag} label={tag} size="small" />
+                      ))}
+                    </Stack>
+                  </CardContent>
+                </Card>
               ))}
             </Stack>
           ) : (
