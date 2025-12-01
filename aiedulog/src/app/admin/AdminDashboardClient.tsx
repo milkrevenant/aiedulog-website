@@ -41,6 +41,8 @@ import {
   Article,
   AdminPanelSettings,
   Dashboard as DashboardIcon,
+  Groups,
+  MenuBook,
 } from '@mui/icons-material'
 
 interface Statistics {
@@ -108,6 +110,22 @@ export function AdminDashboardClient({
       icon: <School fontSize="large" />,
       path: '/admin/lectures',
       color: '#FF7675',
+      permission: 'manage_content',
+    },
+    {
+      title: '연구회원 관리',
+      description: '연구회 소개 페이지 멤버 관리',
+      icon: <Groups fontSize="large" />,
+      path: '/admin/research-members',
+      color: '#7C4DFF',
+      permission: 'manage_content',
+    },
+    {
+      title: '연수자료 관리',
+      description: '연수 자료 등록 및 편집',
+      icon: <MenuBook fontSize="large" />,
+      path: '/admin/training-materials',
+      color: '#00BCD4',
       permission: 'manage_content',
     },
     {
