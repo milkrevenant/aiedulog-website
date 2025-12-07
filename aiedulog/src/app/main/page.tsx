@@ -53,7 +53,6 @@ import {
   Message,
   ExpandLess,
   ExpandMore,
-  EventAvailable,
 } from '@mui/icons-material'
 import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
@@ -191,12 +190,6 @@ export default function Home() {
       key: 'news',
       dropdown: null,
       href: '/news',
-    },
-    {
-      label: '1:1 상담 예약',
-      key: 'scheduling',
-      dropdown: null,
-      href: '/scheduling',
     },
   ]
 
@@ -792,28 +785,6 @@ export default function Home() {
               </ListItemIcon>
               <ListItemText
                 primary="뉴스"
-                primaryTypographyProps={{
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-
-          <Divider />
-
-          {/* 1:1 상담 예약 */}
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
-              href="/scheduling"
-              onClick={() => setMobileMenuAnchor(null)}
-            >
-              <ListItemIcon>
-                <EventAvailable sx={{ color: '#2E86AB' }} />
-              </ListItemIcon>
-              <ListItemText
-                primary="1:1 상담 예약"
                 primaryTypographyProps={{
                   fontSize: '1rem',
                   fontWeight: 500,
