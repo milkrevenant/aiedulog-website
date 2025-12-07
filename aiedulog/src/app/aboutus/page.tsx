@@ -23,7 +23,6 @@ export default function AboutUs() {
   return (
     <CMSContent
       sectionKey="about-us"
-      language="ko"
       fallbackContent={fallbackContent}
       containerProps={{
         sx: { minHeight: '100vh', bgcolor: 'background.default' }
