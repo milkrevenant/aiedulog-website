@@ -254,7 +254,7 @@ export class SecureAuthService {
       }
 
       // 6. Get user profile and role
-      let profileQuery = this.db
+      const profileQuery = this.db
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
@@ -402,7 +402,7 @@ export class SecureAuthService {
       }
 
       // Get user profile
-      let profileQuery = this.db
+      const profileQuery = this.db
         .from('profiles')
         .select('*')
         .eq('id', user.id)

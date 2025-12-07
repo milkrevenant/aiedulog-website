@@ -132,7 +132,7 @@ const putHandler = async (
     };
     
     // Update completed steps if requested
-    let completedSteps = existingSession.data.completed_steps || [];
+    const completedSteps = existingSession.data.completed_steps || [];
     if (body.complete_step && !completedSteps.includes(body.step)) {
       completedSteps.push(body.step);
       updatedData.completed_steps = completedSteps;

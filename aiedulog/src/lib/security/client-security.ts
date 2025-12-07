@@ -82,7 +82,7 @@ export class ClientSecurityMonitor {
     if (!this.config.devToolsProtection) return
 
     // Method 1: Console timing detection
-    let devtools = { open: false, orientation: null as string | null }
+    const devtools = { open: false, orientation: null as string | null }
     
     const threshold = 160
     setInterval(() => {
@@ -177,9 +177,9 @@ export class ClientSecurityMonitor {
     const antiDebug = () => {
       if (typeof window !== 'undefined') {
         // Detect if debugger is attached
-        let start = Date.now()
+        const start = Date.now()
         debugger
-        let end = Date.now()
+        const end = Date.now()
         
         if (end - start > 100) {
           this.recordViolation('debugger', 'high', {

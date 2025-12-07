@@ -97,6 +97,14 @@ export function AdminDashboardClient({
       permission: 'manage_users',
     },
     {
+      title: '운영진 관리',
+      description: '운영진 지정 및 직위/부서 관리',
+      icon: <AdminPanelSettings fontSize="large" />,
+      path: '/admin/staff',
+      color: '#F4A261',
+      permission: 'manage_users',
+    },
+    {
       title: '게시글 관리',
       description: '모든 게시판의 게시글 관리',
       icon: <Article fontSize="large" />,

@@ -26,9 +26,9 @@ import {
  */
 
 // Re-export types from the service for backward compatibility
-export interface UserProfile extends ServiceUserProfile {}
-export interface IdentityData extends ServiceIdentityData {}
-export interface UserStats extends ServiceUserStats {}
+export type UserProfile = ServiceUserProfile
+export type IdentityData = ServiceIdentityData
+export type UserStats = ServiceUserStats
 
 // Export service types for advanced usage
 export type { 

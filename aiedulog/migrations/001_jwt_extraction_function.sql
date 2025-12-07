@@ -6,6 +6,8 @@
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable pgcrypto for gen_random_uuid (used in later migrations)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Create function to extract current user ID from Cognito JWT
 CREATE OR REPLACE FUNCTION get_current_user_id()

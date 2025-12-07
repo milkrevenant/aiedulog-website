@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { queryWithAuth } from '@/lib/db/rds-client';
 import { requireAuth } from '@/lib/auth/jwt-middleware';
 
+export const runtime = 'nodejs';
+
 export const GET = async (req: NextRequest) => {
   try {
     const jwtClaimsHeader = req.headers.get('x-jwt-claims');

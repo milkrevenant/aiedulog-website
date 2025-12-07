@@ -158,9 +158,9 @@ export function createClient() {
         on: (
           _event: string,
           _filterOrCallback: unknown,
-          _callback?: Function
+          _callback?: (...args: unknown[]) => void
         ) => channelStub,
-        subscribe: (_statusCallback?: Function) => channelStub,
+        subscribe: (_statusCallback?: (...args: unknown[]) => void) => channelStub,
         unsubscribe: () => {
           /* noop */
         },

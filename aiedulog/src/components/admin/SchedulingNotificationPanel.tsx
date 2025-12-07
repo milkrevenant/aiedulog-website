@@ -179,7 +179,7 @@ export default function SchedulingNotificationPanel() {
     setTestResults(prev => [newTest, ...prev]);
 
     try {
-      let body: any = { action: `send_${notificationType}` };
+      const body: any = { action: `send_${notificationType}` };
       
       if (selectedAppointment) {
         body.appointmentId = selectedAppointment;

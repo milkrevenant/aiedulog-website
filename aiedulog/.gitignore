@@ -45,3 +45,6 @@ scripts/aws/
 scripts/db/
 *.aws
 *.key
+
+# Local infra
+../docker-compose.yml

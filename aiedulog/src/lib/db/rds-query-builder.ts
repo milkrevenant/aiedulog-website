@@ -473,7 +473,7 @@ export class RDSQueryBuilder<T = any> implements PromiseLike<RDSResponse<T>> {
       const updateColumns = columns.filter(col => col !== 'id' && col !== 'created_at')
       const updateClause = updateColumns.map(col => `${col} = EXCLUDED.${col}`).join(', ')
 
-      let query = `
+      const query = `
         INSERT INTO ${this.tableName} (${columns.join(', ')})
         VALUES ${valuePlaceholders.join(', ')}
         ON CONFLICT ${options?.onConflict || '(id)'}

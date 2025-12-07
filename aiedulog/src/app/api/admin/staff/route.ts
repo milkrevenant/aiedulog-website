@@ -3,6 +3,8 @@ import { queryWithAuth } from '@/lib/db/rds-client'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth/auth-options'
 
+export const runtime = 'nodejs'
+
 export interface StaffMember {
   id: string
   user_id: string

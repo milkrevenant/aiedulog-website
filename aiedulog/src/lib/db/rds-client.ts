@@ -201,9 +201,9 @@ export function createRDSClient() {
         on: (
           _event: string,
           _filterOrCallback: unknown,
-          _callback?: Function
+          _callback?: (...args: unknown[]) => void
         ) => channelStub,
-        subscribe: (_statusCallback?: Function) => {
+        subscribe: (_statusCallback?: (...args: unknown[]) => void) => {
           console.warn('[Realtime] Not implemented. Use WebSocket or polling.');
           return channelStub;
         },

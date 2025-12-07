@@ -131,6 +131,11 @@ const nextConfig: NextConfig = {
       tls: false,
       dns: false,  // Fix for pg module in client builds
     };
+    // Prevent optional pg-native from bundling
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'pg-native': false,
+    };
 
     // Additional optimizations for Edge Runtime compatibility
     if (!isServer) {
@@ -138,6 +143,7 @@ const nextConfig: NextConfig = {
         ...config.resolve.alias,
         // Optimize specific packages for browser builds
         '@supabase/realtime-js': '@supabase/realtime-js',
+        'pg-native': false,
       };
     }
 

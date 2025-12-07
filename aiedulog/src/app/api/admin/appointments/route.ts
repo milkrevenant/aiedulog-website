@@ -182,7 +182,7 @@ const postHandler = async (
       );
     }
 
-    let updateData: any = {
+    const updateData: any = {
       updated_at: new Date().toISOString()
     };
     let notificationType: NotificationType | null = null;
