@@ -222,7 +222,7 @@ async function getSecurityDashboard(rds: any, context: any): Promise<{ success: 
     { count: securityViolations24h },
     { count: criticalAlerts }
   ] = await Promise.all([
-    rds.from('identities').select('*', { count: 'exact' as any }),
+    rds.from('user_profiles').select('*', { count: 'exact' as any }),
     rds.from('security_audit_log').select('*', { count: 'exact' as any })
       .gte('created_at', yesterday.toISOString()).eq('success', true),
     rds.from('security_violations').select('*', { count: 'exact' as any })
@@ -706,12 +706,12 @@ async function blockSuspiciousUser(rds: any, context: any, data: any, adminId: s
   
   // Update user status
   const { error } = await rds
-    .from('identities')
+    .from('user_profiles')
     .update({
-      status: 'blocked',
+      is_active: false,
       updated_at: new Date().toISOString()
     })
-    .eq('id', userId)
+    .eq('user_id', userId)
   
   if (error) throw error
   

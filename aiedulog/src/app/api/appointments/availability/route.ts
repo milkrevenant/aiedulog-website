@@ -70,10 +70,10 @@ const getHandler = async (
     } else {
       // Get all active instructors
       const { data: instructors, error: instructorError } = await rds
-        .from('identities')
-        .select('id')
+        .from('user_profiles')
+        .select('user_id')
         .eq('role', 'instructor')
-        .eq('status', 'active');
+        .eq('is_active', true);
 
       if (instructorError) {
         console.error('Error fetching instructors:', instructorError);
@@ -83,7 +83,7 @@ const getHandler = async (
         );
       }
 
-      instructorIds = instructors?.map((i: any) => i.id) || [];
+      instructorIds = instructors?.map((i: any) => i.user_id) || [];
     }
 
     if (instructorIds.length === 0) {

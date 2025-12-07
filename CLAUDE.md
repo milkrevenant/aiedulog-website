@@ -38,7 +38,7 @@ npm run dev  # Always use port 3000 only
 - GitHub: https://github.com/milkrevenant/aiedulog-website
 
 ## ⚙️ Tech Stack
-- **Framework**: Next.js 15.4.6 (App Router)
+- **Framework**: Next.js 15.4.8 (App Router)
 - **Database**: PostgreSQL (로컬 개발) / AWS RDS (프로덕션 준비됨)
 - **Auth**: AWS Cognito + NextAuth.js
 - **UI**: Material UI v7 + Material 3
@@ -91,4 +91,4 @@ npm run dev
 
 ---
 
-**마지막 업데이트**: 2025-10-21
+**마지막 업데이트**: 2025-12-07

@@ -292,15 +292,11 @@ export default function ChatInterface({ roomId, user, isNewChat = false }: ChatI
             .from('chat_messages')
             .select(`
               *,
-              sender:identities!chat_messages_sender_id_fkey(
-                id,
-                user_profiles!identities_user_profiles_identity_id_fkey(
-                  id,
-                  identity_id,
-                  nickname,
-                  email,
-                  avatar_url
-                )
+              sender:user_profiles!chat_messages_sender_id_fkey(
+                user_id,
+                nickname,
+                email,
+                avatar_url
               )
             `)
             .eq('id', payload.new.id)

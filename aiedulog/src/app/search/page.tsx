@@ -109,15 +109,12 @@ function SearchContent() {
           .select(
             `
             *,
-            identities!posts_author_id_fkey (
-              id,
-              user_profiles (
-                id,
-                email,
-                nickname,
-                role,
-                avatar_url
-              )
+            author:user_profiles!posts_author_id_fkey (
+              user_id,
+              email,
+              nickname,
+              role,
+              avatar_url
             ),
             post_likes (
               user_id
@@ -174,7 +171,7 @@ function SearchContent() {
       if (postsData) {
         const postsWithStats = postsData.map((post: any) => {
           // Handle both identity-based and legacy profile data
-          const profileData = post.identities?.user_profiles || post.profiles
+          const profileData = post.author || post.profiles
           
           return {
             ...post,
@@ -182,7 +179,7 @@ function SearchContent() {
               name: profileData?.nickname || profileData?.email?.split('@')[0] || '사용자',
               email: profileData?.email,
               role: profileData?.role || 'member',
-              isVerified: profileData?.role === 'verified',
+              isVerified: ['verified', 'moderator', 'admin'].includes(profileData?.role),
               avatar_url: profileData?.avatar_url,
             },
             likes: post.post_likes?.length || 0,

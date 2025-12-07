@@ -135,8 +135,8 @@ const postHandler = async (
       
       // Check if user already exists
       const { data: existingUser, error: userCheckError } = await rds
-        .from('identities')
-        .select('id')
+        .from('user_profiles')
+        .select('user_id')
         .eq('email', email)
         .single();
       
@@ -149,20 +149,20 @@ const postHandler = async (
       }
       
       if (existingUser) {
-        finalUserId = existingUser.id;
+        finalUserId = existingUser.user_id;
       } else {
         // Create temporary user entry for anonymous booking
         const { data: newUsers, error: createUserError } = await rds
-          .from('identities')
+          .from('user_profiles')
           .insert({
             email,
             full_name: full_name || 'Anonymous User',
             phone,
-            role: 'user',
-            status: 'pending', // Pending until they complete registration
+            role: 'member',
+            is_active: false, // Pending until they complete registration
             created_at: new Date().toISOString()
           }, {
-            select: 'id'
+            select: 'user_id'
           });
 
         const newUser = newUsers?.[0] || null;
@@ -175,7 +175,7 @@ const postHandler = async (
           );
         }
 
-        finalUserId = newUser.id;
+        finalUserId = newUser.user_id;
       }
     }
     
@@ -202,15 +202,15 @@ const postHandler = async (
       .insert([appointmentData], {
         select: `
           *,
-          instructor:identities!appointments_instructor_id_fkey(
-            id,
+          instructor:user_profiles!appointments_instructor_id_fkey(
+            id:user_id,
             full_name,
             email,
-            profile_image_url,
+            profile_image_url:avatar_url,
             bio
           ),
-          user:identities!appointments_user_id_fkey(
-            id,
+          user:user_profiles!appointments_user_id_fkey(
+            id:user_id,
             full_name,
             email
           ),

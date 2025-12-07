@@ -229,11 +229,11 @@ export async function createSecurityContext(request: NextRequest): Promise<Secur
       const db = createClient();
       const { data: profile } = await db
         .from('user_profiles')
-        .select('role, status')
-        .eq('id', resolvedUserId)
+        .select('role, is_active')
+        .eq('user_id', resolvedUserId)
         .single();
 
-      if (profile && profile.status === 'active') {
+      if (profile && profile.is_active === true) {
         userRole = mapDatabaseRole(profile.role || 'user');
       } else {
         sessionValid = false; // Invalid if user blocked/suspended

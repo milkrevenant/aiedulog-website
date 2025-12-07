@@ -818,9 +818,9 @@ export class NotificationService {
         return userId;
       case 'email':
         const { data: identityRows } = await rds
-          .from('identities')
+          .from('user_profiles')
           .select('email')
-          .eq('id', userId);
+          .eq('user_id', userId);
         const identities = (identityRows ?? []) as Array<{ email?: string | null }>;
         return identities[0]?.email || '';
       case 'push':

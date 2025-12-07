@@ -11,13 +11,11 @@ import {
 
 type AppointmentRow = TableRow<'appointments'>;
 type AppointmentTypeRow = TableRow<'appointment_types'>;
-type IdentitySummary = Pick<TableRow<'identities'>, 'id'> & {
-  full_name?: string | null;
-};
+type UserProfileSummary = Pick<TableRow<'user_profiles'>, 'user_id' | 'full_name'>;
 
 type AppointmentWithType = AppointmentRow & {
   appointment_type?: Pick<AppointmentTypeRow, 'price'> | null;
-  instructor?: IdentitySummary | null;
+  instructor?: UserProfileSummary | null;
 };
 
 /**
@@ -211,7 +209,7 @@ async function getInstructorPerformance(
         instructor_id,
         status,
         appointment_type:appointment_types(price),
-        instructor:identities!appointments_instructor_id_fkey(full_name)
+        instructor:user_profiles!appointments_instructor_id_fkey(full_name)
       `)
       .gte('appointment_date', startDate)
       .lte('appointment_date', endDate);

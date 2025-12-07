@@ -520,9 +520,9 @@ async function handleWaitlistAvailable(
 
     // Fetch waitlisted users
     const { data: waitlistedUsers, error } = await supabase
-      .from('identities')
-      .select('id, full_name, email, preferred_language')
-      .in('id', waitlistedUserIds);
+      .from('user_profiles')
+      .select('id:user_id, full_name, email, preferred_language')
+      .in('user_id', waitlistedUserIds);
 
     if (error) {
       throw new Error(`Failed to fetch waitlisted users: ${error.message}`);

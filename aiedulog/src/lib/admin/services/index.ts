@@ -424,8 +424,8 @@ export class AdminService {
     try {
       // Simple health check query
       await this.supabase
-        .from('identities')
-        .select('id')
+        .from('user_profiles')
+        .select('user_id')
         .limit(1)
         .single();
       

@@ -71,9 +71,9 @@ const getHandler = async (
 
     // Verify instructor exists and is active
     const { data: instructor, error: instructorError } = await rds
-      .from('identities')
-      .select('id, full_name, status, role')
-      .eq('id', instructorId)
+      .from('user_profiles')
+      .select('user_id, full_name, is_active, role')
+      .eq('user_id', instructorId)
       .single();
 
     if (instructorError || !instructor) {
@@ -83,7 +83,7 @@ const getHandler = async (
       );
     }
 
-    if (instructor.status !== 'active') {
+    if (instructor.is_active !== true) {
       return NextResponse.json(
         { error: 'Instructor is not available' } as ApiResponse,
         { status: 404 }
@@ -144,9 +144,9 @@ async function getSimplifiedAvailability(
   try {
     // Get instructor name
     const { data: instructor, error: instructorError } = await rds
-      .from('identities')
+      .from('user_profiles')
       .select('full_name')
-      .eq('id', instructorId)
+      .eq('user_id', instructorId)
       .single();
 
     if (instructorError) {

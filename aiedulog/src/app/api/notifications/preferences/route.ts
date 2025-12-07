@@ -410,9 +410,9 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Check if user exists
     const { data: existingUser, error: userError } = await rds
-      .from('identities')
-      .select('id')
-      .eq('id', user_id)
+      .from('user_profiles')
+      .select('user_id')
+      .eq('user_id', user_id)
       .single()
 
     if (userError || !existingUser) {

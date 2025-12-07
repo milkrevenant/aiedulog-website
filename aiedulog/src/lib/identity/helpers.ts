@@ -1,7 +1,6 @@
-import { createClient as createClientClient } from '@/lib/supabase/server'
 import type { AppUser } from '@/lib/auth/types'
-import { 
-  StableIdentityService, 
+import {
+  StableIdentityService,
   getIdentityService,
   type UserProfile as ServiceUserProfile,
   type IdentityData as ServiceIdentityData,
@@ -11,59 +10,45 @@ import {
 /**
  * Identity System Helper Functions
  *
- * MIGRATION: Updated to use RDS server client (2025-10-14)
- * 
- * UPDATED: Now uses StableIdentityService for improved reliability and performance
- * These functions maintain backward compatibility while leveraging the new service.
- * 
- * The new service provides:
- * - Email-first identity resolution using ensure_user_identity()
- * - In-memory caching for better performance
- * - Improved error handling and fallbacks
- * - Future Cognito compatibility
- * 
- * 모든 컴포넌트에서 일관된 Identity 시스템 사용을 보장
+ * UPDATED: 2025-12-07 - Simplified for Cognito + user_profiles architecture
+ *
+ * These functions provide a simple API for identity operations using
+ * the StableIdentityService which queries user_profiles directly.
  */
 
-// Re-export types from the service for backward compatibility
+// Re-export types for backward compatibility
 export type UserProfile = ServiceUserProfile
 export type IdentityData = ServiceIdentityData
 export type UserStats = ServiceUserStats
 
 // Export service types for advanced usage
-export type { 
+export type {
   IdentityNotFoundError,
   IdentityResolutionError,
   ServiceConfig
 } from './stable-identity-service'
 
-// Export the error class (not interface)
 export { IdentityServiceError } from './stable-identity-service'
 
 /**
- * auth.user.id로부터 identity_id와 profile을 가져오는 통합 함수
- * 
- * UPDATED: Now uses StableIdentityService with ensure_user_identity() for improved reliability
- * 
- * @param user - Supabase User object
+ * Get user identity by looking up user_profiles by email
+ *
+ * @param user - AppUser object (from Cognito session)
  * @param supabaseClient - Optional Supabase client instance
- * @returns Promise<IdentityData | null> - User identity data or null if not found
+ * @returns Promise<IdentityData | null>
  */
 export async function getUserIdentity(user: AppUser, supabaseClient?: any): Promise<IdentityData | null> {
   try {
     const service = getIdentityService(supabaseClient)
     return await service.resolveUserIdentity(user)
   } catch (error) {
-    // Maintain backward compatibility by returning null on error
     console.error('Failed to get user identity:', error)
     return null
   }
 }
 
 /**
- * 채팅 메시지 전송용 - identity_id 반환
- * 
- * UPDATED: Now uses StableIdentityService for better performance
+ * Get user_id from user_profiles by email
  */
 export async function getIdentityId(user: AppUser, supabaseClient?: any): Promise<string | null> {
   try {
@@ -76,9 +61,7 @@ export async function getIdentityId(user: AppUser, supabaseClient?: any): Promis
 }
 
 /**
- * 사용자 표시명 반환
- * 
- * UPDATED: Now uses StableIdentityService for consistent display name logic
+ * Get display name from user profile
  */
 export function getDisplayName(profile: UserProfile): string {
   const service = getIdentityService()
@@ -86,24 +69,15 @@ export function getDisplayName(profile: UserProfile): string {
 }
 
 /**
- * 메시지 소유자 확인
- * 
- * UPDATED: Now uses StableIdentityService for consistent ownership logic
+ * Check if message sender matches current user
  */
-export function isMessageOwner(messageSenderId: string, currentUserIdentityId?: string): boolean {
+export function isMessageOwner(messageSenderId: string, currentUserId?: string): boolean {
   const service = getIdentityService()
-  return service.isMessageOwner(messageSenderId, currentUserIdentityId)
+  return service.isMessageOwner(messageSenderId, currentUserId)
 }
 
 /**
- * 사용자 검색 - 통합 identity 시스템 활용
- * 
- * UPDATED: Now uses StableIdentityService with caching for better performance
- * 
- * @param searchText - 검색어
- * @param supabaseClient - Optional Supabase client instance
- * @param excludeUserId - 제외할 사용자 ID (옵션)
- * @param limit - 결과 개수 제한 (기본값: 10)
+ * Search users by name/email
  */
 export async function searchUsers(
   searchText: string,
@@ -121,9 +95,7 @@ export async function searchUsers(
 }
 
 /**
- * 사용자 통계 조회 - 통합 identity 시스템 활용
- * 
- * UPDATED: Now uses StableIdentityService with caching and parallel queries
+ * Get user statistics
  */
 export async function getUserStats(supabaseClient?: any): Promise<UserStats> {
   try {
@@ -146,12 +118,6 @@ export async function getUserStats(supabaseClient?: any): Promise<UserStats> {
 
 /**
  * Get the StableIdentityService instance for advanced usage
- * 
- * This allows components to access advanced features like:
- * - Cache management
- * - Configuration updates
- * - Error handling
- * - Performance monitoring
  */
 export function getAdvancedIdentityService(supabaseClient?: any): StableIdentityService {
   return getIdentityService(supabaseClient)
@@ -159,7 +125,6 @@ export function getAdvancedIdentityService(supabaseClient?: any): StableIdentity
 
 /**
  * Clear identity cache for a specific user
- * Useful when user data has been updated
  */
 export function clearUserIdentityCache(userId: string): void {
   const service = getIdentityService()
@@ -168,7 +133,6 @@ export function clearUserIdentityCache(userId: string): void {
 
 /**
  * Clear all identity cache
- * Useful for testing or when major data changes occur
  */
 export function clearAllIdentityCache(): void {
   const service = getIdentityService()

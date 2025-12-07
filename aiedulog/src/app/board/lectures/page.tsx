@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { getUserIdentity } from '@/lib/identity/helpers'
@@ -102,7 +101,6 @@ interface Lecture {
 
 export default function LecturesBoardPage() {
   const router = useRouter()
-  const supabase = createClient()
   const { data: session } = useSession()
   const [user, setUser] = useState<any | null>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -129,7 +127,7 @@ export default function LecturesBoardPage() {
     const authUser = session?.user as any
     setUser(authUser || null)
     if (authUser) {
-      fetchUserRegistrations((authUser as any).sub || authUser.id)
+      await fetchUserRegistrations()
       const identity = await getUserIdentity(authUser)
       setProfile(identity?.profile || null)
     }
@@ -137,15 +135,12 @@ export default function LecturesBoardPage() {
 
   const fetchLectures = async () => {
     try {
-      const { data, error } = await supabase
-        .from('lectures')
-        .select('*')
-        .eq('status', 'published')
-        .order('featured', { ascending: false })
-        .order('start_date', { ascending: true })
-
-      if (error) throw error
-      setLectures(data || [])
+      const res = await fetch('/api/lectures', { cache: 'no-store' })
+      if (!res.ok) {
+        throw new Error(`Failed to load lectures (${res.status})`)
+      }
+      const data = await res.json()
+      setLectures(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching lectures:', error)
     } finally {
@@ -153,16 +148,15 @@ export default function LecturesBoardPage() {
     }
   }
 
-  const fetchUserRegistrations = async (userId: string) => {
+  const fetchUserRegistrations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('lecture_registrations')
-        .select('lecture_id')
-        .eq('user_id', userId)
-        .in('status', ['pending', 'confirmed'])
-
-      if (error) throw error
-      setUserRegistrations(data?.map((r: any) => r.lecture_id) || [])
+      const res = await fetch('/api/lectures/registrations', { cache: 'no-store' })
+      if (!res.ok) {
+        setUserRegistrations([])
+        return
+      }
+      const data = await res.json()
+      setUserRegistrations(Array.isArray(data) ? data.map((r: any) => r.lecture_id) : [])
     } catch (error) {
       console.error('Error fetching registrations:', error)
     }
@@ -177,25 +171,26 @@ export default function LecturesBoardPage() {
     if (!selectedLecture) return
 
     try {
-      const { error } = await supabase.from('lecture_registrations').insert({
-        lecture_id: selectedLecture.id,
-        user_id: user.id,
-        status: 'pending',
-        payment_status: selectedLecture.price > 0 ? 'pending' : 'paid',
+      const res = await fetch(`/api/lectures/${selectedLecture.id}/register`, {
+        method: 'POST',
       })
 
-      if (error) throw error
+      if (!res.ok) {
+        if (res.status === 409) {
+          alert('이미 신청한 강의입니다.')
+          return
+        }
+        const message = await res.json().catch(() => ({} as any))
+        throw new Error(message?.error || '신청에 실패했습니다.')
+      }
 
       setUserRegistrations([...userRegistrations, selectedLecture.id])
       setRegistrationDialog(false)
+      await fetchLectures()
       alert('수강 신청이 완료되었습니다!')
     } catch (error: any) {
-      if (error.code === '23505') {
-        alert('이미 신청한 강의입니다.')
-      } else {
-        console.error('Error registering:', error)
-        alert('신청 중 오류가 발생했습니다.')
-      }
+      console.error('Error registering:', error)
+      alert(error?.message || '신청 중 오류가 발생했습니다.')
     }
   }
 
@@ -209,11 +204,7 @@ export default function LecturesBoardPage() {
 
   const incrementViewCount = async (lectureId: string) => {
     try {
-      await supabase.rpc('increment', {
-        table_name: 'lectures',
-        row_id: lectureId,
-        column_name: 'view_count',
-      })
+      await fetch(`/api/lectures/${lectureId}/view`, { method: 'POST' })
     } catch (error) {
       console.error('Error incrementing view count:', error)
     }
@@ -520,12 +511,12 @@ export default function LecturesBoardPage() {
                   </Grid>
                 ))
               ) : filteredLectures.length === 0 ? (
-                <Grid>
-                  <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <Grid size={12}>
+                  <Card sx={{ p: 4, textAlign: 'center' }}>
                     <Typography variant="h6" color="text.secondary">
                       검색 결과가 없습니다.
                     </Typography>
-                  </Paper>
+                  </Card>
                 </Grid>
               ) : (
                 filteredLectures.map((lecture) => (

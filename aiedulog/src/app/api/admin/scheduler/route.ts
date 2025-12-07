@@ -23,7 +23,6 @@ import { TableRow } from '@/lib/db/types';
 type ContentScheduleRow = TableRow<'content_schedules'>;
 type MainContentSectionRow = TableRow<'main_content_sections'>;
 type ContentBlockRow = TableRow<'content_blocks'>;
-type IdentityRow = TableRow<'identities'>;
 
 /**
  * GET /api/admin/scheduler
@@ -155,9 +154,9 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Get current user identity
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
-      .eq('auth_user_id', auth.user.id);
+      .from('user_profiles')
+      .select('user_id')
+      .eq('user_id', auth.user.id);
 
     const identity = identityRows?.[0];
 
@@ -172,7 +171,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       status: 'pending',
       retry_count: 0,
       max_retries: 3,
-      created_by: identity?.id
+      created_by: identity?.user_id
     };
 
     const { data: scheduleRows, error } = await rds

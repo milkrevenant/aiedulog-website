@@ -77,25 +77,13 @@ export interface TableSecurityConfig {
 
 // Comprehensive table security configuration
 const TABLE_SECURITY_CONFIG: Record<string, TableSecurityConfig> = {
-  // Identity and user management
-  'identities': {
-    classification: DataClassification.RESTRICTED,
-    minRole: SecurityRole.AUTHENTICATED,
-    ownershipField: 'id',
-    allowedOperations: [DatabaseOperation.SELECT, DatabaseOperation.UPDATE],
-    requiresAudit: true,
-    encryptedFields: ['email', 'phone'],
-    maxRecordsPerQuery: 1,
-    rateLimit: { endpoint: 'api:identity-access', multiplier: 2 }
-  },
-  
   'user_profiles': {
     classification: DataClassification.CONFIDENTIAL,
     minRole: SecurityRole.AUTHENTICATED,
-    ownershipField: 'identity_id',
+    ownershipField: 'user_id',
     allowedOperations: [DatabaseOperation.SELECT, DatabaseOperation.UPDATE, DatabaseOperation.INSERT],
     requiresAudit: true,
-    encryptedFields: ['full_name', 'phone', 'address'],
+    encryptedFields: ['email', 'full_name'],
     maxRecordsPerQuery: 50,
     rateLimit: { endpoint: 'api:profile-access', multiplier: 1 }
   },
@@ -103,7 +91,7 @@ const TABLE_SECURITY_CONFIG: Record<string, TableSecurityConfig> = {
   'auth_methods': {
     classification: DataClassification.SECRET,
     minRole: SecurityRole.AUTHENTICATED,
-    ownershipField: 'identity_id',
+    ownershipField: 'user_id',
     allowedOperations: [DatabaseOperation.SELECT, DatabaseOperation.INSERT, DatabaseOperation.UPDATE, DatabaseOperation.DELETE],
     requiresAudit: true,
     encryptedFields: ['provider_metadata', 'credentials'],

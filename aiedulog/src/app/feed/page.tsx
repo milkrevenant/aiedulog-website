@@ -99,15 +99,12 @@ export default function FeedPage() {
           .from('posts')
           .select(`
             *,
-            identities!posts_author_id_fkey (
-              id,
-              status,
-              user_profiles!identities_user_profiles_identity_id_fkey (
-                email,
-                nickname,
-                role,
-                avatar_url
-              )
+            author:user_profiles!posts_author_id_fkey (
+              user_id,
+              email,
+              nickname,
+              role,
+              avatar_url
             ),
             post_likes (user_id),
             comments (id),
@@ -146,11 +143,11 @@ export default function FeedPage() {
           const postsWithStats = legacyData.map((post: any) => ({
             ...post,
             author: {
-              name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
-              email: post.identities?.user_profiles?.email,
-              role: post.identities?.user_profiles?.role || 'member',
-              isVerified: post.identities?.user_profiles?.role === 'verified',
-              avatar_url: post.identities?.user_profiles?.avatar_url,
+              name: post.profiles?.nickname || post.profiles?.email?.split('@')[0] || '사용자',
+              email: post.profiles?.email,
+              role: post.profiles?.role || 'member',
+              isVerified: ['verified', 'moderator', 'admin'].includes(post.profiles?.role),
+              avatar_url: post.profiles?.avatar_url,
             },
             likes: post.post_likes?.length || 0,
             comments: post.comments?.length || 0,
@@ -173,7 +170,7 @@ export default function FeedPage() {
         if (data) {
           console.log('Fetched posts:', data)
           const postsWithStats = data.map((post: any) => {
-            const userProfile = post.identities?.user_profiles?.[0]
+            const userProfile = post.author
             return {
               ...post,
               author: {

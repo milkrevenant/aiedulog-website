@@ -35,8 +35,8 @@ const getHandler = async (
       .from('instructor_availability')
       .select(`
         *,
-        instructor:identities!instructor_availability_instructor_id_fkey(
-          id,
+        instructor:user_profiles!instructor_availability_instructor_id_fkey(
+          user_id,
           full_name,
           email
         )
@@ -144,9 +144,9 @@ const postHandler = async (
     
     // Verify instructor exists and is active
     const { data: instructor, error: instructorError } = await rds
-      .from('identities')
-      .select('id, role, status')
-      .eq('id', body.instructor_id)
+      .from('user_profiles')
+      .select('user_id, role, is_active')
+      .eq('user_id', body.instructor_id)
       .single();
     
     if (instructorError || !instructor) {
@@ -163,7 +163,7 @@ const postHandler = async (
       );
     }
     
-    if (instructor.status !== 'active') {
+    if (instructor.is_active !== true) {
       return NextResponse.json(
         { error: 'Instructor account is not active' } as ApiResponse,
         { status: 400 }
@@ -216,8 +216,8 @@ const postHandler = async (
       .insert([availabilityData], {
         select: `
           *,
-          instructor:identities!instructor_availability_instructor_id_fkey(
-            id,
+          instructor:user_profiles!instructor_availability_instructor_id_fkey(
+            user_id,
             full_name,
             email
           )

@@ -275,11 +275,11 @@ export class AppointmentService {
         .insert([appointmentData])
         .select(`
           *,
-          instructor:identities!appointments_instructor_id_fkey(
-            id,
+          instructor:user_profiles!appointments_instructor_id_fkey(
+            user_id,
             full_name,
             email,
-            profile_image_url,
+            avatar_url,
             bio
           ),
           appointment_type:appointment_types(*)
@@ -490,12 +490,12 @@ export class AppointmentService {
   private async getInstructorInfo(instructorId: string) {
     const supabase = await this.getSupabase();
     const { data, error } = await supabase
-      .from('identities')
-      .select('id, full_name, status, role')
-      .eq('id', instructorId)
+      .from('user_profiles')
+      .select('user_id, full_name, is_active, role')
+      .eq('user_id', instructorId)
       .single();
     
-    if (error || !data || data.status !== 'active' || 
+    if (error || !data || data.is_active !== true || 
         (data.role !== 'instructor' && data.role !== 'admin')) {
       return null;
     }

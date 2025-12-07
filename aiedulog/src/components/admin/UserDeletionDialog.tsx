@@ -228,16 +228,11 @@ export default function UserDeletionDialog({
       .eq('user_id', user!.user_id)
 
     await supabase
-      .from('identities')
+      .from('user_profiles')
       .update({ 
-        status: 'deleted' 
+        is_active: false 
       })
-      .eq('id', user!.user_id)
-
-    // Handle content based on selected action
-    if (contentAction === 'anonymize') {
-      await anonymizeUserContent()
-    }
+      .eq('user_id', user!.user_id)
   }
 
   const performHardDelete = async () => {
@@ -250,9 +245,9 @@ export default function UserDeletionDialog({
 
     // Delete user (cascade will handle related records)
     await supabase
-      .from('identities')
+      .from('user_profiles')
       .delete()
-      .eq('id', user!.user_id)
+      .eq('user_id', user!.user_id)
   }
 
   const anonymizeUserContent = async () => {

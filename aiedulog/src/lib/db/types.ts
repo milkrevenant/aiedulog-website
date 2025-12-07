@@ -102,20 +102,45 @@ export interface News {
 export interface Lecture {
   id: string
   title: string
-  description?: string
-  lecturer_name: string
-  lecturer_affiliation?: string
-  lecture_date: string
-  start_time?: string
-  end_time?: string
-  location?: string
-  online_link?: string
-  max_participants?: number
+  subtitle?: string | null
+  description?: string | null
+  instructor_name: string
+  instructor_bio?: string | null
+  instructor_image?: string | null
+  category: string
+  level?: string | null
+  duration?: string | null
+  price: number
+  max_participants: number
   current_participants: number
-  registration_deadline?: string
-  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled'
-  created_at: string
-  updated_at: string
+  start_date: string
+  end_date?: string | null
+  start_time?: string | null
+  end_time?: string | null
+  schedule_details?: string | null
+  location_type: string
+  location_address?: string | null
+  location_url?: string | null
+  thumbnail_image?: string | null
+  banner_image?: string | null
+  status: 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled'
+  registration_open: boolean
+  featured: boolean
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+  view_count: number
+  tags?: string[] | null
+}
+
+export interface LectureRegistration {
+  id: string
+  lecture_id: string
+  user_id: string
+  status: string
+  payment_status: string
+  notes?: string | null
+  registered_at: string
 }
 
 /**

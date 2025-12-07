@@ -234,7 +234,10 @@ export async function queryWithAuth<T = any>(
   const client = await pool.connect();
   try {
     if (jwtClaims) {
-      await client.query('SET LOCAL request.jwt.claims = $1', [JSON.stringify(jwtClaims)]);
+      // SET 문은 파라미터를 사용할 수 없으므로 문자열로 직접 삽입
+      // SQL injection 방지를 위해 JSON.stringify 후 이스케이프
+      const claimsJson = JSON.stringify(jwtClaims).replace(/'/g, "''");
+      await client.query(`SET LOCAL request.jwt.claims = '${claimsJson}'`);
     }
     const result = await client.query(queryText, params);
     const rows = result.rows as T[];
@@ -255,7 +258,8 @@ export async function transaction<T>(
   try {
     await client.query('BEGIN');
     if (jwtClaims) {
-      await client.query('SET LOCAL request.jwt.claims = $1', [JSON.stringify(jwtClaims)]);
+      const claimsJson = JSON.stringify(jwtClaims).replace(/'/g, "''");
+      await client.query(`SET LOCAL request.jwt.claims = '${claimsJson}'`);
     }
     const result = await callback(client);
     await client.query('COMMIT');

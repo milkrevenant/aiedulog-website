@@ -20,7 +20,7 @@ import { createRDSClient } from '@/lib/db/rds-client';
 import { TableRow } from '@/lib/db/types';
 
 type ContentTranslationRow = TableRow<'content_translations'>;
-type IdentityRow = TableRow<'identities'>;
+type UserProfileRow = TableRow<'user_profiles'>;
 
 /**
  * GET /api/admin/translations
@@ -147,9 +147,9 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Get current user identity
     const { data: identity } = await rds
-      .from<IdentityRow>('identities')
-      .select('id')
-      .eq('auth_user_id', auth.user.id)
+      .from<UserProfileRow>('user_profiles')
+      .select('user_id')
+      .eq('user_id', auth.user.id)
       .single();
 
     const translationData = {
@@ -162,7 +162,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       translation_status: translated_text ? 'translated' : 'pending',
       translation_method,
       quality_score,
-      translator_id: identity?.id,
+      translator_id: identity?.user_id,
       translated_at: translated_text ? new Date().toISOString() : null
     };
 
@@ -215,9 +215,9 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
 
     // Get current user identity
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
-      .eq('auth_user_id', auth.user.id);
+      .from('user_profiles')
+      .select('user_id')
+      .eq('user_id', auth.user.id);
     const identity = identityRows?.[0];
 
     // Handle different actions
@@ -229,7 +229,7 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
             .eq('id', id)
             .update({
               translation_status: 'reviewed',
-              reviewer_id: identity?.id,
+              reviewer_id: identity?.user_id,
               reviewed_at: new Date().toISOString()
             }, { select: '*' });
 

@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/auth/rds-auth-helpers';
 import { TableRow } from '@/lib/db/types';
 
 type ScheduleTemplateRow = TableRow<'schedule_templates'>;
-type IdentityRow = TableRow<'identities'>;
+type UserProfileRow = TableRow<'user_profiles'>;
 
 /**
  * GET /api/admin/scheduler/templates
@@ -70,9 +70,9 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Get current user identity
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
-      .eq('auth_user_id', auth.user.id);
+      .from('user_profiles')
+      .select('user_id')
+      .eq('user_id', auth.user.id);
 
     const identity = identityRows?.[0];
 
@@ -80,7 +80,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       name,
       description: description || '',
       template_config,
-      created_by: identity?.id
+      created_by: identity?.user_id
     };
 
     const { data: templateRows, error } = await rds

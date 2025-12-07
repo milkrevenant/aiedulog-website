@@ -171,15 +171,12 @@ export default function ChatPage() {
                 .from('chat_participants')
                 .select(`
                   user_id,
-                  identities!chat_participants_user_id_fkey (
-                    id,
-                    status,
-                    user_profiles!identities_user_profiles_user_id_fkey (
-                      email,
-                      nickname,
-                      avatar_url,
-                      role
-                    )
+                  profile:user_profiles!chat_participants_user_id_fkey (
+                    user_id,
+                    email,
+                    nickname,
+                    avatar_url,
+                    role
                   )
                 `)
                 .eq('room_id', room.id)
@@ -190,11 +187,11 @@ export default function ChatPage() {
               participants = identityParticipants?.map((p: any) => ({
                 user_id: p.user_id,
                 profile: {
-                  id: p.identities?.id,
-                  email: p.identities?.user_profiles?.[0]?.email,
-                  nickname: p.identities?.user_profiles?.[0]?.nickname,
-                  avatar_url: p.identities?.user_profiles?.[0]?.avatar_url,
-                  role: p.identities?.user_profiles?.[0]?.role
+                  id: p.profile?.user_id,
+                  email: p.profile?.email,
+                  nickname: p.profile?.nickname,
+                  avatar_url: p.profile?.avatar_url,
+                  role: p.profile?.role
                 }
               }))
             } catch (err) {

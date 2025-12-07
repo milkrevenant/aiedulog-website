@@ -156,18 +156,10 @@ export default function UserDeletionDialog({
     // Mark user as deleted
     await supabase
       .from('user_profiles')
-      .eq('identity_id', user!.user_id)
+      .eq('user_id', user!.user_id)
       .update({ 
         deleted_at: new Date().toISOString(),
         is_active: false 
-      })
-
-    await supabase
-      .from('identities')
-      .eq('id', user!.user_id)
-      .update({ 
-        deleted_at: new Date().toISOString(),
-        status: 'deleted' 
       })
 
     // Handle content based on selected action
@@ -186,8 +178,8 @@ export default function UserDeletionDialog({
 
     // Delete user (cascade will handle related records)
     await supabase
-      .from('identities')
-      .eq('id', user!.user_id)
+      .from('user_profiles')
+      .eq('user_id', user!.user_id)
       .delete()
   }
 

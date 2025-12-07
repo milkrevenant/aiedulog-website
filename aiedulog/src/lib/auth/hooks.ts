@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession as useNextAuthSession } from 'next-auth/react'
 import type { Session } from 'next-auth'
@@ -23,6 +23,7 @@ type AuthProfile = {
   bio?: string | null
   school?: string | null
   subject?: string | null
+  is_active?: boolean
 }
 
 export function useUser() {
@@ -50,22 +51,26 @@ export function useAuth() {
   const { user, loading: userLoading } = useUser()
   const { session, loading: sessionLoading } = useSession()
   const [profile, setProfile] = useState<AuthProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(false)
   const router = useRouter()
+  const fetchedRef = useRef(false)
 
   useEffect(() => {
     const sessionUser = session?.user as NextAuthSessionUser | undefined
 
     if (!sessionUser) {
       setProfile(null)
+      fetchedRef.current = false
       return
     }
 
+    // Cognito groups에서 기본 role 결정
     const groups = Array.isArray(sessionUser.groups)
       ? (sessionUser.groups as unknown[])
           .filter((value): value is string => typeof value === 'string')
       : []
 
-    const role: AuthProfile['role'] = groups.includes('admin')
+    const sessionRole: AuthProfile['role'] = groups.includes('admin')
       ? 'admin'
       : groups.includes('moderator')
         ? 'moderator'
@@ -73,17 +78,66 @@ export function useAuth() {
           ? 'verified'
           : 'member'
 
-    setProfile({
+    // 세션 기반 기본 프로필 설정 (빠른 응답)
+    setProfile(prev => prev || {
       user_id: sessionUser.id ?? null,
-      role,
+      role: sessionRole,
       email: sessionUser.email ?? null,
-      nickname: (sessionUser as any)?.nickname ?? null,
-      avatar_url: (sessionUser as any)?.avatar_url ?? null,
-      full_name: (sessionUser as any)?.full_name ?? null,
-      bio: (sessionUser as any)?.bio ?? null,
-      school: (sessionUser as any)?.school ?? null,
-      subject: (sessionUser as any)?.subject ?? null
+      nickname: null,
+      avatar_url: null,
+      full_name: null,
+      bio: null,
+      school: null,
+      subject: null
     })
+
+    // API에서 DB 프로필 가져오기 (한 번만)
+    if (!fetchedRef.current && sessionUser.email) {
+      fetchedRef.current = true
+      setProfileLoading(true)
+
+      fetch('/api/user/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile) {
+            setProfile({
+              user_id: data.profile.user_id,
+              role: sessionRole, // Cognito groups 우선
+              email: data.profile.email,
+              nickname: data.profile.nickname,
+              avatar_url: data.profile.avatar_url,
+              full_name: data.profile.full_name,
+              bio: data.profile.bio,
+              school: data.profile.school,
+              subject: data.profile.subject,
+              is_active: data.profile.is_active
+            })
+          } else {
+            // 프로필이 없으면 자동 생성
+            fetch('/api/user/profile', { method: 'POST' })
+              .then(res => res.json())
+              .then(createData => {
+                if (createData.profile) {
+                  setProfile({
+                    user_id: createData.profile.user_id,
+                    role: sessionRole,
+                    email: createData.profile.email,
+                    nickname: createData.profile.nickname,
+                    avatar_url: createData.profile.avatar_url,
+                    full_name: createData.profile.full_name,
+                    bio: createData.profile.bio,
+                    school: createData.profile.school,
+                    subject: createData.profile.subject,
+                    is_active: createData.profile.is_active
+                  })
+                }
+              })
+              .catch(err => console.error('Profile creation failed:', err))
+          }
+        })
+        .catch(err => console.error('Profile fetch failed:', err))
+        .finally(() => setProfileLoading(false))
+    }
   }, [session])
 
   const isAuthenticated = Boolean(user)
@@ -109,7 +163,7 @@ export function useAuth() {
     user,
     session,
     profile,
-    loading: userLoading || sessionLoading,
+    loading: userLoading || sessionLoading || profileLoading,
     error: null as Error | null,
     signIn,
     signUp,
@@ -119,7 +173,7 @@ export function useAuth() {
     isAdmin: profile?.role === 'admin',
     isModerator: profile?.role === 'moderator' || profile?.role === 'admin',
     isVerified: profile?.role === 'verified' || profile?.role === 'moderator' || profile?.role === 'admin',
-  }), [user, session, profile, userLoading, sessionLoading, isAuthenticated, signIn, signUp, signOut, updateProfile])
+  }), [user, session, profile, userLoading, sessionLoading, profileLoading, isAuthenticated, signIn, signUp, signOut, updateProfile])
 
   return authState
 }

@@ -150,13 +150,11 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
             .select(
               `
               user_id,
-              identities!chat_participants_user_id_fkey (
-                id,
-                user_profiles!identities_user_profiles_identity_id_fkey (
-                  email,
-                  nickname,
-                  avatar_url
-                )
+              profile:user_profiles!chat_participants_user_id_fkey (
+                user_id,
+                email,
+                nickname,
+                avatar_url
               )
             `
             )
@@ -167,10 +165,10 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
           const transformedParticipants = participants?.map((p: any) => ({
             user_id: p.user_id,
             profile: {
-              id: p.identities?.id || p.user_id,
-              email: p.identities?.user_profiles?.[0]?.email || '',
-              nickname: p.identities?.user_profiles?.[0]?.nickname,
-              avatar_url: p.identities?.user_profiles?.[0]?.avatar_url
+              id: p.profile?.user_id || p.user_id,
+              email: p.profile?.email || '',
+              nickname: p.profile?.nickname,
+              avatar_url: p.profile?.avatar_url
             }
           })) || []
 
@@ -203,13 +201,11 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
       .select(
         `
         *,
-        identities!chat_messages_sender_id_fkey (
-          id,
-          user_profiles!identities_user_profiles_identity_id_fkey (
-            email,
-            nickname,
-            avatar_url
-          )
+        sender:user_profiles!chat_messages_sender_id_fkey (
+          user_id,
+          email,
+          nickname,
+          avatar_url
         )
       `
       )
@@ -222,10 +218,10 @@ export default function SideChat({ user, open = true, onClose }: SideChatProps) 
       const formattedMessages = messagesData.map((msg: any) => ({
         ...msg,
         sender: {
-          id: msg.identities?.id || msg.sender_id,
-          email: msg.identities?.user_profiles?.[0]?.email || '',
-          nickname: msg.identities?.user_profiles?.[0]?.nickname,
-          avatar_url: msg.identities?.user_profiles?.[0]?.avatar_url
+          id: msg.sender?.user_id || msg.sender_id,
+          email: msg.sender?.email || '',
+          nickname: msg.sender?.nickname,
+          avatar_url: msg.sender?.avatar_url
         },
       }))
       setMessages(formattedMessages)

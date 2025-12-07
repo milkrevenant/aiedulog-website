@@ -33,10 +33,10 @@ export default function AuthGuard({
   const isAuthorized = () => {
     if (!requireAuth) return true
     if (!isAuthenticated) return false
-    
+
     if (requireAdmin) return isAdmin
-    if (requireModerator) return isModerator
-    
+    if (requireModerator) return isAdmin || isModerator  // admin도 moderator 페이지 접근 가능
+
     return true
   }
 

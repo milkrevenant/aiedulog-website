@@ -265,16 +265,16 @@ export class AppointmentAuthorization {
     // Validate user exists and is active
     const supabase = createClient();
     const { data: user, error } = await supabase
-      .from('identities')
-      .select('id, status, role, created_at')
-      .eq('id', context.userId)
+      .from('user_profiles')
+      .select('user_id, is_active, role, created_at')
+      .eq('user_id', context.userId)
       .single();
 
     if (error || !user) {
       return { valid: false, reason: 'User not found' };
     }
 
-    if (user.status !== 'active') {
+    if (user.is_active !== true) {
       return { valid: false, reason: 'User account not active' };
     }
 
@@ -303,19 +303,19 @@ export class AppointmentAuthorization {
       .from('appointments')
       .select(`
         *,
-        user:identities!appointments_user_id_fkey(
-          id, 
+        user:user_profiles!appointments_user_id_fkey(
+          user_id, 
           full_name, 
           email, 
-          status,
+          is_active,
           role,
           created_at
         ),
-        instructor:identities!appointments_instructor_id_fkey(
-          id, 
+        instructor:user_profiles!appointments_instructor_id_fkey(
+          user_id, 
           full_name, 
           email, 
-          status,
+          is_active,
           role,
           created_at
         ),
@@ -731,9 +731,9 @@ export class AppointmentAuthorization {
       const supabase = createClient();
       
       const { data: user, error } = await supabase
-        .from('identities')
-        .select('role, status')
-        .eq('id', userId)
+        .from('user_profiles')
+        .select('role, is_active')
+        .eq('user_id', userId)
         .single();
 
       if (error || !user) {
@@ -747,7 +747,7 @@ export class AppointmentAuthorization {
       const permissions = this.ROLE_PERMISSIONS[user.role as UserRole] || [];
       const restrictions: string[] = [];
 
-      if (user.status !== 'active') {
+      if (user.is_active !== true) {
         restrictions.push('Account not active');
       }
 

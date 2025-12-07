@@ -165,6 +165,7 @@ export interface StatsContent {
     id?: string;
     number: number;
     label: MultilingualText;
+    subtitle?: MultilingualText;
     suffix?: string;
     prefix?: string;
     format?: 'number' | 'percentage' | 'currency';

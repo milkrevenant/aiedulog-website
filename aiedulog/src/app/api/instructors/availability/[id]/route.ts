@@ -32,8 +32,8 @@ const getHandler = async (
       .from('instructor_availability')
       .select(`
         *,
-        instructor:identities!instructor_availability_instructor_id_fkey(
-          id,
+        instructor:user_profiles!instructor_availability_instructor_id_fkey(
+          user_id,
           full_name,
           email
         )
@@ -198,8 +198,8 @@ const putHandler = async (
       .update(updateData, {
         select: `
           *,
-          instructor:identities!instructor_availability_instructor_id_fkey(
-            id,
+          instructor:user_profiles!instructor_availability_instructor_id_fkey(
+            id:user_id,
             full_name,
             email
           )

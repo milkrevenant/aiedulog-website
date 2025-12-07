@@ -1,13 +1,10 @@
-'use client'
-
-import { createClient } from '@/lib/supabase/server'
 import type { AppUser } from '@/lib/auth/types'
 
 /**
- * 임시 Fallback 시스템
+ * Fallback User Data
  *
- * MIGRATION: Updated to use RDS server client (2025-10-14)
- * Identity 시스템이 작동하지 않는 상황에서 사용
+ * UPDATED: 2025-12-07 - Simplified for Cognito + user_profiles architecture
+ * Used when identity resolution fails
  */
 
 export interface FallbackUserData {
@@ -17,9 +14,9 @@ export interface FallbackUserData {
 }
 
 /**
- * auth.users에서 직접 사용자 정보 가져오기
+ * Get fallback user data from AppUser when DB lookup fails
  */
-export async function getFallbackUserData(user: AppUser): Promise<FallbackUserData> {
+export function getFallbackUserData(user: AppUser): FallbackUserData {
   return {
     id: user.id,
     email: user.email || 'unknown@example.com',
@@ -28,14 +25,14 @@ export async function getFallbackUserData(user: AppUser): Promise<FallbackUserDa
 }
 
 /**
- * 메시지 전송용 - auth.users.id 직접 사용
+ * Get sender ID for messages - use user.id directly
  */
 export function getFallbackSenderId(user: AppUser): string {
   return user.id
 }
 
 /**
- * 메시지 소유자 확인 - auth.users.id 직접 비교
+ * Check message ownership - compare IDs directly
  */
 export function isFallbackMessageOwner(messageSenderId: string, currentUserId: string): boolean {
   return messageSenderId === currentUserId

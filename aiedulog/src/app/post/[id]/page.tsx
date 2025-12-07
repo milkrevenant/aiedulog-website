@@ -97,15 +97,12 @@ export default function PostDetailPage() {
         .from('posts')
         .select(`
           *,
-          identities!posts_author_id_fkey (
-            id,
-            status,
-            user_profiles!identities_user_profiles_identity_id_fkey (
-              email,
-              nickname,
-              role,
-              avatar_url
-            )
+          author:user_profiles!posts_author_id_fkey (
+            user_id,
+            email,
+            nickname,
+            role,
+            avatar_url
           ),
           post_likes (user_id),
           bookmarks (user_id)
@@ -142,7 +139,7 @@ export default function PostDetailPage() {
             name: legacyData.profiles?.nickname || legacyData.profiles?.email?.split('@')[0] || '사용자',
             email: legacyData.profiles?.email,
             role: legacyData.profiles?.role || 'member',
-            isVerified: legacyData.profiles?.role === 'verified',
+            isVerified: ['verified', 'moderator', 'admin'].includes(legacyData.profiles?.role),
             avatar_url: legacyData.profiles?.avatar_url,
           },
           likes: legacyData.post_likes?.length || 0,
@@ -156,11 +153,11 @@ export default function PostDetailPage() {
       }
 
       if (data) {
-        const userProfile = data.identities?.user_profiles?.[0]
+        const userProfile = data.author
         const postWithStats = {
           ...data,
           author: {
-            id: data.identities?.id,
+            id: userProfile?.user_id,
             name: userProfile?.nickname || userProfile?.email?.split('@')[0] || '사용자',
             email: userProfile?.email,
             role: userProfile?.role || 'member',
@@ -195,15 +192,12 @@ export default function PostDetailPage() {
         .from('comments')
         .select(`
           *,
-          identities!comments_author_id_fkey (
-            id,
-            status,
-            user_profiles!identities_user_profiles_identity_id_fkey (
-              email,
-              nickname,
-              role,
-              avatar_url
-            )
+          author:user_profiles!comments_author_id_fkey (
+            user_id,
+            email,
+            nickname,
+            role,
+            avatar_url
           )
         `)
         .eq('post_id', postId)
@@ -232,12 +226,12 @@ export default function PostDetailPage() {
         const commentsWithAuthor = legacyData.map((comment: any) => ({
           ...comment,
           author: {
-            id: comment.identities?.user_profiles?.id,
-            name: comment.identities?.user_profiles?.nickname || comment.identities?.user_profiles?.email?.split('@')[0] || '사용자',
-            email: comment.identities?.user_profiles?.email,
-            role: comment.identities?.user_profiles?.role || 'member',
-            isVerified: comment.identities?.user_profiles?.role === 'verified',
-            avatar_url: comment.identities?.user_profiles?.avatar_url,
+            id: comment.profiles?.id,
+            name: comment.profiles?.nickname || comment.profiles?.email?.split('@')[0] || '사용자',
+            email: comment.profiles?.email,
+            role: comment.profiles?.role || 'member',
+            isVerified: ['verified', 'moderator', 'admin'].includes(comment.profiles?.role),
+            avatar_url: comment.profiles?.avatar_url,
           },
         }))
         setComments(commentsWithAuthor)
@@ -246,11 +240,11 @@ export default function PostDetailPage() {
 
       if (data) {
         const commentsWithAuthor = data.map((comment: any) => {
-          const userProfile = comment.identities?.user_profiles?.[0]
+          const userProfile = comment.author
           return {
             ...comment,
             author: {
-              id: comment.identities?.id,
+              id: userProfile?.user_id,
               name: userProfile?.nickname || userProfile?.email?.split('@')[0] || '사용자',
               email: userProfile?.email,
               role: userProfile?.role || 'member',

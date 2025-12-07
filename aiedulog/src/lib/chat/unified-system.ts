@@ -2,25 +2,21 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { AppUser } from '@/lib/auth/types'
-import { getOrCreateIdentity } from '@/lib/identity/migration'
 
 /**
- * 통합 채팅 시스템 - Identity 기반 완전 구현
+ * Unified Chat System
  *
- * MIGRATION: Updated to use RDS server client (2025-10-14)
- * 
- * 아키텍처:
- * auth.users.id → auth_methods.provider_user_id → auth_methods.user_id
- *                                                     ↓
- *                                            identities.id → user_profiles.user_id
- *                                                     ↓
- *                                            chat_messages.sender_id (identity_id 사용)
- *                                            chat_participants.user_id (identity_id 사용)
+ * UPDATED: 2025-12-07 - Simplified for Cognito + user_profiles architecture
+ *
+ * Architecture:
+ * Cognito user.id → user_profiles (by email) → chat_messages/chat_participants
+ *
+ * All chat operations use user_profiles.user_id directly.
  */
 
 export interface ChatUser {
-  authUserId: string      // auth.users.id
-  identityId: string      // identities.id
+  authUserId: string      // Cognito user.id
+  identityId: string      // user_profiles.user_id (same as authUserId in most cases)
   email: string
   nickname?: string
   avatarUrl?: string
@@ -30,7 +26,7 @@ export interface ChatUser {
 export interface ChatMessage {
   id: string
   roomId: string
-  senderId: string        // identity_id
+  senderId: string        // user_profiles.user_id
   message: string
   type?: string
   attachments?: any
@@ -47,13 +43,13 @@ export interface ChatRoom {
   id: string
   name?: string
   type: 'direct' | 'group' | 'collaboration'
-  createdBy: string       // identity_id로 통일
+  createdBy: string       // user_profiles.user_id
   createdAt: string
   participants?: ChatParticipant[]
 }
 
 export interface ChatParticipant {
-  userId: string          // identity_id
+  userId: string          // user_profiles.user_id
   profile: {
     email: string
     nickname?: string
@@ -62,61 +58,32 @@ export interface ChatParticipant {
 }
 
 /**
- * 현재 사용자의 완전한 채팅 정보 가져오기
+ * Get current user's chat info from user_profiles
  */
 export async function getCurrentChatUser(user: AppUser): Promise<ChatUser | null> {
   const supabase = createClient()
 
   try {
-    // Secure logging: production-safe (no console output in production)
-    
-    // Step 1: auth.users.id → identity_id 매핑
-    const { data: authMethod, error: authError } = await supabase
-      .from('auth_methods')
-      .select(`
-        identity_id,
-        identities!inner (
-          id,
-          user_profiles!inner (
-            email,
-            nickname,
-            avatar_url,
-            role
-          )
-        )
-      `)
-      .eq('provider', 'supabase')  // 중요: provider 필터 추가
-      .eq('provider_user_id', user.id)
+    // Direct lookup by email in user_profiles
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('user_id, email, nickname, avatar_url, role')
+      .eq('email', user.email)
       .single()
-    
-    // Secure logging: production-safe (no console output in production)
-    
-    if (authError || !authMethod?.identities?.[0]?.user_profiles?.[0]) {
-      console.error('Auth method or profile not found:', authError)
-      // Identity가 없으면 생성 시도
-      const identityId = await getOrCreateIdentity(user)
-      if (!identityId) {
-        return null
-      }
-      // 재시도
-      return getCurrentChatUser(user)
-    }
-    
-    const profile = authMethod.identities[0].user_profiles[0]
-    const identityId = (authMethod as any).identity_id
 
-    // 이미 profile을 가져왔으므로 직접 사용
-    const result = {
+    if (error || !profile) {
+      console.error('Profile not found:', error)
+      return null
+    }
+
+    return {
       authUserId: user.id,
-      identityId: identityId,
+      identityId: profile.user_id,
       email: profile.email || user.email || 'unknown@example.com',
       nickname: profile.nickname || user.email?.split('@')[0] || 'Anonymous',
-      avatarUrl: profile.avatar_url || user.user_metadata?.avatar_url,
-      role: profile.role || 'user'
+      avatarUrl: profile.avatar_url,
+      role: profile.role || 'member'
     }
-
-    // Secure logging: production-safe (no console output in production)
-    return result
   } catch (error) {
     console.error('Failed to get chat user:', error)
     return null
@@ -124,11 +91,11 @@ export async function getCurrentChatUser(user: AppUser): Promise<ChatUser | null
 }
 
 /**
- * Identity 기반 메시지 전송
+ * Send chat message
  */
 export async function sendChatMessage(
-  roomId: string, 
-  message: string, 
+  roomId: string,
+  message: string,
   chatUser: ChatUser,
   type: string = 'text',
   attachments?: any
@@ -140,7 +107,7 @@ export async function sendChatMessage(
       .from('chat_messages')
       .insert({
         room_id: roomId,
-        sender_id: chatUser.identityId,  // Identity ID 사용
+        sender_id: chatUser.identityId,
         message,
         type,
         attachments,
@@ -160,7 +127,7 @@ export async function sendChatMessage(
 }
 
 /**
- * Identity 기반 메시지 로딩
+ * Load chat messages with sender info
  */
 export async function loadChatMessages(roomId: string): Promise<ChatMessage[]> {
   const supabase = createClient()
@@ -170,29 +137,22 @@ export async function loadChatMessages(roomId: string): Promise<ChatMessage[]> {
       .from('chat_messages')
       .select(`
         *,
-        identities!chat_messages_sender_id_fkey (
-          id,
-          user_profiles!user_profiles_identity_id_fkey (
-            email,
-            nickname,
-            avatar_url
-          )
+        user_profiles!chat_messages_sender_id_fkey (
+          user_id,
+          email,
+          nickname,
+          avatar_url
         )
       `)
       .eq('room_id', roomId)
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Failed to load messages:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
+      console.error('Failed to load messages:', error)
       return []
     }
 
-    return data.map((msg: any) => ({
+    return (data || []).map((msg: any) => ({
       id: msg.id,
       roomId: msg.room_id,
       senderId: msg.sender_id,
@@ -200,11 +160,11 @@ export async function loadChatMessages(roomId: string): Promise<ChatMessage[]> {
       type: msg.type,
       attachments: msg.attachments,
       createdAt: msg.created_at,
-      sender: msg.identities?.user_profiles ? {
-        identityId: msg.identities.id,
-        email: msg.identities.user_profiles.email,
-        nickname: msg.identities.user_profiles.nickname,
-        avatarUrl: msg.identities.user_profiles.avatar_url
+      sender: msg.user_profiles ? {
+        identityId: msg.user_profiles.user_id,
+        email: msg.user_profiles.email,
+        nickname: msg.user_profiles.nickname,
+        avatarUrl: msg.user_profiles.avatar_url
       } : undefined
     }))
   } catch (error) {
@@ -214,7 +174,7 @@ export async function loadChatMessages(roomId: string): Promise<ChatMessage[]> {
 }
 
 /**
- * Identity 기반 채팅방 생성
+ * Create chat room
  */
 export async function createChatRoom(
   name: string,
@@ -229,7 +189,7 @@ export async function createChatRoom(
       .insert({
         name,
         type,
-        created_by: chatUser.identityId,  // Identity ID 사용
+        created_by: chatUser.identityId,
         created_at: new Date().toISOString()
       }, { select: 'id' })
 
@@ -241,12 +201,12 @@ export async function createChatRoom(
       return null
     }
 
-    // 생성자를 참가자로 추가
+    // Add creator as participant
     await supabase
       .from('chat_participants')
       .insert({
         room_id: roomId,
-        user_id: chatUser.identityId,  // Identity ID 사용
+        user_id: chatUser.identityId,
         is_active: true
       })
 
@@ -258,14 +218,14 @@ export async function createChatRoom(
 }
 
 /**
- * 메시지 소유자 확인
+ * Check if message belongs to current user
  */
 export function isMessageOwner(message: ChatMessage, chatUser: ChatUser): boolean {
   return message.senderId === chatUser.identityId
 }
 
 /**
- * 사용자 표시명
+ * Get display name for chat user
  */
 export function getDisplayName(chatUser: ChatUser): string {
   return chatUser.nickname || chatUser.email.split('@')[0] || 'Anonymous'

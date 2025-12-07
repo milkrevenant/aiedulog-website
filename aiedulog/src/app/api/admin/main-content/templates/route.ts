@@ -20,7 +20,7 @@ import { createRDSClient } from '@/lib/db/rds-client'
 import { TableRow } from '@/lib/db/types'
 
 type ContentTemplateRow = TableRow<'content_templates'>
-type IdentityRow = TableRow<'identities'>
+type UserProfileRow = TableRow<'user_profiles'>
 
 // GET - Fetch content templates
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
@@ -87,8 +87,8 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Get user identity for created_by field
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
+      .from<UserProfileRow>('user_profiles')
+      .select('user_id')
       .eq('user_id', auth.user.id)
 
     const identity = identityRows?.[0]
@@ -97,8 +97,8 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       .from('content_templates')
       .insert({
         ...body,
-        created_by: identity?.id,
-        updated_by: identity?.id
+        created_by: identity?.user_id,
+        updated_by: identity?.user_id
       }, { select: '*' })
 
     const template = templateRows?.[0]

@@ -283,23 +283,23 @@ export class AtomicBookingService {
 
     // Validate user exists and is active
     const { data: user, error: userError } = await supabase
-      .from('identities')
-      .select('id, status')
-      .eq('id', request.userId)
+      .from('user_profiles')
+      .select('user_id, is_active')
+      .eq('user_id', request.userId)
       .single();
 
-    if (userError || !user || user.status !== 'active') {
+    if (userError || !user || user.is_active !== true) {
       return { valid: false, error: 'User not found or inactive' };
     }
 
     // Validate instructor exists and is active
     const { data: instructor, error: instructorError } = await supabase
-      .from('identities')
-      .select('id, status, role')
-      .eq('id', request.instructorId)
+      .from('user_profiles')
+      .select('user_id, is_active, role')
+      .eq('user_id', request.instructorId)
       .single();
 
-    if (instructorError || !instructor || instructor.status !== 'active') {
+    if (instructorError || !instructor || instructor.is_active !== true) {
       return { valid: false, error: 'Instructor not found or inactive' };
     }
 

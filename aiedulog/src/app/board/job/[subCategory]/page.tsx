@@ -113,11 +113,12 @@ export default function JobBoardPage() {
       .select(
         `
         *,
-        profiles!posts_author_id_fkey (
-          id,
+        author:user_profiles!posts_author_id_fkey (
+          user_id,
           email,
           nickname,
-          role
+          role,
+          avatar_url
         ),
         post_likes (
           user_id
@@ -147,10 +148,10 @@ export default function JobBoardPage() {
       const postsWithStats = data.map((post: any) => ({
         ...post,
         author: {
-          name: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
-          email: post.identities?.user_profiles?.email,
-          role: post.identities?.user_profiles?.role || 'member',
-          isVerified: post.identities?.user_profiles?.role === 'verified',
+          name: post.author?.nickname || post.author?.email?.split('@')[0] || '사용자',
+          email: post.author?.email,
+          role: post.author?.role || 'member',
+          isVerified: ['verified', 'moderator', 'admin'].includes(post.author?.role),
         },
         likes: post.post_likes?.length || 0,
         comments: post.comments?.length || 0,

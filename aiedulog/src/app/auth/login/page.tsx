@@ -58,14 +58,37 @@ function LoginContent() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setErrorSuggestion(null)
 
     try {
       // 로그인 유지 설정을 ActivityTracker에 저장
       ActivityTracker.setRememberMe(rememberMe)
-      
-      // Use the new identity-based sign in
-      // Delegate to Cognito Hosted UI (username/password via Hosted UI)
-      await signIn('cognito', { callbackUrl: '/feed' })
+
+      // Use Credentials provider with Cognito direct API
+      const result = await signIn('cognito-credentials', {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        // Handle specific error cases
+        if (result.error === 'NEW_PASSWORD_REQUIRED') {
+          setError('임시 비밀번호로 로그인했습니다. 새 비밀번호를 설정해주세요.')
+          setErrorSuggestion('비밀번호 찾기를 통해 새 비밀번호를 설정하세요.')
+        } else {
+          setError(result.error)
+          setErrorSuggestion(getErrorSuggestion(result.error))
+        }
+        setLoading(false)
+        return
+      }
+
+      if (result?.ok) {
+        // Successful login - redirect to feed
+        const callbackUrl = searchParams.get('callbackUrl') || '/feed'
+        router.push(callbackUrl)
+      }
     } catch (error: any) {
       console.error('Login error:', error)
       const translatedError = translateAuthError(error)
@@ -75,16 +98,9 @@ function LoginContent() {
     }
   }
 
+  // Google 로그인은 현재 Cognito에서 설정되지 않아 비활성화
   const handleGoogleLogin = async () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      await signIn('cognito', { callbackUrl: '/feed' })
-    } catch (error: any) {
-      setError('Google 로그인 중 오류가 발생했습니다.')
-      setLoading(false)
-    }
+    setError('Google 로그인은 현재 준비 중입니다.')
   }
 
 

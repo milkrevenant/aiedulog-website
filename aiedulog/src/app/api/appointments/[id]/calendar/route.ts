@@ -30,15 +30,15 @@ const getHandler = async (
       .from('appointments')
       .select(`
         *,
-        instructor:identities!appointments_instructor_id_fkey(
-          id,
+        instructor:user_profiles!appointments_instructor_id_fkey(
+          id:user_id,
           full_name,
           email,
-          profile_image_url,
+          profile_image_url:avatar_url,
           bio
         ),
-        user:identities!appointments_user_id_fkey(
-          id,
+        user:user_profiles!appointments_user_id_fkey(
+          id:user_id,
           full_name,
           email
         ),

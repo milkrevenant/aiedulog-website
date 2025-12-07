@@ -118,8 +118,8 @@ export default function TrendingPage() {
       .from('posts')
       .select(`
         *,
-        profiles!posts_author_id_fkey (
-          id,
+        author:user_profiles!posts_author_id_fkey (
+          user_id,
           email,
           nickname,
           avatar_url
@@ -139,9 +139,9 @@ export default function TrendingPage() {
         like_count: post.like_count || 0,
         created_at: post.created_at,
         author: {
-          nickname: post.identities?.user_profiles?.nickname || post.identities?.user_profiles?.email?.split('@')[0] || '사용자',
-          email: post.identities?.user_profiles?.email || '',
-          avatar_url: post.identities?.user_profiles?.avatar_url,
+          nickname: post.author?.nickname || post.author?.email?.split('@')[0] || '사용자',
+          email: post.author?.email || '',
+          avatar_url: post.author?.avatar_url,
         },
       }))
       setTrendingPosts(formattedPosts)
@@ -156,8 +156,8 @@ export default function TrendingPage() {
           id,
           title
         ),
-        profiles!comments_author_id_fkey (
-          id,
+        author:user_profiles!comments_author_id_fkey (
+          user_id,
           email,
           nickname,
           avatar_url
@@ -178,9 +178,9 @@ export default function TrendingPage() {
           title: comment.posts?.title || '삭제된 게시글',
         },
         author: {
-          nickname: comment.identities?.user_profiles?.nickname || comment.identities?.user_profiles?.email?.split('@')[0] || '사용자',
-          email: comment.identities?.user_profiles?.email || '',
-          avatar_url: comment.identities?.user_profiles?.avatar_url,
+          nickname: comment.author?.nickname || comment.author?.email?.split('@')[0] || '사용자',
+          email: comment.author?.email || '',
+          avatar_url: comment.author?.avatar_url,
         },
       }))
       setTrendingComments(formattedComments)

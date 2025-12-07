@@ -9,6 +9,10 @@ import { useEffect } from 'react'
 import { initializeClientSecurity } from '@/lib/security/client-security'
 import SchedulingNavigation from '@/components/SchedulingNavigation'
 
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ko } from 'date-fns/locale/ko';
+
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Initialize client-side security on mount
@@ -29,10 +33,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AppRouterCacheProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <SessionProvider>
-          {children}
-          <SchedulingNavigation />
-        </SessionProvider>
+        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+          <SessionProvider>
+            {children}
+            <SchedulingNavigation />
+          </SessionProvider>
+        </LocalizationProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>
   )

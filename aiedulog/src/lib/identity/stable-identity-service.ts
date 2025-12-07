@@ -1,17 +1,16 @@
 /**
  * Stable Identity Service
  *
- * MIGRATION: Updated to use RDS server client (2025-10-14)
- * 
- * Provides consistent user resolution using the improved ensure_user_identity() 
- * database function with caching, error handling, and future provider compatibility.
- * 
+ * UPDATED: 2025-12-07 - Simplified for Cognito + user_profiles architecture
+ *
+ * Provides consistent user resolution using user_profiles table directly.
+ * The legacy 'identities' table layer has been removed as it was designed
+ * for Supabase auth.users.id regeneration scenarios which don't apply to Cognito.
+ *
  * Key Features:
- * - Uses email-first resolution strategy from ensure_user_identity()
- * - Handles auth.user.id regeneration scenarios
+ * - Direct user_profiles lookup by email
  * - In-memory caching for performance
- * - Graceful error handling and fallbacks
- * - Provider-agnostic design for future Cognito compatibility
+ * - Graceful error handling
  * - Comprehensive TypeScript typing
  */
 
@@ -33,8 +32,7 @@ export interface UserProfile {
   school?: string
   subject?: string
   bio?: string
-  social_links?: Record<string, any>
-  preferences?: Record<string, any>
+  is_active?: boolean
   created_at?: string
   updated_at?: string
 }
@@ -83,7 +81,7 @@ export class IdentityServiceError extends Error {
 
 export class IdentityNotFoundError extends IdentityServiceError {
   constructor(identifier: string, details?: any) {
-    super('IDENTITY_NOT_FOUND', `Identity not found: ${identifier}`, details)
+    super('IDENTITY_NOT_FOUND', `User not found: ${identifier}`, details)
   }
 }
 
@@ -119,12 +117,12 @@ export class StableIdentityService {
   // =====================================================================
 
   /**
-   * Resolves user identity using the improved ensure_user_identity() database function
+   * Resolves user identity by looking up user_profiles directly by email
    * This is the primary method that should be used throughout the application
    */
   async resolveUserIdentity(authUser: AppUser): Promise<IdentityData> {
     const cacheKey = `identity:${authUser.id}:${authUser.email}`
-    
+
     // Check cache first
     if (this.config.cacheEnabled) {
       const cached = this.getCachedData<IdentityData>(cacheKey)
@@ -135,32 +133,44 @@ export class StableIdentityService {
     }
 
     try {
-      // Use the improved ensure_user_identity() function
-      const { data: identityId, error } = await this.supabaseClient
-        .rpc('ensure_user_identity', {
-          new_auth_user_id: authUser.id,
-          user_email: authUser.email
-        })
+      // Direct lookup by email in user_profiles
+      const { data: profile, error } = await this.supabaseClient
+        .from('user_profiles')
+        .select('*')
+        .eq('email', authUser.email)
+        .single()
 
       if (error) {
+        if (error.code === 'PGRST116') {
+          throw new IdentityNotFoundError(authUser.email || authUser.id, { email: authUser.email })
+        }
         throw new IdentityResolutionError(
-          'Failed to ensure user identity',
+          'Failed to resolve user identity',
           { error, userId: authUser.id, email: authUser.email }
         )
       }
 
-      if (!identityId) {
-        throw new IdentityResolutionError(
-          'ensure_user_identity returned null',
-          { userId: authUser.id, email: authUser.email }
-        )
+      if (!profile) {
+        throw new IdentityNotFoundError(authUser.email || authUser.id, { email: authUser.email })
       }
 
-      // Fetch the complete identity data
-      const identityData = await this.getIdentityById(identityId)
-      
-      if (!identityData) {
-        throw new IdentityNotFoundError(identityId)
+      const identityData: IdentityData = {
+        user_id: profile.user_id,
+        profile: {
+          id: profile.user_id,
+          user_id: profile.user_id,
+          email: profile.email,
+          nickname: profile.nickname || profile.username,
+          avatar_url: profile.avatar_url,
+          role: profile.role || 'member',
+          full_name: profile.full_name,
+          school: profile.school,
+          subject: profile.subject,
+          bio: profile.bio,
+          is_active: profile.is_active,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at
+        }
       }
 
       // Cache the result
@@ -168,30 +178,28 @@ export class StableIdentityService {
         this.setCachedData(cacheKey, identityData)
       }
 
-      this.log('Successfully resolved user identity', { 
-        userId: authUser.id, 
-        identityId: identityData.user_id 
+      this.log('Successfully resolved user identity', {
+        userId: authUser.id,
+        profileUserId: profile.user_id
       })
 
       return identityData
 
     } catch (error) {
-      this.log('Identity resolution failed, attempting fallback', { 
+      this.log('Identity resolution failed', {
         error: error instanceof Error ? error.message : error,
-        userId: authUser.id 
+        userId: authUser.id
       })
-
-      // Fallback to legacy method with retries
-      return await this.fallbackUserIdentity(authUser)
+      throw error
     }
   }
 
   /**
-   * Get identity by ID with caching
+   * Get user profile by user_id with caching
    */
-  async getIdentityById(identityId: string): Promise<IdentityData | null> {
-    const cacheKey = `identity_by_id:${identityId}`
-    
+  async getIdentityById(userId: string): Promise<IdentityData | null> {
+    const cacheKey = `identity_by_id:${userId}`
+
     if (this.config.cacheEnabled) {
       const cached = this.getCachedData<IdentityData>(cacheKey)
       if (cached) {
@@ -201,9 +209,9 @@ export class StableIdentityService {
 
     try {
       const { data: profile, error } = await this.supabaseClient
-        .from('profiles')
+        .from('user_profiles')
         .select(`
-          id,
+          user_id,
           email,
           username,
           nickname,
@@ -213,10 +221,11 @@ export class StableIdentityService {
           school,
           subject,
           bio,
+          is_active,
           created_at,
           updated_at
         `)
-        .eq('id', identityId)
+        .eq('user_id', userId)
         .single()
 
       if (error) {
@@ -231,10 +240,10 @@ export class StableIdentityService {
       }
 
       const identityData: IdentityData = {
-        user_id: identityId,
+        user_id: profile.user_id,
         profile: {
-          id: profile.id,
-          user_id: profile.id, // In profiles table, id serves as user_id
+          id: profile.user_id,
+          user_id: profile.user_id,
           email: profile.email,
           nickname: profile.nickname || profile.username,
           avatar_url: profile.avatar_url,
@@ -243,8 +252,7 @@ export class StableIdentityService {
           school: profile.school,
           subject: profile.subject,
           bio: profile.bio,
-          social_links: {},  // profiles table doesn't have social_links
-          preferences: {},   // profiles table doesn't have preferences
+          is_active: profile.is_active,
           created_at: profile.created_at,
           updated_at: profile.updated_at
         }
@@ -257,20 +265,20 @@ export class StableIdentityService {
       return identityData
 
     } catch (error) {
-      this.log('Failed to get identity by ID', { 
+      this.log('Failed to get identity by ID', {
         error: error instanceof Error ? error.message : error,
-        identityId 
+        userId
       })
       throw error
     }
   }
 
   /**
-   * Get user statistics with caching
+   * Get user statistics with caching - using user_profiles table
    */
   async getUserStats(): Promise<UserStats> {
     const cacheKey = 'user_stats'
-    
+
     if (this.config.cacheEnabled) {
       const cached = this.getCachedData<UserStats>(cacheKey)
       if (cached) {
@@ -279,29 +287,33 @@ export class StableIdentityService {
     }
 
     try {
-      // Run queries in parallel for better performance
-      const [totalUsersResult, newUsersTodayResult, verifiedTeachersResult, activeUsersResult] = 
+      // Run queries in parallel for better performance - all using user_profiles
+      const [totalUsersResult, newUsersTodayResult, verifiedTeachersResult, activeUsersResult] =
         await Promise.all([
-          this.supabaseClient
-            .from('identities')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', 'active'),
-          
-          this.supabaseClient
-            .from('identities')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', 'active')
-            .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
-          
+          // Total active users
           this.supabaseClient
             .from('user_profiles')
             .select('user_id', { count: 'exact', head: true })
-            .eq('role', 'verified'),
-          
+            .eq('is_active', true),
+
+          // New users today
           this.supabaseClient
-            .from('identities')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', 'active')
+            .from('user_profiles')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('is_active', true)
+            .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+
+          // Verified teachers (is_lecturer = true)
+          this.supabaseClient
+            .from('user_profiles')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('is_lecturer', true),
+
+          // Active users (same as total for now)
+          this.supabaseClient
+            .from('user_profiles')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('is_active', true)
         ])
 
       const stats: UserStats = {
@@ -318,10 +330,10 @@ export class StableIdentityService {
       return stats
 
     } catch (error) {
-      this.log('Failed to get user stats', { 
-        error: error instanceof Error ? error.message : error 
+      this.log('Failed to get user stats', {
+        error: error instanceof Error ? error.message : error
       })
-      
+
       // Return zero stats on error
       return {
         totalUsers: 0,
@@ -336,7 +348,7 @@ export class StableIdentityService {
    * Search users with caching and improved query optimization
    */
   async searchUsers(
-    query: string, 
+    query: string,
     limit: number = 10,
     excludeUserId?: string
   ): Promise<UserProfile[]> {
@@ -345,7 +357,7 @@ export class StableIdentityService {
     }
 
     const cacheKey = `search:${query}:${limit}:${excludeUserId || 'none'}`
-    
+
     if (this.config.cacheEnabled) {
       const cached = this.getCachedData<UserProfile[]>(cacheKey)
       if (cached) {
@@ -366,19 +378,20 @@ export class StableIdentityService {
           school,
           subject
         `)
+        .eq('is_active', true)
         .or(`nickname.ilike.%${query}%,email.ilike.%${query}%,full_name.ilike.%${query}%`)
         .limit(limit)
-        
+
       if (excludeUserId) {
         queryBuilder = queryBuilder.neq('user_id', excludeUserId)
       }
-      
+
       const { data, error } = await queryBuilder
-      
+
       if (error) {
         throw new IdentityServiceError('USER_SEARCH_ERROR', error.message, error)
       }
-      
+
       const users = (data || []).map((user: any): UserProfile => ({
         id: user.user_id,
         user_id: user.user_id,
@@ -398,124 +411,13 @@ export class StableIdentityService {
       return users
 
     } catch (error) {
-      this.log('User search failed', { 
+      this.log('User search failed', {
         error: error instanceof Error ? error.message : error,
         query,
-        limit 
+        limit
       })
       return []
     }
-  }
-
-  // =====================================================================
-  // FALLBACK AND LEGACY METHODS
-  // =====================================================================
-
-  /**
-   * Fallback identity resolution using legacy method with retries
-   */
-  private async fallbackUserIdentity(authUser: AppUser): Promise<IdentityData> {
-    let lastError: any
-    
-    for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
-      try {
-        // Legacy method similar to getUserIdentity
-        const { data: authMethod } = await this.supabaseClient
-          .from('auth_methods')
-          .select(`
-            user_id,
-            provider_user_id,
-            identities!auth_methods_user_id_fkey (
-              id,
-              status,
-              user_profiles!user_profiles_user_id_fkey (
-                user_id,
-                email,
-                nickname,
-                avatar_url,
-                role,
-                full_name,
-                school,
-                subject,
-                bio,
-                social_links,
-                preferences
-              )
-            )
-          `)
-          .eq('provider_user_id', authUser.id)
-          .single()
-
-        if (authMethod?.identities?.[0]?.user_profiles?.[0]) {
-          const identity = authMethod.identities[0]
-          const profile = identity.user_profiles[0]
-          
-          return {
-            user_id: identity.id,
-            profile: {
-              id: authMethod.user_id,
-              user_id: identity.id,
-              email: profile.email,
-              nickname: profile.nickname,
-              avatar_url: profile.avatar_url,
-              role: profile.role,
-              full_name: profile.full_name,
-              school: profile.school,
-              subject: profile.subject,
-              bio: profile.bio,
-              social_links: profile.social_links,
-              preferences: profile.preferences
-            }
-          }
-        }
-        
-        // Fallback: Direct profile lookup by email
-        const { data: profile } = await this.supabaseClient
-          .from('user_profiles')
-          .select('*')
-          .eq('email', authUser.email)
-          .single()
-        
-        if (profile) {
-          return {
-            user_id: profile.user_id,
-            profile: {
-              id: profile.user_id,
-              user_id: profile.user_id,
-              email: profile.email,
-              nickname: profile.nickname,
-              avatar_url: profile.avatar_url,
-              role: profile.role,
-              full_name: profile.full_name,
-              school: profile.school,
-              subject: profile.subject,
-              bio: profile.bio,
-              social_links: profile.social_links,
-              preferences: profile.preferences
-            }
-          }
-        }
-        
-        // If we get here, no identity was found
-        throw new IdentityNotFoundError(authUser.id, { email: authUser.email })
-
-      } catch (error) {
-        lastError = error
-        this.log(`Fallback attempt ${attempt} failed`, {
-          error: error instanceof Error ? error.message : error,
-          userId: authUser.id
-        })
-        
-        if (attempt < this.config.maxRetries) {
-          await this.delay(this.config.retryDelay * attempt)
-        }
-      }
-    }
-
-    throw new IdentityResolutionError(
-      'All fallback attempts failed',
-      { lastError, userId: authUser.id, email: authUser.email }
-    )
   }
 
   // =====================================================================
@@ -532,21 +434,21 @@ export class StableIdentityService {
   /**
    * Check if a message belongs to the current user
    */
-  isMessageOwner(messageSenderId: string, currentUserIdentityId?: string): boolean {
-    return messageSenderId === currentUserIdentityId
+  isMessageOwner(messageSenderId: string, currentUserId?: string): boolean {
+    return messageSenderId === currentUserId
   }
 
   /**
-   * Get identity ID from user (convenience method)
+   * Get user_id from AppUser (convenience method)
    */
   async getIdentityId(user: AppUser): Promise<string | null> {
     try {
       const identity = await this.resolveUserIdentity(user)
       return identity.user_id
     } catch (error) {
-      this.log('Failed to get identity ID', { 
+      this.log('Failed to get identity ID', {
         error: error instanceof Error ? error.message : error,
-        userId: user.id 
+        userId: user.id
       })
       return null
     }
@@ -598,7 +500,7 @@ export class StableIdentityService {
    * Clear cache for specific user
    */
   clearUserCache(userId: string): void {
-    const keysToDelete = Array.from(this.cache.keys()).filter(key => 
+    const keysToDelete = Array.from(this.cache.keys()).filter(key =>
       key.includes(userId)
     )
     keysToDelete.forEach(key => this.cache.delete(key))
@@ -644,10 +546,6 @@ export class StableIdentityService {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[StableIdentityService] ${message}`, data)
     }
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 

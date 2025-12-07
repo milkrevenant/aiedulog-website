@@ -20,7 +20,7 @@ import { createRDSClient } from '@/lib/db/rds-client'
 import { TableRow } from '@/lib/db/types'
 
 type MainContentVersionRow = TableRow<'main_content_versions'>
-type IdentityRow = TableRow<'identities'>
+type UserProfileRow = TableRow<'user_profiles'>
 type MainContentSectionRow = TableRow<'main_content_sections'>
 
 // GET - Fetch content versions
@@ -47,12 +47,12 @@ const getHandler = async (request: NextRequest, context: SecurityContext): Promi
       .from('main_content_versions')
       .select(`
         *,
-        created_by_identity:identities!created_by (
-          display_name,
+        created_by_identity:user_profiles!created_by (
+          display_name:full_name,
           user_id
         ),
-        approved_by_identity:identities!approved_by (
-          display_name,
+        approved_by_identity:user_profiles!approved_by (
+          display_name:full_name,
           user_id
         )
       `)
@@ -107,8 +107,8 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Get user identity
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
+      .from<UserProfileRow>('user_profiles')
+      .select('user_id')
       .eq('user_id', auth.user.id)
 
     const identity = identityRows?.[0]
@@ -135,12 +135,12 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
         change_summary: changeSummary,
         is_major_version: isMajor,
         change_type: 'update',
-        created_by: identity?.id
+        created_by: identity?.user_id
       }, {
         select: `
           *,
-          created_by_identity:identities!created_by (
-            display_name,
+          created_by_identity:user_profiles!created_by (
+            display_name:full_name,
             user_id
           )
         `
@@ -188,8 +188,8 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
 
     // Get user identity
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
+      .from<UserProfileRow>('user_profiles')
+      .select('user_id')
       .eq('user_id', auth.user.id)
 
     const identity = identityRows?.[0]
@@ -222,19 +222,19 @@ const putHandler = async (request: NextRequest, context: SecurityContext): Promi
         .update({
           is_published: true,
           published_at: new Date().toISOString(),
-          approved_by: identity?.id,
+          approved_by: identity?.user_id,
           approved_at: new Date().toISOString(),
           approval_notes: approvalNotes,
           change_type: 'publish'
         }, {
           select: `
             *,
-            created_by_identity:identities!created_by (
-              display_name,
+            created_by_identity:user_profiles!created_by (
+              display_name:full_name,
               user_id
             ),
-            approved_by_identity:identities!approved_by (
-              display_name,
+            approved_by_identity:user_profiles!approved_by (
+              display_name:full_name,
               user_id
             )
           `

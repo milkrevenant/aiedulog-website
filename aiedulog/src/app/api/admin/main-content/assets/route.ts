@@ -20,7 +20,7 @@ import { createRDSClient } from '@/lib/db/rds-client'
 import { TableRow } from '@/lib/db/types'
 
 type ContentAssetRow = TableRow<'content_assets'>
-type IdentityRow = TableRow<'identities'>
+type UserProfileRow = TableRow<'user_profiles'>
 
 // GET - Fetch content assets
 const getHandler = async (request: NextRequest, context: SecurityContext): Promise<NextResponse> => {
@@ -91,8 +91,8 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
 
     // Get user identity for created_by field
     const { data: identityRows } = await rds
-      .from('identities')
-      .select('id')
+      .from<UserProfileRow>('user_profiles')
+      .select('user_id')
       .eq('user_id', auth.user.id)
 
     const identity = identityRows?.[0]
@@ -101,7 +101,7 @@ const postHandler = async (request: NextRequest, context: SecurityContext): Prom
       .from('content_assets')
       .insert({
         ...body,
-        created_by: identity?.id
+        created_by: identity?.user_id
       }, { select: '*' })
 
     const asset = assetRows?.[0]

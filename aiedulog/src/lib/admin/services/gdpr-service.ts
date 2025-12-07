@@ -405,7 +405,6 @@ export class GdprService {
       const affectedTables = [
         ...Object.keys(exportResult.data?.user_data || {}),
         ...anonymizedTables,
-        'identities',
         'user_profiles',
         'auth_methods'
       ];
