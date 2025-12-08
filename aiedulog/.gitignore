@@ -48,3 +48,5 @@ scripts/db/
 
 # Local infra
 ../docker-compose.yml
+STATUS.md
+NEXT_SESSION.md

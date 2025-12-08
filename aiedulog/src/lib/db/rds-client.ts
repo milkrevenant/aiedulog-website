@@ -11,10 +11,12 @@ const pool = new Pool({
   database: process.env.DB_NAME || process.env.RDS_DATABASE,
   user: process.env.DB_USER || process.env.RDS_USERNAME,
   password: process.env.DB_PASSWORD || process.env.RDS_PASSWORD,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: (process.env.RDS_HOST?.includes('rds.amazonaws.com') || process.env.NODE_ENV === 'production')
+    ? { rejectUnauthorized: false }
+    : false,
   max: parseInt(process.env.RDS_MAX_CONNECTIONS || '20', 10),
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 2_000,
+  connectionTimeoutMillis: 30_000, // Aurora Serverless cold start 대응
 });
 
 pool.on('error', (err) => {
